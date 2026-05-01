@@ -1157,16 +1157,7 @@ const PAYSTACK_PUBLIC_KEY = window.PPCONFIG.PAYSTACK_PUBLIC_KEY;
 const N8N_WEBHOOK_URL     = window.PPCONFIG.N8N_WEBHOOK_URL;
 const supabase = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
 
-const FALLBACK_PRODUCTS = [
-  {id:'p1',n:'Royal Canin Adult Maxi 15kg',e:'🐶',cat:'Food',pet:'Dog',brand:'Royal Canin',p:28000,o:32000,r:4.8,rv:124,tag:'best'},
-  {id:'p2',n:'Whiskas Adult Tuna Pouch 85g (x12)',e:'🐱',cat:'Food',pet:'Cat',brand:'Whiskas',p:7500,o:null,r:4.6,rv:87,tag:'hot'},
-  {id:'p3',n:'Pedigree Puppy Chicken 3kg',e:'🐾',cat:'Food',pet:'Dog',brand:'Pedigree',p:9500,o:11000,r:4.7,rv:96,tag:'sale'},
-  {id:'p4',n:'Cat Litter Silica Gel 5L',e:'🧴',cat:'Accessories',pet:'Cat',brand:'Fresh Step',p:6800,o:null,r:4.5,rv:43,tag:'new'},
-  {id:'p5',n:'Dog Collar Adjustable Medium',e:'🦮',cat:'Accessories',pet:'Dog',brand:'Ruffwear',p:4200,o:5500,r:4.4,rv:61,tag:'sale'},
-  {id:'p6',n:'Frontline Flea & Tick Spray 250ml',e:'💊',cat:'Health',pet:'Dog',brand:'Frontline',p:18500,o:null,r:4.9,rv:212,tag:'best'},
-];
-
-let prods = [...FALLBACK_PRODUCTS]; // starts with fallback, replaced on load
+let prods = [];
 
 async function loadProductsFromSupabase() {
   try {
@@ -1178,30 +1169,25 @@ async function loadProductsFromSupabase() {
 
     if (error) throw error;
 
-    if (data && data.length > 0) {
-      // Map Supabase column names → existing app field names
-      prods = data.map(row => ({
-        id:    row.id,
-        n:     row.name,
-        e:     row.emoji      || '📦',
-        cat:   row.category,
-        pet:   row.pet_type   || 'All',
-        brand: row.brand      || '',
-        p:     row.price,
-        o:     row.original_price || null,
-        r:     row.rating     || 4.5,
-        rv:    row.review_count || 0,
-        tag:   row.tag        || '',
-        img:   row.image_url  || null,
-        desc:  row.description || '',
-        vars:  row.variants   || [],
-        varGroups: row.var_groups || [],
-      }));
-    }
-    // If Supabase returns 0 rows, FALLBACK_PRODUCTS stays in prods
+    prods = (data || []).map(row => ({
+      id:    row.id,
+      n:     row.name,
+      e:     row.emoji      || '📦',
+      cat:   row.category,
+      pet:   row.pet_type   || 'All',
+      brand: row.brand      || '',
+      p:     row.price,
+      o:     row.original_price || null,
+      r:     row.rating     || 4.5,
+      rv:    row.review_count || 0,
+      tag:   row.tag        || '',
+      img:   row.image_url  || null,
+      desc:  row.description || '',
+      vars:  row.variants   || [],
+      varGroups: row.var_groups || [],
+    }));
   } catch (err) {
-    console.warn('Supabase load failed, using fallback products:', err.message);
-    // prods already set to FALLBACK_PRODUCTS above — nothing more needed
+    console.warn('Supabase product load failed:', err.message);
   }
 
   renderProds(prods);
@@ -1391,6 +1377,10 @@ const lblText={sale:'Sale',new:'New',hot:'Hot',best:'Best Seller',popular:'Popul
 
 function renderProds(list) {
   const g = document.getElementById('prodGrid');
+  if (!list.length) {
+    g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--gray)"><div style="font-size:48px;margin-bottom:16px">📦</div><div style="font-size:16px;font-weight:800">No products yet</div><div style="font-size:13px;margin-top:8px">Products added from the admin panel will appear here.</div></div>';
+    return;
+  }
   g.innerHTML = '';
   list.forEach(p => {
     const disc = p.o ? Math.round((1 - p.p / p.o) * 100) : 0;
@@ -1841,225 +1831,105 @@ renderWishDrawer();
 /* ══════════════════════════════════════════
    BLOG
    ══════════════════════════════════════════ */
-const blogPosts = [
-  {
-    id:'b0',
-    cat:'Nutrition',
-    catColor:'#ED6436',
-    emoji:'🥩',
-    bg:'#fff5f0',
-    title:'What to Really Feed Your Dog in Nigeria',
-    date:'Apr 10, 2025',
-    author:'Dr. Amaka Osei',
-    readTime:'5 min read',
-    excerpt:'Local options, imported brands, and the hidden dangers lurking in cheap kibble sold at Lagos markets.',
-    body:`<p>Feeding your dog correctly in Nigeria requires balancing availability, cost, and nutritional quality. Many dog owners default to cheap local kibble — but not all products are equal.</p>
-<h4>What to look for on the label</h4>
-<p>The first ingredient should be a named meat source (chicken, beef, fish) — not "meat meal" or "animal by-products" without specification. Protein content should be at least 18% for adult dogs and 22% for puppies.</p>
-<h4>Best imported brands available in Nigeria</h4>
-<ul><li><strong>Royal Canin</strong> — breed-specific formulas, widely available in Lagos and Abuja</li><li><strong>Pedigree</strong> — budget-friendly, decent baseline nutrition</li><li><strong>Purina ProPlan</strong> — premium option for working/active dogs</li></ul>
-<h4>Local alternatives that work</h4>
-<p>Plain cooked rice and chicken (no onion, no seasoning) is a solid home-cooked supplement. Eja osan (smoked fish) in small amounts adds omega-3. Avoid raw cassava, chocolate, grapes, and onions entirely.</p>
-<h4>How much to feed</h4>
-<p>A 10kg adult dog needs roughly 200–250g of dry food per day. Adjust based on activity level and body condition — you should feel ribs but not see them.</p>`,
-  },
-  {
-    id:'b1',
-    cat:'Health',
-    catColor:'#2d9d78',
-    emoji:'💉',
-    bg:'#f0fff8',
-    title:'Vaccination Schedule Every Nigerian Pet Owner Needs',
-    date:'Mar 22, 2025',
-    author:'Dr. Emeka Nwachukwu',
-    readTime:'4 min read',
-    excerpt:'Rabies, parvo, distemper — which vaccines are critical, when to give them, and what they cost in Nigeria.',
-    body:`<p>Vaccination is the single most cost-effective thing you can do for your pet's health. Yet many Nigerian pet owners skip or delay vaccines — often because they don't know the schedule.</p>
-<h4>Core vaccines for dogs</h4>
-<ul><li><strong>Rabies</strong> — legally required. First dose at 12 weeks, booster at 1 year, then every 3 years.</li><li><strong>DHPPi (5-in-1)</strong> — covers Distemper, Hepatitis, Parvovirus, Parainfluenza. Start at 6–8 weeks, repeat every 3–4 weeks until 16 weeks, then annually.</li><li><strong>Leptospirosis</strong> — important in Lagos, Port Harcourt due to flooding risk. Annual.</li></ul>
-<h4>Core vaccines for cats</h4>
-<ul><li><strong>FVRCP (3-in-1)</strong> — Feline Viral Rhinotracheitis, Calicivirus, Panleukopenia. Start at 8 weeks.</li><li><strong>Rabies</strong> — even for indoor cats. Annual.</li></ul>
-<h4>Cost in Nigeria (2025)</h4>
-<p>Expect to pay ₦3,500–₦8,000 per vaccination visit at a registered vet clinic. DHPPi multi-dose kits cost vets around ₦1,200 wholesale — so anything above ₦5,000 per visit includes a fair consultation fee.</p>`,
-  },
-  {
-    id:'b2',
-    cat:'Training',
-    catColor:'#6c5ce7',
-    emoji:'🐾',
-    bg:'#f5f3ff',
-    title:'5 Commands Every Lagos Dog Should Know',
-    date:'Mar 5, 2025',
-    author:'Tunde Adeyemi',
-    readTime:'6 min read',
-    excerpt:'Sit, stay, leave it — plus two Nigerian-specific commands that could save your dog\'s life in traffic.',
-    body:`<p>Training in Lagos presents unique challenges: dense traffic, open gutters, street food vendors, and other free-roaming dogs. These 5 commands are non-negotiables.</p>
-<h4>1. Sit</h4>
-<p>The foundation of everything. Hold a treat above your dog's nose, move it backward over their head — their bottom naturally drops. Say "Sit" the moment it happens. Reward immediately. Practice 5 minutes daily.</p>
-<h4>2. Stay</h4>
-<p>Ask your dog to sit. Open your palm toward them and say "Stay." Take one step back. Return and reward. Gradually increase distance over days. Critical before crossing roads.</p>
-<h4>3. Leave It</h4>
-<p>Lagos streets are full of dangerous scraps. Place a treat on the floor, cover with your foot, say "Leave it." When they stop trying, reward with a <em>different</em> treat from your hand. Never reward with the item you asked them to leave.</p>
-<h4>4. Come (Recall)</h4>
-<p>The life-saving one. Start in a small room, crouch down, say "Come!" enthusiastically. Reward massively. Practice on a long lead before trying off-lead. Never punish a dog that comes to you — even if they were misbehaving before.</p>
-<h4>5. Off (for gates and strangers)</h4>
-<p>Nigerian visitors are often scared of dogs jumping. When they jump, turn completely away — no eye contact, no knee, no talking. Only give attention when all four paws are on the floor. Consistency is everything.</p>`,
-  },
-  {
-    id:'b3',
-    cat:'Housing',
-    catColor:'#e17055',
-    emoji:'🏠',
-    bg:'#fff8f5',
-    title:'Setting Up the Perfect Cage for Your Bird',
-    date:'Feb 18, 2025',
-    author:'Chisom Eze',
-    readTime:'3 min read',
-    excerpt:'Bar spacing, perch placement, toys that actually stimulate — everything for a happy Nigerian parrot or lovebird.',
-    body:`<p>A bird's cage is its entire world. Getting it right is the most impactful thing you'll do as a bird owner.</p>
-<h4>Size rules</h4>
-<p>The cage should be wide enough for your bird to fully extend both wings simultaneously. For lovebirds: minimum 60×45cm. For African Greys: minimum 90×90cm. When in doubt, go bigger.</p>
-<h4>Bar spacing</h4>
-<ul><li>Finches, canaries: 1–1.2cm spacing</li><li>Lovebirds, budgies: 1.5cm</li><li>African Grey, cockatoo: 2–2.5cm (wider allows beak exercise)</li></ul>
-<h4>Perch placement</h4>
-<p>Use natural wood perches of varying diameters (mango, guava branches work well) — not just the plastic dowels that come with cages. Place highest perch away from food bowls to prevent contamination from droppings.</p>
-<h4>Enrichment</h4>
-<p>Rotate 3–4 toys every 2 weeks. Birds get bored quickly. Foraging toys (hiding food inside) are the most stimulating. Avoid mirrors for single birds — it causes obsessive behavior.</p>`,
-  },
-  {
-    id:'b4',
-    cat:'Lifestyle',
-    catColor:'#0984e3',
-    emoji:'🌊',
-    bg:'#f0f7ff',
-    title:'Keeping Fish Alive Through NEPA Outages',
-    date:'Jan 30, 2025',
-    author:'Segun Lawal',
-    readTime:'4 min read',
-    excerpt:'Power cuts kill fish faster than anything else. Here\'s a Nigerian fish keeper\'s survival guide for your aquarium.',
-    body:`<p>Nothing is more heartbreaking than returning to a tank of dead fish after a long power cut. Oxygen depletion is the primary killer — within 2–4 hours in a heavily stocked tank. Here's how to prepare.</p>
-<h4>Battery-powered backup aerators</h4>
-<p>A ₦3,500–5,000 battery aerator from computer village or any pet shop is your first line of defense. Keep spare AA batteries. Run it anytime power goes out.</p>
-<h4>Reduce feeding during outages</h4>
-<p>Fish can survive 5–7 days without food. But uneaten food decomposes rapidly without filtration, spiking ammonia and killing fish. Don't feed if power has been out more than 4 hours.</p>
-<h4>UPS for filtration</h4>
-<p>A small 650VA UPS can run a submersible filter for 3–5 hours. This maintains biological filtration (the beneficial bacteria that process ammonia). It's worth the ₦25,000–40,000 investment for serious tanks.</p>
-<h4>Reduce stocking density</h4>
-<p>In Nigeria, stock your tank at 60–70% of theoretical capacity to build in resilience for outage periods. More fish = more oxygen demand = faster crash when power fails.</p>`,
-  },
-  {
-    id:'b5',
-    cat:'Grooming',
-    catColor:'#fd79a8',
-    emoji:'✂️',
-    bg:'#fff0f6',
-    title:'At-Home Dog Grooming on a Nigerian Budget',
-    date:'Jan 12, 2025',
-    author:'Adaeze Okafor',
-    readTime:'5 min read',
-    excerpt:'Professional grooming costs ₦8,000–₦25,000 per session. Here\'s how to do 80% of it yourself at home.',
-    body:`<p>Regular grooming isn't just cosmetic — it prevents skin infections, matting, and allows you to spot health issues early. You don't need a salon for every session.</p>
-<h4>What you need (one-time investment: ~₦12,000)</h4>
-<ul><li>Slicker brush + metal comb — ₦2,500–4,000</li><li>Nail clippers (guillotine type) — ₦1,500–2,500</li><li>Dog shampoo (not human shampoo — pH is different) — ₦1,800–3,500</li><li>Ear cleaning solution — ₦1,200</li></ul>
-<h4>Brushing (3× weekly for most breeds)</h4>
-<p>Always brush before bathing — washing matted fur makes it tighter. Work in sections, from head to tail. The slicker brush gets surface tangles; the metal comb goes deeper to check for mats near the skin.</p>
-<h4>Bathing (monthly for most dogs)</h4>
-<p>Use lukewarm water. Wet thoroughly, apply shampoo working from neck back (keep face dry). Rinse completely — leftover shampoo causes itching. Dry with a towel first, then a fan if no hairdryer.</p>
-<h4>Nail trimming (the scary part)</h4>
-<p>Clip only the curved tip — avoid the pink "quick" which bleeds if cut. If nails are dark and you can't see the quick, take small slivers and stop when you see a grey/pink oval in the center. One nail per session is fine when starting out.</p>`,
-  },
-];
+let blogPosts = [];
+
+async function loadBlogPosts() {
+  try {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time')
+      .eq('published', true)
+      .order('published_at', { ascending: false })
+      .limit(6);
+    if (error) throw error;
+    blogPosts = (data || []).map(p => ({
+      id:       p.id,
+      slug:     p.slug,
+      cat:      p.category  || 'General',
+      catColor: p.cat_color || '#ED6436',
+      emoji:    p.emoji     || '📝',
+      bg:       p.bg_color  || '#fff5f0',
+      title:    p.title,
+      date:     p.published_at ? new Date(p.published_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '',
+      author:   p.author    || 'PuppyPlace',
+      readTime: (p.read_time || 5) + ' min read',
+      excerpt:  p.excerpt   || '',
+    }));
+  } catch(err) {
+    console.warn('Blog load failed:', err.message);
+  }
+  renderBlog();
+}
 
 function renderBlog(){
   const grid = document.getElementById('blogGrid');
   if(!grid) return;
-  // Show first 3 posts: featured (large) + 2 smaller
+  if(!blogPosts.length){
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-weight:800">No blog posts yet</div></div>';
+    return;
+  }
   const featured = blogPosts[0];
-  const others = blogPosts.slice(1,3);
+  const others   = blogPosts.slice(1,3);
   grid.innerHTML = `
-    <div class="blog-card" onclick="openBlogModal('${featured.id}')">
-      <div class="blog-img" style="background:${featured.bg};">
-        <span style="font-size:80px;">${featured.emoji}</span>
-        <span class="blog-cat-pill" style="background:${featured.catColor}">${featured.cat}</span>
+    <div class="blog-card" onclick="window.location.href='/posts/${escHtml(featured.slug)}.html'">
+      <div class="blog-img" style="background:${escHtml(featured.bg)};">
+        <span style="font-size:80px;">${escHtml(featured.emoji)}</span>
+        <span class="blog-cat-pill" style="background:${escHtml(featured.catColor)}">${escHtml(featured.cat)}</span>
       </div>
       <div class="blog-body">
-        <div class="blog-title">${featured.title}</div>
-        <div class="blog-meta">${featured.author} · ${featured.date} · ${featured.readTime}</div>
-        <p style="font-size:13px;color:#666;margin:10px 0 0;line-height:1.6;">${featured.excerpt}</p>
+        <div class="blog-title">${escHtml(featured.title)}</div>
+        <div class="blog-meta">${escHtml(featured.author)} · ${escHtml(featured.date)} · ${escHtml(featured.readTime)}</div>
+        <p style="font-size:13px;color:#666;margin:10px 0 0;line-height:1.6;">${escHtml(featured.excerpt)}</p>
         <span class="blog-read">Read Article →</span>
       </div>
     </div>
     ${others.map(p=>`
-    <div class="blog-card" onclick="openBlogModal('${p.id}')">
-      <div class="blog-img sm" style="background:${p.bg};">
-        <span style="font-size:56px;">${p.emoji}</span>
-        <span class="blog-cat-pill" style="background:${p.catColor}">${p.cat}</span>
+    <div class="blog-card" onclick="window.location.href='/posts/${escHtml(p.slug)}.html'">
+      <div class="blog-img sm" style="background:${escHtml(p.bg)};">
+        <span style="font-size:56px;">${escHtml(p.emoji)}</span>
+        <span class="blog-cat-pill" style="background:${escHtml(p.catColor)}">${escHtml(p.cat)}</span>
       </div>
       <div class="blog-body">
-        <div class="blog-title" style="font-size:16px;">${p.title}</div>
-        <div class="blog-meta">${p.author} · ${p.date} · ${p.readTime}</div>
+        <div class="blog-title" style="font-size:16px;">${escHtml(p.title)}</div>
+        <div class="blog-meta">${escHtml(p.author)} · ${escHtml(p.date)} · ${escHtml(p.readTime)}</div>
         <span class="blog-read">Read →</span>
       </div>
     </div>`).join('')}`;
 }
 
-
-function openBlogModal(id, mode){
-  if(id && mode !== 'all'){
-    window.location.href = 'blog.html?id=' + id;
-    return;
-  }
-  const modal = document.getElementById('blogModal');
-  const content = document.getElementById('blogModalContent');
-  if(mode === 'all'){
-    // Show all posts as a list
-    content.innerHTML = `
-      <div style="padding:24px 28px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:20px;">
-        <h2 style="font-size:22px;font-weight:900;">All Blog Posts</h2>
-        <button onclick="closeBlogModal()" style="background:var(--light);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
-      </div>
-      <div style="padding:24px 28px;">
-        ${blogPosts.map(p=>`
-          <div onclick="openBlogModal('${p.id}')" style="display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);cursor:pointer;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
-            <div style="width:64px;height:64px;background:${p.bg};border-radius:var(--rxs);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;">${p.emoji}</div>
-            <div>
-              <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:${p.catColor};margin-bottom:4px;">${p.cat}</div>
-              <div style="font-size:15px;font-weight:800;color:var(--black);line-height:1.4;margin-bottom:4px;">${p.title}</div>
-              <div style="font-size:12px;color:var(--gray);">${p.author} · ${p.readTime}</div>
-            </div>
-          </div>`).join('')}
-      </div>`;
-  } else {
-    const p = blogPosts.find(x=>x.id===id);
-    if(!p) return;
-    content.innerHTML = `
-      <div style="background:${p.bg};padding:40px 28px 28px;position:relative;">
-        <button onclick="closeBlogModal()" style="position:absolute;top:16px;right:16px;background:rgba(0,0,0,.08);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
-        <span style="font-size:64px;display:block;margin-bottom:16px;">${p.emoji}</span>
-        <span style="background:${p.catColor};color:#fff;font-size:11px;font-weight:800;padding:5px 14px;border-radius:50px;text-transform:uppercase;letter-spacing:.06em;">${p.cat}</span>
-        <h2 style="font-size:24px;font-weight:900;line-height:1.35;margin:14px 0 10px;color:var(--black);">${p.title}</h2>
-        <div style="font-size:13px;color:var(--gray);">${p.author} · ${p.date} · ${p.readTime}</div>
-      </div>
-      <div style="padding:28px;font-size:15px;line-height:1.8;color:#333;">
-        ${p.body}
-      </div>
-      <div style="padding:0 28px 28px;display:flex;gap:12px;flex-wrap:wrap;">
-        ${blogPosts.filter(x=>x.id!==p.id).slice(0,3).map(x=>`
-          <div onclick="openBlogModal('${x.id}')" style="flex:1;min-width:160px;padding:14px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all var(--trans);" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'">
-            <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:${x.catColor};margin-bottom:4px;">${x.cat}</div>
-            <div style="font-size:13px;font-weight:800;line-height:1.4;">${x.title}</div>
-          </div>`).join('')}
-      </div>`;
-  }
-  modal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
 function closeBlogModal(){
   document.getElementById('blogModal').style.display = 'none';
   document.body.style.overflow = '';
 }
 
-renderBlog();
+/* ══════════════════════════════════════════
+   HERO IMAGES — load from store_settings
+   ══════════════════════════════════════════ */
+async function loadHeroImages() {
+  try {
+    const { data } = await supabase
+      .from('store_settings')
+      .select('key,value')
+      .in('key', ['hero_main','hero_food','hero_vet']);
+    if (!data) return;
+    const map = Object.fromEntries(data.map(r => [r.key, r.value]));
+    if (map.hero_main?.img_url) {
+      const el = document.querySelector('.hero-left');
+      if (el) el.style.backgroundImage = `url('${map.hero_main.img_url}'), url('images/hero-bg-main.svg'), linear-gradient(135deg,#fff9f6,#fdeee7)`;
+    }
+    if (map.hero_food?.img_url) {
+      const el = document.querySelector('.hero-mini:first-child');
+      if (el) el.style.backgroundImage = `url('${map.hero_food.img_url}'), url('images/hero-bg-food.svg'), linear-gradient(135deg,#e8f4f8,#c8e6f0)`;
+    }
+    if (map.hero_vet?.img_url) {
+      const el = document.querySelector('.hero-mini:last-child');
+      if (el) el.style.backgroundImage = `url('${map.hero_vet.img_url}'), url('images/hero-bg-vet.svg'), linear-gradient(135deg,#f0f8e8,#c8e8c0)`;
+    }
+  } catch(e) { /* silently ignore */ }
+}
+
+loadBlogPosts();
+loadHeroImages();
 
 /* ══════════════════════════════════════════
    REVIEWS & COMMENTS SYSTEM

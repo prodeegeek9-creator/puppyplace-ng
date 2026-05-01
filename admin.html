@@ -231,6 +231,65 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 .danger-btn{background:var(--red);color:#fff;border:none;border-radius:50px;padding:12px 24px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:all var(--trans)}
 .danger-btn:hover{background:#c0392b;transform:translateY(-1px)}
 
+/* ── BLOG PANEL ── */
+.blog-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap}
+.blog-table-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow-x:auto;box-shadow:var(--shadow)}
+.blog-table{width:100%;border-collapse:collapse;min-width:600px}
+.blog-table th{background:var(--light);padding:14px 20px;text-align:left;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--gray);border-bottom:1px solid var(--border)}
+.blog-table td{padding:14px 20px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:14px}
+.blog-table tr:last-child td{border-bottom:none}
+.blog-table tr:hover td{background:#fafaf8}
+.pub-badge{padding:4px 10px;border-radius:50px;font-size:11px;font-weight:800}
+.pub-yes{background:rgba(46,204,113,.1);color:var(--green)}
+.pub-no{background:rgba(243,156,18,.1);color:var(--yellow)}
+
+/* ── BLOG FORM MODAL ── */
+.blog-form-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.blog-form-bg.open{display:flex}
+.blog-form-modal{background:var(--white);border-radius:var(--r);width:100%;max-width:760px;max-height:92vh;overflow-y:auto;animation:fadeUp .25s ease;box-shadow:var(--shadow2)}
+.blog-form-modal::-webkit-scrollbar{width:4px}
+.bf-hd{display:flex;align-items:center;justify-content:space-between;padding:24px 28px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--white);z-index:2}
+.bf-title{font-size:18px;font-weight:900;color:var(--black)}
+.bf-close{background:var(--light);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--trans)}
+.bf-close:hover{background:var(--orange);color:#fff}
+.bf-body{padding:28px;display:flex;flex-direction:column;gap:18px}
+.bf-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.bf-field{display:flex;flex-direction:column;gap:6px}
+.bf-field.full{grid-column:1/-1}
+.bf-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--black)}
+.bf-label span{color:var(--orange)}
+.bf-input{border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-family:'Nunito',sans-serif;font-size:14px;color:var(--black);outline:none;transition:all var(--trans);background:var(--light)}
+.bf-input:focus{border-color:var(--orange);background:var(--white);box-shadow:0 0 0 3px rgba(237,100,54,.1)}
+.bf-input::placeholder{color:#bbb}
+.bf-textarea{min-height:300px;resize:vertical;font-size:13px;line-height:1.7}
+.bf-hint{font-size:12px;color:var(--gray);margin-top:2px}
+.bf-footer{padding:20px 28px;border-top:1px solid var(--border);display:flex;gap:12px;position:sticky;bottom:0;background:var(--white)}
+.bf-cancel{flex:0 0 auto;background:transparent;border:1.5px solid var(--border);border-radius:50px;padding:12px 24px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--black);transition:all var(--trans)}
+.bf-cancel:hover{border-color:var(--black)}
+.bf-draft{flex:0 0 auto;background:var(--light);border:1.5px solid var(--border);border-radius:50px;padding:12px 24px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;color:var(--black);transition:all var(--trans)}
+.bf-draft:hover{border-color:var(--orange);color:var(--orange)}
+.bf-publish{flex:1;background:var(--orange);color:#fff;border:none;border-radius:50px;padding:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:background var(--trans)}
+.bf-publish:hover{background:var(--orange-d)}
+
+/* ── HERO IMAGES PANEL ── */
+.hero-img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px}
+.hero-img-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow)}
+.hero-img-card h3{font-size:15px;font-weight:900;margin-bottom:4px;color:var(--black)}
+.hero-img-card p{font-size:12px;color:var(--gray);margin-bottom:16px}
+.hero-preview{width:100%;height:160px;border-radius:var(--rxs);margin-bottom:12px;object-fit:cover;background:var(--light);display:flex;align-items:center;justify-content:center;overflow:hidden;border:1.5px dashed var(--border)}
+.hero-preview img{width:100%;height:100%;object-fit:cover;display:none}
+.hero-preview-placeholder{font-size:36px;opacity:.3}
+.hero-upload-row{display:flex;gap:8px;margin-bottom:12px}
+.hero-upload-btn{flex:1;background:var(--light);border:1.5px solid var(--border);border-radius:50px;padding:10px 14px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--black);cursor:pointer;transition:all var(--trans);text-align:center}
+.hero-upload-btn:hover{border-color:var(--orange);color:var(--orange)}
+.hero-url-input{width:100%;border:1.5px solid var(--border);border-radius:var(--r);padding:10px 14px;font-family:'Nunito',sans-serif;font-size:13px;color:var(--black);outline:none;background:var(--light);transition:all var(--trans);margin-bottom:12px}
+.hero-url-input:focus{border-color:var(--orange);background:var(--white)}
+.hero-url-input::placeholder{color:#bbb}
+.hero-save-btn{width:100%;background:var(--orange);color:#fff;border:none;border-radius:50px;padding:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all var(--trans)}
+.hero-save-btn:hover{background:var(--orange-d)}
+.hero-clear-btn{width:100%;background:transparent;border:1.5px solid var(--border);border-radius:50px;padding:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--gray);transition:all var(--trans);margin-top:8px}
+.hero-clear-btn:hover{border-color:var(--red);color:var(--red)}
+
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .admin-layout{grid-template-columns:1fr}
@@ -283,7 +342,9 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-section">Main</div>
         <div class="sb-link on" onclick="showPanel('dashboard',this)"><span class="sb-link-ico">📊</span> Dashboard</div>
         <div class="sb-link" onclick="showPanel('products',this)"><span class="sb-link-ico">📦</span> Products <span class="sb-badge" id="sbProdCount">0</span></div>
+        <div class="sb-link" onclick="showPanel('blog',this)"><span class="sb-link-ico">📝</span> Blog Posts <span class="sb-badge" id="sbBlogCount">0</span></div>
         <div class="sb-section">Store</div>
+        <div class="sb-link" onclick="showPanel('hero',this)"><span class="sb-link-ico">🖼️</span> Hero Images</div>
         <div class="sb-link" onclick="showPanel('settings',this)"><span class="sb-link-ico">⚙️</span> Settings</div>
         <div class="sb-link" onclick="window.open('index.html','_blank','noopener,noreferrer')"><span class="sb-link-ico">🔗</span> View Shop</div>
       </nav>
@@ -420,7 +481,122 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           </div>
         </div>
 
-      </div></div></div></div><div class="form-bg" id="formBg" onclick="if(event.target===this)closeForm()">
+        <!-- ══ BLOG PANEL ══ -->
+        <div class="panel" id="panelBlog">
+          <div class="blog-toolbar">
+            <div style="font-size:15px;font-weight:800;color:var(--black)">All Posts</div>
+            <button class="add-btn" onclick="openBlogForm()">＋ New Post</button>
+          </div>
+          <div class="blog-table-wrap">
+            <table class="blog-table">
+              <thead><tr><th>Title</th><th>Category</th><th>Author</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="blogTableBody"><tr><td colspan="6" class="empty-table"><div class="empty-table-ico">📝</div><div>No posts yet</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══ HERO IMAGES PANEL ══ -->
+        <div class="panel" id="panelHero">
+          <div style="margin-bottom:24px">
+            <div style="font-size:15px;font-weight:800;color:var(--black);margin-bottom:4px">Hero Card Images</div>
+            <div style="font-size:13px;color:var(--gray)">Upload or paste a URL for each hero card. Images overlay the illustrated backgrounds.</div>
+          </div>
+          <div class="hero-img-grid">
+            <div class="hero-img-card">
+              <h3>🏠 Main Hero Card</h3>
+              <p>The large left card with "Everything Your Pet Loves"</p>
+              <div class="hero-preview" id="prevHeroMain"><span class="hero-preview-placeholder">🖼️</span><img id="imgHeroMain" src="" alt=""/></div>
+              <label class="hero-upload-btn" style="display:block;cursor:pointer">📷 Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadHeroImage(this,'hero_main','imgHeroMain','prevHeroMain','urlHeroMain')"/></label>
+              <input class="hero-url-input" id="urlHeroMain" type="url" placeholder="Or paste image URL…"/>
+              <button class="hero-save-btn" onclick="saveHeroImage('hero_main','urlHeroMain','imgHeroMain','prevHeroMain')">Save Main Hero</button>
+              <button class="hero-clear-btn" onclick="clearHeroImage('hero_main','urlHeroMain','imgHeroMain','prevHeroMain')">Remove Image</button>
+            </div>
+            <div class="hero-img-card">
+              <h3>🥩 Food Mini Card</h3>
+              <p>Top-right card — "Premium Pet Food"</p>
+              <div class="hero-preview" id="prevHeroFood"><span class="hero-preview-placeholder">🖼️</span><img id="imgHeroFood" src="" alt=""/></div>
+              <label class="hero-upload-btn" style="display:block;cursor:pointer">📷 Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadHeroImage(this,'hero_food','imgHeroFood','prevHeroFood','urlHeroFood')"/></label>
+              <input class="hero-url-input" id="urlHeroFood" type="url" placeholder="Or paste image URL…"/>
+              <button class="hero-save-btn" onclick="saveHeroImage('hero_food','urlHeroFood','imgHeroFood','prevHeroFood')">Save Food Card</button>
+              <button class="hero-clear-btn" onclick="clearHeroImage('hero_food','urlHeroFood','imgHeroFood','prevHeroFood')">Remove Image</button>
+            </div>
+            <div class="hero-img-card">
+              <h3>🏥 Vet Mini Card</h3>
+              <p>Bottom-right card — "Find a Vet Near You"</p>
+              <div class="hero-preview" id="prevHeroVet"><span class="hero-preview-placeholder">🖼️</span><img id="imgHeroVet" src="" alt=""/></div>
+              <label class="hero-upload-btn" style="display:block;cursor:pointer">📷 Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadHeroImage(this,'hero_vet','imgHeroVet','prevHeroVet','urlHeroVet')"/></label>
+              <input class="hero-url-input" id="urlHeroVet" type="url" placeholder="Or paste image URL…"/>
+              <button class="hero-save-btn" onclick="saveHeroImage('hero_vet','urlHeroVet','imgHeroVet','prevHeroVet')">Save Vet Card</button>
+              <button class="hero-clear-btn" onclick="clearHeroImage('hero_vet','urlHeroVet','imgHeroVet','prevHeroVet')">Remove Image</button>
+            </div>
+          </div>
+        </div>
+
+      </div></div></div></div><!-- Blog Form Modal -->
+<div class="blog-form-bg" id="blogFormBg" onclick="if(event.target===this)closeBlogForm()">
+  <div class="blog-form-modal" onclick="event.stopPropagation()">
+    <div class="bf-hd">
+      <div class="bf-title" id="bfTitle">New Post</div>
+      <button class="bf-close" onclick="closeBlogForm()">✕</button>
+    </div>
+    <div class="bf-body">
+      <input type="hidden" id="bfId"/>
+      <div class="bf-row">
+        <div class="bf-field full">
+          <label class="bf-label">Title <span>*</span></label>
+          <input class="bf-input" id="bfPostTitle" type="text" placeholder="e.g. 5 Tips for a Healthy Puppy" oninput="autoSlug(this.value)"/>
+        </div>
+        <div class="bf-field full">
+          <label class="bf-label">Slug (URL) <span>*</span></label>
+          <input class="bf-input" id="bfSlug" type="text" placeholder="e.g. 5-tips-healthy-puppy"/>
+          <span class="bf-hint">Auto-generated from title. URL will be: /posts/SLUG.html</span>
+        </div>
+      </div>
+      <div class="bf-row">
+        <div class="bf-field">
+          <label class="bf-label">Category</label>
+          <input class="bf-input" id="bfCat" type="text" placeholder="e.g. Nutrition, Health, Training"/>
+        </div>
+        <div class="bf-field">
+          <label class="bf-label">Category Colour</label>
+          <input class="bf-input" id="bfCatColor" type="color" value="#ED6436" style="padding:6px;height:46px;cursor:pointer"/>
+        </div>
+        <div class="bf-field">
+          <label class="bf-label">Emoji</label>
+          <input class="bf-input" id="bfEmoji" type="text" placeholder="📝" maxlength="4"/>
+        </div>
+        <div class="bf-field">
+          <label class="bf-label">Card Background Colour</label>
+          <input class="bf-input" id="bfBg" type="color" value="#fff5f0" style="padding:6px;height:46px;cursor:pointer"/>
+        </div>
+        <div class="bf-field">
+          <label class="bf-label">Author</label>
+          <input class="bf-input" id="bfAuthor" type="text" placeholder="e.g. Dr. Amaka Osei"/>
+        </div>
+        <div class="bf-field">
+          <label class="bf-label">Read Time (minutes)</label>
+          <input class="bf-input" id="bfReadTime" type="number" min="1" max="60" placeholder="5"/>
+        </div>
+      </div>
+      <div class="bf-field">
+        <label class="bf-label">Excerpt</label>
+        <textarea class="bf-input" id="bfExcerpt" rows="2" placeholder="A short summary shown on the blog listing…" style="resize:vertical"></textarea>
+      </div>
+      <div class="bf-field">
+        <label class="bf-label">Content (HTML) <span>*</span></label>
+        <textarea class="bf-input bf-textarea" id="bfContent" placeholder="&lt;p&gt;Your article content here. Use &lt;h4&gt; for headings, &lt;p&gt; for paragraphs, &lt;ul&gt;&lt;li&gt; for lists.&lt;/p&gt;"></textarea>
+        <span class="bf-hint">Accepts HTML — use &lt;h4&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;em&gt;</span>
+      </div>
+    </div>
+    <div class="bf-footer">
+      <button class="bf-cancel" onclick="closeBlogForm()">Cancel</button>
+      <button class="bf-draft" onclick="saveBlogPost(false)">💾 Save Draft</button>
+      <button class="bf-publish" onclick="saveBlogPost(true)">🚀 Publish</button>
+    </div>
+  </div>
+</div>
+
+<div class="form-bg" id="formBg" onclick="if(event.target===this)closeForm()">
   <div class="form-modal" onclick="event.stopPropagation()">
     <div class="form-hd">
       <div class="form-title" id="formTitle">Add Product</div>
@@ -667,10 +843,12 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',hero:'Hero Images',settings:'Settings'};
   document.getElementById('pageTitle').textContent = titles[name]||name;
   if(name==='products') renderTable();
   if(name==='dashboard'){ updateStats(); renderDashRecent(); }
+  if(name==='blog') loadBlogPosts();
+  if(name==='hero') loadHeroSettings();
 }
 
 /* ── STATS ── */
@@ -1030,8 +1208,210 @@ async function clearAllProducts(){
   showToast('🗑️ All products deleted','warning');
 }
 
+/* ══════════════════════════════════════
+   BLOG POSTS
+   ══════════════════════════════════════ */
+let _blogPosts = [];
+
+async function loadBlogPosts() {
+  const { data, error } = await sbAdmin.from('blog_posts').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('Blog load:', error.message); return; }
+  _blogPosts = data || [];
+  renderBlogTable();
+  document.getElementById('sbBlogCount').textContent = _blogPosts.length;
+}
+
+function renderBlogTable() {
+  const tbody = document.getElementById('blogTableBody');
+  if (!_blogPosts.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-table"><div class="empty-table-ico">📝</div><div>No posts yet — click "+ New Post" to create one</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = _blogPosts.map(p => {
+    const date = p.published_at ? new Date(p.published_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    const pubBadge = p.published
+      ? '<span class="pub-badge pub-yes">Published</span>'
+      : '<span class="pub-badge pub-no">Draft</span>';
+    return `<tr>
+      <td><div style="font-weight:800;color:var(--black);max-width:280px">${escAdm(p.title)}</div><div style="font-size:12px;color:var(--gray);margin-top:2px">/posts/${escAdm(p.slug)}.html</div></td>
+      <td><span style="font-size:12px;font-weight:800;color:${escAdm(p.cat_color||'#ED6436')}">${escAdm(p.category||'General')}</span></td>
+      <td>${escAdm(p.author||'—')}</td>
+      <td style="white-space:nowrap">${escAdm(date)}</td>
+      <td>${pubBadge}</td>
+      <td><div class="action-btns">
+        <button class="act-btn" title="Edit" onclick="editBlogPost('${escAdm(p.id)}')">✏️</button>
+        <button class="act-btn" title="${p.published?'Unpublish':'Publish'}" onclick="togglePublish('${escAdm(p.id)}',${!p.published})">${p.published?'🔒':'🚀'}</button>
+        <button class="act-btn del" title="Delete" onclick="deleteBlogPost('${escAdm(p.id)}')">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function escAdm(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function autoSlug(title) {
+  const slug = title.toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-').slice(0,80);
+  document.getElementById('bfSlug').value = slug;
+}
+
+function openBlogForm() {
+  document.getElementById('bfTitle').textContent = 'New Post';
+  document.getElementById('bfId').value = '';
+  ['bfPostTitle','bfSlug','bfCat','bfAuthor','bfExcerpt','bfContent'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('bfEmoji').value = '📝';
+  document.getElementById('bfCatColor').value = '#ED6436';
+  document.getElementById('bfBg').value = '#fff5f0';
+  document.getElementById('bfReadTime').value = '5';
+  document.getElementById('blogFormBg').classList.add('open');
+}
+
+function editBlogPost(id) {
+  const p = _blogPosts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('bfTitle').textContent = 'Edit Post';
+  document.getElementById('bfId').value = p.id;
+  document.getElementById('bfPostTitle').value = p.title || '';
+  document.getElementById('bfSlug').value = p.slug || '';
+  document.getElementById('bfCat').value = p.category || '';
+  document.getElementById('bfCatColor').value = p.cat_color || '#ED6436';
+  document.getElementById('bfEmoji').value = p.emoji || '📝';
+  document.getElementById('bfBg').value = p.bg_color || '#fff5f0';
+  document.getElementById('bfAuthor').value = p.author || '';
+  document.getElementById('bfReadTime').value = p.read_time || 5;
+  document.getElementById('bfExcerpt').value = p.excerpt || '';
+  document.getElementById('bfContent').value = p.content || '';
+  document.getElementById('blogFormBg').classList.add('open');
+}
+
+function closeBlogForm() {
+  document.getElementById('blogFormBg').classList.remove('open');
+}
+
+async function saveBlogPost(publish) {
+  const title   = document.getElementById('bfPostTitle').value.trim();
+  const slug    = document.getElementById('bfSlug').value.trim();
+  const content = document.getElementById('bfContent').value.trim();
+  if (!title || !slug || !content) { showToast('Title, slug, and content are required','error'); return; }
+
+  const row = {
+    title,
+    slug,
+    category:    document.getElementById('bfCat').value.trim() || 'General',
+    cat_color:   document.getElementById('bfCatColor').value,
+    emoji:       document.getElementById('bfEmoji').value.trim() || '📝',
+    bg_color:    document.getElementById('bfBg').value,
+    author:      document.getElementById('bfAuthor').value.trim() || 'PuppyPlace Team',
+    read_time:   parseInt(document.getElementById('bfReadTime').value) || 5,
+    excerpt:     document.getElementById('bfExcerpt').value.trim(),
+    content,
+    published:   publish,
+    published_at: publish ? new Date().toISOString() : null,
+  };
+
+  const id = document.getElementById('bfId').value;
+  let error;
+  if (id) {
+    ({ error } = await sbAdmin.from('blog_posts').update(row).eq('id', id));
+  } else {
+    ({ error } = await sbAdmin.from('blog_posts').insert(row));
+  }
+
+  if (error) { showToast('❌ ' + error.message, 'error'); return; }
+  showToast(publish ? '🚀 Post published!' : '💾 Draft saved', 'success');
+  closeBlogForm();
+  await loadBlogPosts();
+}
+
+async function togglePublish(id, publish) {
+  const { error } = await sbAdmin.from('blog_posts').update({
+    published: publish,
+    published_at: publish ? new Date().toISOString() : null,
+  }).eq('id', id);
+  if (error) { showToast('❌ ' + error.message, 'error'); return; }
+  showToast(publish ? '🚀 Post published' : '🔒 Post unpublished', 'success');
+  await loadBlogPosts();
+}
+
+async function deleteBlogPost(id) {
+  const p = _blogPosts.find(x => x.id === id);
+  if (!confirm(`Delete "${p?.title || 'this post'}"? This cannot be undone.`)) return;
+  const { error } = await sbAdmin.from('blog_posts').delete().eq('id', id);
+  if (error) { showToast('❌ ' + error.message, 'error'); return; }
+  showToast('🗑️ Post deleted', 'warning');
+  await loadBlogPosts();
+}
+
+/* ══════════════════════════════════════
+   HERO IMAGES
+   ══════════════════════════════════════ */
+async function loadHeroSettings() {
+  const { data } = await sbAdmin.from('store_settings').select('key,value').in('key',['hero_main','hero_food','hero_vet']);
+  if (!data) return;
+  const map = Object.fromEntries(data.map(r => [r.key, r.value]));
+  ['main','food','vet'].forEach(k => {
+    const url = map[`hero_${k}`]?.img_url || '';
+    const urlInp = document.getElementById('urlHero' + k.charAt(0).toUpperCase()+k.slice(1));
+    const img    = document.getElementById('imgHero' + k.charAt(0).toUpperCase()+k.slice(1));
+    const prev   = document.getElementById('prevHero' + k.charAt(0).toUpperCase()+k.slice(1));
+    if (urlInp) urlInp.value = url;
+    if (url && img && prev) { img.src = url; img.style.display = 'block'; prev.querySelector('.hero-preview-placeholder').style.display = 'none'; }
+  });
+}
+
+async function uploadHeroImage(input, settingKey, imgId, prevId, urlInputId) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { showToast('Image too large — max 5MB','error'); return; }
+
+  showToast('Uploading…','warning');
+  const ext  = file.name.split('.').pop();
+  const path = `${settingKey}-${Date.now()}.${ext}`;
+  const { error: upErr } = await sbAdmin.storage.from('hero-images').upload(path, file, { upsert: true });
+  if (upErr) { showToast('❌ Upload failed: ' + upErr.message, 'error'); return; }
+
+  const { data: { publicUrl } } = sbAdmin.storage.from('hero-images').getPublicUrl(path);
+  document.getElementById(urlInputId).value = publicUrl;
+  const img  = document.getElementById(imgId);
+  const prev = document.getElementById(prevId);
+  img.src = publicUrl; img.style.display = 'block';
+  prev.querySelector('.hero-preview-placeholder').style.display = 'none';
+  showToast('✅ Uploaded — click Save to apply','success');
+}
+
+async function saveHeroImage(settingKey, urlInputId, imgId, prevId) {
+  const url = document.getElementById(urlInputId).value.trim();
+  if (!url) { showToast('Enter or upload an image URL first','error'); return; }
+
+  const { error } = await sbAdmin.from('store_settings').upsert({ key: settingKey, value: { img_url: url }, updated_at: new Date().toISOString() });
+  if (error) { showToast('❌ ' + error.message, 'error'); return; }
+
+  const img  = document.getElementById(imgId);
+  const prev = document.getElementById(prevId);
+  img.src = url; img.style.display = 'block';
+  prev.querySelector('.hero-preview-placeholder').style.display = 'none';
+  showToast('✅ Hero image saved', 'success');
+}
+
+async function clearHeroImage(settingKey, urlInputId, imgId, prevId) {
+  if (!confirm('Remove this hero image?')) return;
+  await sbAdmin.from('store_settings').upsert({ key: settingKey, value: { img_url: '' }, updated_at: new Date().toISOString() });
+  document.getElementById(urlInputId).value = '';
+  const img  = document.getElementById(imgId);
+  const prev = document.getElementById(prevId);
+  img.src = ''; img.style.display = 'none';
+  prev.querySelector('.hero-preview-placeholder').style.display = '';
+  showToast('Image removed', 'warning');
+}
+
 /* ── BOOT ── */
-if(sessionStorage.getItem('pp_authed')==='1') init();
+const _origInit = typeof init === 'function' ? init : null;
+async function _extendedInit() {
+  if (_origInit) await _origInit();
+  loadBlogPosts();
+  loadHeroSettings();
+}
+
+if(sessionStorage.getItem('pp_authed')==='1') _extendedInit();
 </script>
 </body>
 </html>
