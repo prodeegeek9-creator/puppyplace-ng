@@ -264,7 +264,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
     </div>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
     <div class="login-err" id="loginErr">Incorrect password. Try again.</div>
-    <div style="margin-top:20px;text-align:center;font-size:12px;color:#bbb">Default password: <strong>admin123</strong> — change in Settings</div>
+    <div style="margin-top:20px;text-align:center;font-size:12px;color:#bbb">Change your password in Settings after signing in</div>
   </div>
 </div>
 
@@ -285,7 +285,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link" onclick="showPanel('products',this)"><span class="sb-link-ico">📦</span> Products <span class="sb-badge" id="sbProdCount">0</span></div>
         <div class="sb-section">Store</div>
         <div class="sb-link" onclick="showPanel('settings',this)"><span class="sb-link-ico">⚙️</span> Settings</div>
-        <div class="sb-link" onclick="window.open('index.html','_blank')"><span class="sb-link-ico">🔗</span> View Shop</div>
+        <div class="sb-link" onclick="window.open('index.html','_blank','noopener,noreferrer')"><span class="sb-link-ico">🔗</span> View Shop</div>
       </nav>
       <div class="sb-footer">
         <div class="sb-user">
@@ -300,7 +300,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
       <div class="admin-topbar">
         <div class="admin-page-title" id="pageTitle">Dashboard</div>
         <div class="admin-topbar-right">
-          <div class="view-shop-btn" onclick="window.open('index.html','_blank')">🔗 View Shop</div>
+          <div class="view-shop-btn" onclick="window.open('index.html','_blank','noopener,noreferrer')">🔗 View Shop</div>
         </div>
       </div>
 
@@ -547,7 +547,15 @@ const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const sbAdmin = window.supabase.createClient(SB_URL, SB_ANON);
 
 const PASS_KEY = 'puppyplace_admin_pass';
+// SHA-256 of 'admin123' — change via Settings after first login
+const DEFAULT_PASS_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
 let _cachedProducts = [];
+
+async function hashPassword(pw){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function getPassHash(){ return localStorage.getItem(PASS_KEY) || DEFAULT_PASS_HASH; }
 
 /* ── FIELD MAPPING ── */
 function rowToApp(row){
@@ -593,11 +601,10 @@ function appToRow(prod){
 }
 
 /* ── AUTH ── */
-function getPass(){ return localStorage.getItem(PASS_KEY) || 'admin123'; }
-
-function doLogin(){
+async function doLogin(){
   const val = document.getElementById('loginPass').value;
-  if(val === getPass()){
+  const hash = await hashPassword(val);
+  if(hash === getPassHash()){
     sessionStorage.setItem('pp_authed','1');
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('adminShell').style.display='block';
@@ -971,14 +978,16 @@ function showToast(msg, type='success'){
 }
 
 /* ── SETTINGS ── */
-function changePassword(){
+async function changePassword(){
   const curr = document.getElementById('currPass').value;
   const nw   = document.getElementById('newPass').value;
   const conf = document.getElementById('confPass').value;
-  if(curr!==getPass()){showToast('Current password is incorrect','error');return;}
+  const currHash = await hashPassword(curr);
+  if(currHash!==getPassHash()){showToast('Current password is incorrect','error');return;}
   if(nw.length<6){showToast('New password must be at least 6 characters','error');return;}
   if(nw!==conf){showToast('Passwords do not match','error');return;}
-  localStorage.setItem(PASS_KEY,nw);
+  const newHash = await hashPassword(nw);
+  localStorage.setItem(PASS_KEY, newHash);
   ['currPass','newPass','confPass'].forEach(id=>document.getElementById(id).value='');
   showToast('✅ Password updated','success');
 }
