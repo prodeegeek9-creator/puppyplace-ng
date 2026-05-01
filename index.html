@@ -453,86 +453,8 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 .pay-badge { background: rgba(255,255,255,.08); border-radius: var(--rxs); padding: 4px 12px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,.6); }
 
 /* Modals */
-.modal-bg { 
-  position: fixed; 
-  inset: 0; 
-  background: rgba(0,0,0,.5); 
-  z-index: 800; 
-  display: none; /* Hidden by default */
-  align-items: center; 
-  justify-content: center; 
-  padding: 20px; 
-  backdrop-filter: blur(4px); 
-}
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 800; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
 .modal { border-radius: var(--r); }
-
-/* === CHECKOUT === */
-.co-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
-.co-bg.open { display: flex; }
-.co-modal { background: var(--white); border-radius: var(--r); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; animation: popUp .25s ease; display: flex; flex-direction: column; box-shadow: var(--shadow2); }
-.co-hd { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.co-hd-title { font-size: 18px; font-weight: 900; }
-.co-close { background: var(--light); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all var(--trans); }
-.co-close:hover { background: var(--orange); color: #fff; }
-.co-steps { display: flex; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.co-step { display: flex; align-items: center; gap: 8px; flex: 1; }
-.co-step-num { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); background: var(--white); font-size: 12px; font-weight: 900; color: var(--gray); display: flex; align-items: center; justify-content: center; transition: all var(--trans); flex-shrink: 0; }
-.co-step-label { font-size: 13px; font-weight: 700; color: var(--gray); }
-.co-step.active .co-step-num { background: var(--orange); border-color: var(--orange); color: #fff; }
-.co-step.active .co-step-label { color: var(--black); }
-.co-step.done .co-step-num { background: var(--black); border-color: var(--black); color: #fff; }
-.co-step.done .co-step-label { color: var(--black); }
-.co-step-line { flex: 1; height: 2px; background: var(--border); margin: 0 10px; }
-.co-step-line.done { background: var(--black); }
-.co-body { padding: 24px; flex: 1; }
-.co-section { display: none; }
-.co-section.active { display: block; }
-.co-summary { background: var(--light); border-radius: var(--r); padding: 16px; margin-bottom: 24px; }
-.co-sum-title { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--gray); margin-bottom: 12px; }
-.co-sum-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.co-sum-item { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
-.co-sum-item-left { display: flex; align-items: center; gap: 10px; }
-.co-sum-emoji { font-size: 20px; }
-.co-sum-name { font-weight: 700; }
-.co-sum-qty { color: var(--gray); font-size: 12px; }
-.co-sum-price { font-weight: 900; }
-.co-sum-divider { height: 1px; background: var(--border); margin: 12px 0; }
-.co-sum-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; }
-.co-form { display: flex; flex-direction: column; gap: 16px; }
-.co-field { display: flex; flex-direction: column; gap: 6px; }
-.co-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.co-label { font-size: 12px; font-weight: 800; color: var(--black); text-transform: uppercase; letter-spacing: 0.05em; }
-.co-label span { color: var(--orange); }
-.co-input { border: 1.5px solid var(--border); border-radius: var(--r); padding: 12px 16px; font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; background: var(--light); transition: all var(--trans); }
-.co-input:focus { border-color: var(--orange); background: var(--white); }
-.co-input.error { border-color: var(--red); }
-.co-select { appearance: none; cursor: pointer; padding-right: 36px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23868686' d='M5 7L0 0h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
-.co-err { font-size: 11px; color: var(--red); font-weight: 700; display: none; margin-top: 4px; }
-.co-err.show { display: block; }
-.co-pay-info { background: linear-gradient(135deg,#fff8f5,#fdeee7); border: 1px solid rgba(237,100,54,.2); border-radius: var(--r); padding: 20px; margin-bottom: 24px; display: flex; gap: 16px; align-items: center; }
-.co-pay-ico { font-size: 28px; flex-shrink: 0; }
-.co-pay-text h4 { font-size: 15px; font-weight: 900; margin-bottom: 4px; }
-.co-pay-text p { font-size: 13px; color: var(--gray); line-height: 1.6; }
-.co-test-banner { background: #e8f4fd; border: 1px solid #bee3f8; border-radius: var(--rxs); padding: 12px 16px; font-size: 13px; font-weight: 700; color: #2b6cb0; margin-bottom: 20px; }
-.co-success { text-align: center; padding: 24px 0; }
-.co-success-ico { font-size: 80px; margin-bottom: 20px; }
-.co-success h3 { font-size: 26px; font-weight: 900; margin-bottom: 10px; }
-.co-success p { font-size: 15px; color: var(--gray); line-height: 1.7; margin-bottom: 24px; }
-.co-success-ref { background: var(--light); border-radius: var(--rxs); padding: 14px 20px; font-size: 14px; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; }
-.co-success-steps { text-align: left; background: var(--light); border-radius: var(--r); padding: 20px; margin-bottom: 24px; }
-.co-success-steps h4 { font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--gray); margin-bottom: 12px; }
-.co-ss-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; padding: 6px 0; }
-.co-ss-dot { width: 24px; height: 24px; background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0; }
-.co-footer { border-top: 1px solid var(--border); padding: 20px 24px; display: flex; gap: 12px; flex-shrink: 0; background: var(--white); }
-.co-btn-back { flex: 0 0 auto; background: transparent; border: 1.5px solid var(--border); border-radius: 50px; padding: 12px 24px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all var(--trans); }
-.co-btn-back:hover { border-color: var(--black); }
-.co-btn-next { flex: 1; background: var(--orange); color: #fff; border: none; border-radius: 50px; padding: 14px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background var(--trans); }
-.co-btn-next:hover { background: var(--orange-d); transform: translateY(-1px); box-shadow: var(--shadow); }
-.co-btn-next:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
-.co-spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
-.co-spinner.show { display: block; }
-@keyframes popUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-@keyframes spin { to{transform:rotate(360deg)} }
 
 /* ============================================================
    RESPONSIVE — written once, cleanly, no patches
@@ -1227,15 +1149,14 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="config.js"></script>
 <script>
 /* ══════════════════════════════════════════
    CHECKOUT + PAYSTACK + N8N INTEGRATION
    ══════════════════════════════════════════ */
-const PAYSTACK_PUBLIC_KEY = 'pk_live_3ec94e6b82677539d10636c7a0f6087a91a8f0ea';
-const N8N_WEBHOOK_URL     = 'https://idon2.app.n8n.cloud/webhook/puppyplace-orders';
-const SUPABASE_URL  = 'https://fsrkzhknqonpjjkjwqlw.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzcmt6aGtucW9ucGpqa2p3cWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDA2MDcsImV4cCI6MjA5MjAxNjYwN30.8xi7-tb0X7Bp-_Eknlb8Kxdi5J9DGut-RYewEvB2-fk';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const PAYSTACK_PUBLIC_KEY = window.PPCONFIG.PAYSTACK_PUBLIC_KEY;
+const N8N_WEBHOOK_URL     = window.PPCONFIG.N8N_WEBHOOK_URL;
+const supabase = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
 
 const FALLBACK_PRODUCTS = [
   {id:'p1',n:'Royal Canin Adult Maxi 15kg',e:'🐶',cat:'Food',pet:'Dog',brand:'Royal Canin',p:28000,o:32000,r:4.8,rv:124,tag:'best'},
@@ -1762,8 +1683,8 @@ function buildReview() {
   const itemsHtml = cartItems.map(i =>
     `<div class="co-sum-item">
       <div class="co-sum-item-left">
-        <span class="co-sum-emoji">${i.e}</span>
-        <span class="co-sum-name">${i.n}</span>
+        <span class="co-sum-emoji">${escHtml(i.e)}</span>
+        <span class="co-sum-name">${escHtml(i.n)}</span>
         <span class="co-sum-qty">×${i.qty}</span>
       </div>
       <span class="co-sum-price">${fmt(i.p * i.qty)}</span>
@@ -1781,7 +1702,7 @@ function buildReview() {
     ['✉️ Email',   document.getElementById('coEmail').value],
     ['📍 Address', document.getElementById('coAddress').value],
     ['🗺️ State',   document.getElementById('coState').value],
-  ].map(([l,v]) => `<div style="display:flex;gap:8px;font-size:13px"><span style="color:var(--gray);width:90px;flex-shrink:0">${l}</span><strong>${v}</strong></div>`).join('');
+  ].map(([l,v]) => `<div style="display:flex;gap:8px;font-size:13px"><span style="color:var(--gray);width:90px;flex-shrink:0">${l}</span><strong>${escHtml(v)}</strong></div>`).join('');
 }
 
 function buildPaySummary() {
@@ -2302,9 +2223,6 @@ function submitReview(pid) {
   }, 80);
 }
 
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
 </script>
 </body>
 </html>
