@@ -1,6 +1,7 @@
 {
   "name": "puppyplace-ng",
   "compatibility_date": "2026-05-01",
+  "main": "worker.js",
   "assets": {
     "directory": "./"
   }
