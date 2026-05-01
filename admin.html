@@ -538,13 +538,12 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script>
 /* ══════════════════════════════════════
    SUPABASE CLIENT
    ══════════════════════════════════════ */
-const SB_URL  = 'https://fsrkzhknqonpjjkjwqlw.supabase.co';
-const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzcmt6aGtucW9ucGpqa2p3cWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDA2MDcsImV4cCI6MjA5MjAxNjYwN30.8xi7-tb0X7Bp-_Eknlb8Kxdi5J9DGut-RYewEvB2-fk';
-const sbAdmin = window.supabase.createClient(SB_URL, SB_ANON);
+const sbAdmin = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
 
 const PASS_KEY = 'puppyplace_admin_pass';
 // SHA-256 of 'admin123' — change via Settings after first login
