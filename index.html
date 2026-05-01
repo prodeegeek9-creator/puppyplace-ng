@@ -1304,6 +1304,7 @@ const petsData=[
 let cartItems = JSON.parse(localStorage.getItem('pp_cart') || '[]');
 let wishItems = JSON.parse(localStorage.getItem('pp_wish') || '[]');
 const fmt = n => '₦' + n.toLocaleString('en-NG');
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 function saveCart() { localStorage.setItem('pp_cart', JSON.stringify(cartItems)); }
 function saveWish() { localStorage.setItem('pp_wish', JSON.stringify(wishItems)); }
@@ -1362,18 +1363,18 @@ function renderCartDrawer() {
 
   itemsEl.innerHTML = cartItems.map(item => `
     <div style="display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); position:relative;">
-      <div style="width:64px; height:64px; background:var(--light); border-radius:var(--rxs); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;">${item.e}</div>
+      <div style="width:64px; height:64px; background:var(--light); border-radius:var(--rxs); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;">${escHtml(item.e)}</div>
       <div style="flex:1; min-width:0;">
-        <div style="font-size:10px; color:var(--gray); font-weight:700; text-transform:uppercase; margin-bottom:2px;">${item.cat}</div>
-        <div style="font-size:14px; font-weight:800; color:var(--black); margin-bottom:5px;">${item.n}</div>
+        <div style="font-size:10px; color:var(--gray); font-weight:700; text-transform:uppercase; margin-bottom:2px;">${escHtml(item.cat)}</div>
+        <div style="font-size:14px; font-weight:800; color:var(--black); margin-bottom:5px;">${escHtml(item.n)}</div>
         <div style="font-size:15px; font-weight:900; color:var(--orange);">${fmt(item.p * item.qty)}</div>
         <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${item.id}',-1)">−</button>
+          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${escHtml(item.id)}',-1)">−</button>
           <span style="font-size:13px; font-weight:800;">${item.qty}</span>
-          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${item.id}',1)">+</button>
+          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${escHtml(item.id)}',1)">+</button>
         </div>
       </div>
-      <button style="position:absolute; top:14px; right:0; background:none; border:none; color:#ccc; font-size:16px; cursor:pointer;" onclick="removeFromCart('${item.id}')">✕</button>
+      <button style="position:absolute; top:14px; right:0; background:none; border:none; color:#ccc; font-size:16px; cursor:pointer;" onclick="removeFromCart('${escHtml(item.id)}')">✕</button>
     </div>`).join('');
 
   totalEl.textContent = fmt(cartItems.reduce((s, i) => s + i.p * i.qty, 0));
@@ -1443,14 +1444,14 @@ function renderWishDrawer() {
 
   itemsEl.innerHTML = wishItems.map(item => `
     <div style="display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); position:relative;">
-      <div style="width:64px; height:64px; background:var(--light); border-radius:var(--rxs); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;">${item.e}</div>
+      <div style="width:64px; height:64px; background:var(--light); border-radius:var(--rxs); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;">${escHtml(item.e)}</div>
       <div style="flex:1; min-width:0;">
-        <div style="font-size:10px; color:var(--gray); font-weight:700; text-transform:uppercase; margin-bottom:2px;">${item.cat}</div>
-        <div style="font-size:14px; font-weight:800; color:var(--black); margin-bottom:5px;">${item.n}</div>
+        <div style="font-size:10px; color:var(--gray); font-weight:700; text-transform:uppercase; margin-bottom:2px;">${escHtml(item.cat)}</div>
+        <div style="font-size:14px; font-weight:800; color:var(--black); margin-bottom:5px;">${escHtml(item.n)}</div>
         <div style="font-size:15px; font-weight:900; color:var(--black);">${fmt(item.p)}</div>
-        <button class="btn-dark" style="margin-top:8px; padding:6px 12px; font-size:11px;" onclick="moveToCart('${item.id}')">🛒 Add to Cart</button>
+        <button class="btn-dark" style="margin-top:8px; padding:6px 12px; font-size:11px;" onclick="moveToCart('${escHtml(item.id)}')">🛒 Add to Cart</button>
       </div>
-      <button style="position:absolute; top:14px; right:0; background:none; border:none; color:#ccc; font-size:16px; cursor:pointer;" onclick="removeFromWish('${item.id}')">✕</button>
+      <button style="position:absolute; top:14px; right:0; background:none; border:none; color:#ccc; font-size:16px; cursor:pointer;" onclick="removeFromWish('${escHtml(item.id)}')">✕</button>
     </div>`).join('');
 }
 
@@ -1473,20 +1474,20 @@ function renderProds(list) {
   g.innerHTML = '';
   list.forEach(p => {
     const disc = p.o ? Math.round((1 - p.p / p.o) * 100) : 0;
-    g.innerHTML += `<div class="pcard" onclick="openModal('${p.id}')">
+    g.innerHTML += `<div class="pcard" onclick="openModal('${escHtml(p.id)}')">
       <div class="pc-thumb">
-        ${p.tag ? `<span class="pc-badge ${lblMap[p.tag]||'lbl-sale'}">${lblText[p.tag]||p.tag}</span>` : ''}
-        <button class="pc-wish" onclick="event.stopPropagation();addWishFromCard(this,'${p.id}')">♡</button>
-        ${p.img ? `<img src="${p.img}" alt="${p.n}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${p.e}</span>`}
+        ${p.tag ? `<span class="pc-badge ${lblMap[p.tag]||'lbl-sale'}">${escHtml(lblText[p.tag]||p.tag)}</span>` : ''}
+        <button class="pc-wish" onclick="event.stopPropagation();addWishFromCard(this,'${escHtml(p.id)}')">♡</button>
+        ${p.img ? `<img src="${escHtml(p.img)}" alt="${escHtml(p.n)}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${escHtml(p.e)}</span>`}
         <div class="pc-actions">
-          <button class="pa-btn" onclick="event.stopPropagation();addCart('${p.id}','${p.n.replace(/'/g,"\\'")}','${p.e}','${p.cat}',${p.p})">🛒 Add to Cart</button>
-          <span class="pa-icon" onclick="event.stopPropagation();openModal('${p.id}')">👁</span>
+          <button class="pa-btn" data-pid="${escHtml(p.id)}" onclick="event.stopPropagation();addCartFromCard(this)">🛒 Add to Cart</button>
+          <span class="pa-icon" onclick="event.stopPropagation();openModal('${escHtml(p.id)}')">👁</span>
         </div>
       </div>
       <div class="pc-body">
-        <div class="pc-cat">${p.cat} · ${p.pet}</div>
-        <div class="pc-name">${p.n}</div>
-        <div class="pc-stars">★★★★${p.r>=5?'★':'☆'}<span class="pc-rc">${p.r} (${p.rv})</span></div>
+        <div class="pc-cat">${escHtml(p.cat)} · ${escHtml(p.pet)}</div>
+        <div class="pc-name">${escHtml(p.n)}</div>
+        <div class="pc-stars">★★★★${p.r>=5?'★':'☆'}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>
         <div class="pc-price-row">
           <span class="pc-price">${fmt(p.p)}</span>
           ${p.o ? `<span class="pc-del">${fmt(p.o)}</span><span class="pc-disc">-${disc}%</span>` : ''}
@@ -1503,6 +1504,13 @@ function addWishFromCard(btn, id) {
   const isAdded = btn.textContent === '♥';
   if (isAdded) { removeFromWish(id); btn.textContent = '♡'; }
   else { btn.textContent = '♥'; addWish(id, p.n, p.e, p.cat, p.p); }
+}
+
+function addCartFromCard(btn) {
+  const id = btn.dataset.pid;
+  const p = prods.find(x => x.id === id);
+  if (!p) return;
+  addCart(p.id, p.n, p.e, p.cat, p.p);
 }
 
 function renderPets() {
@@ -1558,10 +1566,10 @@ function openModal(id) {
 
   // Info tiles
   document.getElementById('mG').innerHTML = `
-    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Category</span><span style="font-weight:700;">${p.cat}</span></div>
-    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">For</span><span style="font-weight:700;">${p.pet}</span></div>
-    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Brand</span><span style="font-weight:700;">${p.brand || '—'}</span></div>
-    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Rating</span><span style="font-weight:700;">⭐ ${p.r || '4.7'}</span></div>`;
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Category</span><span style="font-weight:700;">${escHtml(p.cat)}</span></div>
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">For</span><span style="font-weight:700;">${escHtml(p.pet)}</span></div>
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Brand</span><span style="font-weight:700;">${escHtml(p.brand || '—')}</span></div>
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Rating</span><span style="font-weight:700;">⭐ ${escHtml(String(p.r || '4.7'))}</span></div>`;
 
   // Variation groups
   const vgEl = document.getElementById('mVarGroups');

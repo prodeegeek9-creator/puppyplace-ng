@@ -565,6 +565,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 /* ── HELPERS ── */
 const fmt = n => '₦' + n.toLocaleString('en-NG');
 const genId = () => 'u' + Date.now() + Math.random().toString(36).slice(2,5);
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 let toastTimer;
 function showToast(msg, type='ok'){
@@ -743,14 +744,16 @@ function sendOTP(){
     document.getElementById('phoneStep2').style.display = '';
     document.querySelectorAll('.otp-digit').forEach(d=>d.value='');
     document.querySelectorAll('.otp-digit')[0].focus();
-    // In production, SMS goes here. For demo, show code in toast.
-    showToast(`Demo OTP: ${otpCode} (SMS would send in production)`,'ok');
+    // In production, SMS would be sent here.
+    console.log(`[DEMO] OTP for ${otpPhone}: ${otpCode}`);
+    showToast('OTP sent to your phone','ok');
   }, 1000);
 }
 
 function resendOTP(){
   otpCode = Math.floor(1000 + Math.random()*9000).toString();
-  showToast(`New OTP: ${otpCode} (demo mode)`,'ok');
+  console.log(`[DEMO] New OTP for ${otpPhone}: ${otpCode}`);
+  showToast('New OTP sent to your phone','ok');
 }
 
 function otpMove(inp, idx){
@@ -857,11 +860,11 @@ function renderOrders(user){
     <div class="order-card">
       <div class="order-head" onclick="toggleOrder(this)">
         <div>
-          <div class="order-ref">${o.ref}</div>
+          <div class="order-ref">${escHtml(o.ref)}</div>
           <div class="order-date">${new Date(o.date).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'})}</div>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <span class="order-status ${statusClass[o.status]||'status-processing'}">● ${o.status}</span>
+          <span class="order-status ${statusClass[o.status]||'status-processing'}">● ${escHtml(o.status)}</span>
           <span style="font-size:16px;color:var(--gray)">▾</span>
         </div>
       </div>
@@ -869,13 +872,13 @@ function renderOrders(user){
         <div class="order-items">
           ${o.items.map(item=>`
             <div class="oi">
-              <span class="oi-emoji">${item.e||'📦'}</span>
-              <span class="oi-name">${item.n}</span>
+              <span class="oi-emoji">${escHtml(item.e||'📦')}</span>
+              <span class="oi-name">${escHtml(item.n)}</span>
               <span class="oi-qty">×${item.qty}</span>
               <span class="oi-price">${fmt(item.p * item.qty)}</span>
             </div>`).join('')}
         </div>
-        <div style="font-size:13px;color:var(--gray);margin-bottom:12px">📍 Delivered to: ${o.address||'—'}</div>
+        <div style="font-size:13px;color:var(--gray);margin-bottom:12px">📍 Delivered to: ${escHtml(o.address||'—')}</div>
         <div class="order-footer">
           <div class="order-total">Total: ${fmt(o.total)}</div>
           <button class="reorder-btn" onclick="event.stopPropagation()">🔄 Reorder</button>
@@ -907,22 +910,23 @@ function renderDiscounts(user){
     ? `<div class="empty-state"><div class="empty-ico">🏷️</div><div class="empty-msg">No coupons yet</div><div class="empty-sub">Coupons &amp; deals will appear here</div></div>`
     : coupons.map((c,i) => {
         const ico = Object.entries(emojiMap).find(([k])=>c.type.includes(k))?.[1]||'🏷️';
-        return `<div class="coupon${c.used?' used':''}" data-emoji="${ico}">
+        return `<div class="coupon${c.used?' used':''}" data-emoji="${escHtml(ico)}" data-coupon-index="${i}">
           ${c.used?'<div class="used-stamp">Used</div>':''}
-          <div class="coupon-type">${c.type}</div>
-          <div class="coupon-code">${c.code}</div>
-          <div class="coupon-desc">${c.desc}</div>
+          <div class="coupon-type">${escHtml(c.type)}</div>
+          <div class="coupon-code">${escHtml(c.code)}</div>
+          <div class="coupon-desc">${escHtml(c.desc)}</div>
           <div class="coupon-footer">
-            <div class="coupon-expiry">Expires ${c.expiry}</div>
-            <button class="coupon-copy" onclick="copyCoupon('${c.code}',${i})" ${c.used?'disabled':''}>Copy Code</button>
+            <div class="coupon-expiry">Expires ${escHtml(c.expiry)}</div>
+            <button class="coupon-copy" data-code="${escHtml(c.code)}" onclick="copyCoupon(this)" ${c.used?'disabled':''}>Copy Code</button>
           </div>
         </div>`;
       }).join('');
 }
 
-function copyCoupon(code, idx){
+function copyCoupon(btn){
+  const code = btn.dataset.code;
   navigator.clipboard.writeText(code).catch(()=>{});
-  showToast(`✅ ${code} copied to clipboard!`,'ok');
+  showToast(`✅ ${escHtml(code)} copied to clipboard!`,'ok');
 }
 
 /* ── ADDRESSES ── */
@@ -932,12 +936,12 @@ function renderAddresses(user){
   let html = addrs.map((a,i)=>`
     <div class="addr-card${a.isDefault?' default':''}">
       ${a.isDefault?'<div class="addr-default-badge">Default</div>':''}
-      <div class="addr-name">${a.label||'Address '+(i+1)}</div>
-      <div class="addr-text">${a.text}<br/>${a.state}<br/>📞 ${a.phone}</div>
+      <div class="addr-name">${escHtml(a.label||'Address '+(i+1))}</div>
+      <div class="addr-text">${escHtml(a.text)}<br/>${escHtml(a.state)}<br/>📞 ${escHtml(a.phone)}</div>
       <div class="addr-actions">
-        <button class="addr-btn" onclick="openAddrModal('${a.id}')">✏️ Edit</button>
-        ${!a.isDefault?`<button class="addr-btn" onclick="setDefaultAddr('${a.id}')">⭐ Default</button>`:''}
-        <button class="addr-btn del" onclick="deleteAddr('${a.id}')">🗑️</button>
+        <button class="addr-btn" onclick="openAddrModal('${escHtml(a.id)}')">✏️ Edit</button>
+        ${!a.isDefault?`<button class="addr-btn" onclick="setDefaultAddr('${escHtml(a.id)}')">⭐ Default</button>`:''}
+        <button class="addr-btn del" onclick="deleteAddr('${escHtml(a.id)}')">🗑️</button>
       </div>
     </div>`).join('');
   html += `<button class="add-addr-btn" onclick="openAddrModal()"><span style="font-size:32px">＋</span><span>Add New Address</span></button>`;
@@ -1017,14 +1021,14 @@ function renderWishlist(user){
   grid.innerHTML = items.map(p=>`
     <div class="wish-card">
       <div class="wc-img">
-        <button class="wc-remove" onclick="removeWish('${p.id}')">✕</button>
-        <span>${p.e}</span>
+        <button class="wc-remove" onclick="removeWish('${escHtml(p.id)}')">✕</button>
+        <span>${escHtml(p.e)}</span>
       </div>
       <div class="wc-body">
-        <div class="wc-cat">${p.cat}</div>
-        <div class="wc-name">${p.n}</div>
+        <div class="wc-cat">${escHtml(p.cat)}</div>
+        <div class="wc-name">${escHtml(p.n)}</div>
         <div class="wc-price">${fmt(p.p)}</div>
-        <button class="wc-cart" onclick="addToCartFromWish('${p.id}')">🛒 Add to Cart</button>
+        <button class="wc-cart" onclick="addToCartFromWish('${escHtml(p.id)}')">🛒 Add to Cart</button>
       </div>
     </div>`).join('');
 }
