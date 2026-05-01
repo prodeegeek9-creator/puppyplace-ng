@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Blog — PuppyPlace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333;min-height:100vh}
+a{text-decoration:none;color:inherit}
+:root{
+  --orange:#ed6436;--orange-d:#c9530a;
+  --black:#0e0e0c;--dark:#1a1a18;
+  --gray:#868686;--light:#f1f3f5;--border:#e9ecef;--white:#fff;
+  --green:#2ecc71;--r:12px;
+  --shadow:0 4px 20px rgba(0,0,0,.06);
+  --shadow2:0 10px 30px rgba(0,0,0,.1);
+  --trans:.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── NAV ── */
+.nav{background:var(--dark);padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.nav-logo{color:#fff;font-size:22px;font-weight:900;cursor:pointer}.nav-logo span{color:var(--orange)}
+.nav-back{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-radius:50px;padding:9px 20px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:all var(--trans);text-decoration:none}
+.nav-back:hover{background:var(--orange);border-color:var(--orange);color:#fff}
+.nav-back svg{width:14px;height:14px;flex-shrink:0}
+
+/* ── ARTICLE PAGE ── */
+#articlePage{display:none}
+.art-hero{background:var(--dark);padding:72px 40px 60px;text-align:center;position:relative;overflow:hidden}
+.art-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 60% 40%,rgba(237,100,54,.15),transparent 70%);pointer-events:none}
+.art-cat{display:inline-block;background:var(--orange);color:#fff;font-size:11px;font-weight:800;padding:6px 18px;border-radius:50px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px}
+.art-title{font-size:clamp(24px,5vw,44px);font-weight:900;color:#fff;line-height:1.25;max-width:760px;margin:0 auto 20px}
+.art-meta{font-size:14px;color:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+.art-meta-dot{opacity:.3}
+.art-body{max-width:780px;margin:0 auto;padding:56px 24px 80px}
+.art-body h4{font-size:21px;font-weight:900;margin:36px 0 12px;color:var(--black);line-height:1.3}
+.art-body p{margin:0 0 20px;font-size:17px;color:#444;line-height:1.85}
+.art-body ul,.art-body ol{margin:0 0 20px;padding-left:26px}
+.art-body li{margin-bottom:10px;font-size:17px;color:#444;line-height:1.75}
+.art-body strong{font-weight:800;color:var(--black)}
+.art-body em{font-style:italic;color:#555}
+.art-divider{width:60px;height:4px;background:var(--orange);border-radius:2px;margin:48px auto}
+
+/* Related posts */
+.related{background:var(--white);border-top:1px solid var(--border);padding:56px 24px}
+.related-inner{max-width:780px;margin:0 auto}
+.related-title{font-size:22px;font-weight:900;margin-bottom:28px;color:var(--black)}
+.related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.rel-card{background:var(--light);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;cursor:pointer;transition:all var(--trans)}
+.rel-card:hover{border-color:var(--orange);transform:translateY(-3px);box-shadow:var(--shadow)}
+.rel-card-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--orange);margin-bottom:8px}
+.rel-card-title{font-size:15px;font-weight:800;line-height:1.4;color:var(--black)}
+.rel-card-meta{font-size:12px;color:var(--gray);margin-top:8px}
+
+/* ── ALL POSTS PAGE ── */
+#allPostsPage{display:none}
+.all-hero{background:var(--dark);padding:60px 40px 48px;text-align:center}
+.all-hero h1{font-size:clamp(28px,5vw,48px);font-weight:900;color:#fff;margin-bottom:12px}
+.all-hero p{font-size:16px;color:rgba(255,255,255,.5);max-width:480px;margin:0 auto}
+.all-posts-grid{max-width:1100px;margin:0 auto;padding:48px 24px 80px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
+.post-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all var(--trans);box-shadow:var(--shadow)}
+.post-card:hover{border-color:var(--orange);transform:translateY(-4px);box-shadow:var(--shadow2)}
+.post-card-img{height:180px;display:flex;align-items:center;justify-content:center;font-size:64px;position:relative}
+.post-card-cat{position:absolute;bottom:14px;left:16px;font-size:11px;font-weight:800;padding:5px 14px;border-radius:50px;text-transform:uppercase;letter-spacing:.07em;color:#fff}
+.post-card-body{padding:22px}
+.post-card-title{font-size:17px;font-weight:800;line-height:1.4;color:var(--black);margin-bottom:10px;transition:color var(--trans)}
+.post-card:hover .post-card-title{color:var(--orange)}
+.post-card-excerpt{font-size:13px;color:var(--gray);line-height:1.6;margin-bottom:14px}
+.post-card-meta{font-size:12px;color:var(--gray);display:flex;align-items:center;gap:8px}
+.post-card-read{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--orange);margin-top:14px}
+
+/* ── FOOTER ── */
+.footer{background:var(--dark);color:rgba(255,255,255,.4);text-align:center;padding:32px 24px;font-size:13px}
+.footer a{color:rgba(255,255,255,.6);font-weight:700}
+.footer a:hover{color:var(--orange)}
+
+/* ── NOT FOUND ── */
+#notFound{display:none;text-align:center;padding:100px 24px}
+.nf-ico{font-size:72px;margin-bottom:20px}
+.nf-title{font-size:28px;font-weight:900;margin-bottom:10px}
+.nf-sub{font-size:16px;color:var(--gray);margin-bottom:32px}
+.btn-orange{background:var(--orange);color:#fff;border:none;border-radius:50px;padding:14px 32px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:all var(--trans)}
+.btn-orange:hover{background:var(--orange-d);transform:translateY(-2px);box-shadow:var(--shadow)}
+
+@media(max-width:600px){
+  .nav{padding:0 20px}
+  .art-hero{padding:48px 20px 40px}
+  .art-body{padding:36px 20px 60px}
+  .all-hero{padding:40px 20px 32px}
+  .all-posts-grid{padding:28px 16px 60px;grid-template-columns:1fr}
+  .related{padding:36px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo" onclick="goHome()">Puppy<span>Place</span></div>
+  <a class="nav-back" href="index.html">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 12L6 8l4-4"/></svg>
+    Back to Shop
+  </a>
+</nav>
+
+<!-- SINGLE ARTICLE -->
+<div id="articlePage">
+  <div class="art-hero" id="artHero">
+    <div class="art-cat" id="artCat"></div>
+    <h1 class="art-title" id="artTitle"></h1>
+    <div class="art-meta">
+      <span id="artAuthor"></span>
+      <span class="art-meta-dot">·</span>
+      <span id="artDate"></span>
+      <span class="art-meta-dot">·</span>
+      <span id="artReadTime"></span>
+    </div>
+  </div>
+  <div class="art-body" id="artBody"></div>
+  <div class="art-divider"></div>
+  <div class="related" id="relatedSection">
+    <div class="related-inner">
+      <div class="related-title">More from the Blog</div>
+      <div class="related-grid" id="relatedGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ALL POSTS -->
+<div id="allPostsPage">
+  <div class="all-hero">
+    <h1>Pet Care Blog</h1>
+    <p>Expert tips, nutrition guides, health advice, and training insights for Nigerian pet owners</p>
+  </div>
+  <div class="all-posts-grid" id="allPostsGrid"></div>
+</div>
+
+<!-- NOT FOUND -->
+<div id="notFound">
+  <div class="nf-ico">🐾</div>
+  <div class="nf-title">Post Not Found</div>
+  <div class="nf-sub">This article doesn't exist or may have been removed.</div>
+  <button class="btn-orange" onclick="showAllPosts()">Browse All Posts</button>
+</div>
+
+<footer class="footer">
+  &copy; 2025 <a href="index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria
+</footer>
+
+<script>
+const blogPosts = [
+  {
+    id:'b0',
+    cat:'Nutrition',
+    catColor:'#ED6436',
+    emoji:'🥩',
+    bg:'#fff5f0',
+    title:'What to Really Feed Your Dog in Nigeria',
+    date:'Apr 10, 2025',
+    author:'Dr. Amaka Osei',
+    readTime:'5 min read',
+    excerpt:'Local options, imported brands, and the hidden dangers lurking in cheap kibble sold at Lagos markets.',
+    body:`<p>Feeding your dog correctly in Nigeria requires balancing availability, cost, and nutritional quality. Many dog owners default to cheap local kibble — but not all products are equal.</p>
+<h4>What to look for on the label</h4>
+<p>The first ingredient should be a named meat source (chicken, beef, fish) — not "meat meal" or "animal by-products" without specification. Protein content should be at least 18% for adult dogs and 22% for puppies.</p>
+<h4>Best imported brands available in Nigeria</h4>
+<ul><li><strong>Royal Canin</strong> — breed-specific formulas, widely available in Lagos and Abuja</li><li><strong>Pedigree</strong> — budget-friendly, decent baseline nutrition</li><li><strong>Purina ProPlan</strong> — premium option for working/active dogs</li></ul>
+<h4>Local alternatives that work</h4>
+<p>Plain cooked rice and chicken (no onion, no seasoning) is a solid home-cooked supplement. Eja osan (smoked fish) in small amounts adds omega-3. Avoid raw cassava, chocolate, grapes, and onions entirely.</p>
+<h4>How much to feed</h4>
+<p>A 10kg adult dog needs roughly 200–250g of dry food per day. Adjust based on activity level and body condition — you should feel ribs but not see them.</p>`,
+  },
+  {
+    id:'b1',
+    cat:'Health',
+    catColor:'#2d9d78',
+    emoji:'💉',
+    bg:'#f0fff8',
+    title:'Vaccination Schedule Every Nigerian Pet Owner Needs',
+    date:'Mar 22, 2025',
+    author:'Dr. Emeka Nwachukwu',
+    readTime:'4 min read',
+    excerpt:'Rabies, parvo, distemper — which vaccines are critical, when to give them, and what they cost in Nigeria.',
+    body:`<p>Vaccination is the single most cost-effective thing you can do for your pet's health. Yet many Nigerian pet owners skip or delay vaccines — often because they don't know the schedule.</p>
+<h4>Core vaccines for dogs</h4>
+<ul><li><strong>Rabies</strong> — legally required. First dose at 12 weeks, booster at 1 year, then every 3 years.</li><li><strong>DHPPi (5-in-1)</strong> — covers Distemper, Hepatitis, Parvovirus, Parainfluenza. Start at 6–8 weeks, repeat every 3–4 weeks until 16 weeks, then annually.</li><li><strong>Leptospirosis</strong> — important in Lagos, Port Harcourt due to flooding risk. Annual.</li></ul>
+<h4>Core vaccines for cats</h4>
+<ul><li><strong>FVRCP (3-in-1)</strong> — Feline Viral Rhinotracheitis, Calicivirus, Panleukopenia. Start at 8 weeks.</li><li><strong>Rabies</strong> — even for indoor cats. Annual.</li></ul>
+<h4>Cost in Nigeria (2025)</h4>
+<p>Expect to pay ₦3,500–₦8,000 per vaccination visit at a registered vet clinic. DHPPi multi-dose kits cost vets around ₦1,200 wholesale — so anything above ₦5,000 per visit includes a fair consultation fee.</p>`,
+  },
+  {
+    id:'b2',
+    cat:'Training',
+    catColor:'#6c5ce7',
+    emoji:'🐾',
+    bg:'#f5f3ff',
+    title:'5 Commands Every Lagos Dog Should Know',
+    date:'Mar 5, 2025',
+    author:'Tunde Adeyemi',
+    readTime:'6 min read',
+    excerpt:'Sit, stay, leave it — plus two Nigerian-specific commands that could save your dog\'s life in traffic.',
+    body:`<p>Training in Lagos presents unique challenges: dense traffic, open gutters, street food vendors, and other free-roaming dogs. These 5 commands are non-negotiables.</p>
+<h4>1. Sit</h4>
+<p>The foundation of everything. Hold a treat above your dog's nose, move it backward over their head — their bottom naturally drops. Say "Sit" the moment it happens. Reward immediately. Practice 5 minutes daily.</p>
+<h4>2. Stay</h4>
+<p>Ask your dog to sit. Open your palm toward them and say "Stay." Take one step back. Return and reward. Gradually increase distance over days. Critical before crossing roads.</p>
+<h4>3. Leave It</h4>
+<p>Lagos streets are full of dangerous scraps. Place a treat on the floor, cover with your foot, say "Leave it." When they stop trying, reward with a <em>different</em> treat from your hand. Never reward with the item you asked them to leave.</p>
+<h4>4. Come (Recall)</h4>
+<p>The life-saving one. Start in a small room, crouch down, say "Come!" enthusiastically. Reward massively. Practice on a long lead before trying off-lead. Never punish a dog that comes to you — even if they were misbehaving before.</p>
+<h4>5. Off (for gates and strangers)</h4>
+<p>Nigerian visitors are often scared of dogs jumping. When they jump, turn completely away — no eye contact, no knee, no talking. Only give attention when all four paws are on the floor. Consistency is everything.</p>`,
+  },
+  {
+    id:'b3',
+    cat:'Housing',
+    catColor:'#e17055',
+    emoji:'🏠',
+    bg:'#fff8f5',
+    title:'Setting Up the Perfect Cage for Your Bird',
+    date:'Feb 18, 2025',
+    author:'Chisom Eze',
+    readTime:'3 min read',
+    excerpt:'Bar spacing, perch placement, toys that actually stimulate — everything for a happy Nigerian parrot or lovebird.',
+    body:`<p>A bird's cage is its entire world. Getting it right is the most impactful thing you'll do as a bird owner.</p>
+<h4>Size rules</h4>
+<p>The cage should be wide enough for your bird to fully extend both wings simultaneously. For lovebirds: minimum 60×45cm. For African Greys: minimum 90×90cm. When in doubt, go bigger.</p>
+<h4>Bar spacing</h4>
+<ul><li>Finches, canaries: 1–1.2cm spacing</li><li>Lovebirds, budgies: 1.5cm</li><li>African Grey, cockatoo: 2–2.5cm (wider allows beak exercise)</li></ul>
+<h4>Perch placement</h4>
+<p>Use natural wood perches of varying diameters (mango, guava branches work well) — not just the plastic dowels that come with cages. Place highest perch away from food bowls to prevent contamination from droppings.</p>
+<h4>Enrichment</h4>
+<p>Rotate 3–4 toys every 2 weeks. Birds get bored quickly. Foraging toys (hiding food inside) are the most stimulating. Avoid mirrors for single birds — it causes obsessive behavior.</p>`,
+  },
+  {
+    id:'b4',
+    cat:'Lifestyle',
+    catColor:'#0984e3',
+    emoji:'🌊',
+    bg:'#f0f7ff',
+    title:'Keeping Fish Alive Through NEPA Outages',
+    date:'Jan 30, 2025',
+    author:'Segun Lawal',
+    readTime:'4 min read',
+    excerpt:'Power cuts kill fish faster than anything else. Here\'s a Nigerian fish keeper\'s survival guide for your aquarium.',
+    body:`<p>Nothing is more heartbreaking than returning to a tank of dead fish after a long power cut. Oxygen depletion is the primary killer — within 2–4 hours in a heavily stocked tank. Here's how to prepare.</p>
+<h4>Battery-powered backup aerators</h4>
+<p>A ₦3,500–5,000 battery aerator from computer village or any pet shop is your first line of defense. Keep spare AA batteries. Run it anytime power goes out.</p>
+<h4>Reduce feeding during outages</h4>
+<p>Fish can survive 5–7 days without food. But uneaten food decomposes rapidly without filtration, spiking ammonia and killing fish. Don't feed if power has been out more than 4 hours.</p>
+<h4>UPS for filtration</h4>
+<p>A small 650VA UPS can run a submersible filter for 3–5 hours. This maintains biological filtration (the beneficial bacteria that process ammonia). It's worth the ₦25,000–40,000 investment for serious tanks.</p>
+<h4>Reduce stocking density</h4>
+<p>In Nigeria, stock your tank at 60–70% of theoretical capacity to build in resilience for outage periods. More fish = more oxygen demand = faster crash when power fails.</p>`,
+  },
+  {
+    id:'b5',
+    cat:'Grooming',
+    catColor:'#fd79a8',
+    emoji:'✂️',
+    bg:'#fff0f6',
+    title:'At-Home Dog Grooming on a Nigerian Budget',
+    date:'Jan 12, 2025',
+    author:'Adaeze Okafor',
+    readTime:'5 min read',
+    excerpt:'Professional grooming costs ₦8,000–₦25,000 per session. Here\'s how to do 80% of it yourself at home.',
+    body:`<p>Regular grooming isn't just cosmetic — it prevents skin infections, matting, and allows you to spot health issues early. You don't need a salon for every session.</p>
+<h4>What you need (one-time investment: ~₦12,000)</h4>
+<ul><li>Slicker brush + metal comb — ₦2,500–4,000</li><li>Nail clippers (guillotine type) — ₦1,500–2,500</li><li>Dog shampoo (not human shampoo — pH is different) — ₦1,800–3,500</li><li>Ear cleaning solution — ₦1,200</li></ul>
+<h4>Brushing (3× weekly for most breeds)</h4>
+<p>Always brush before bathing — washing matted fur makes it tighter. Work in sections, from head to tail. The slicker brush gets surface tangles; the metal comb goes deeper to check for mats near the skin.</p>
+<h4>Bathing (monthly for most dogs)</h4>
+<p>Use lukewarm water. Wet thoroughly, apply shampoo working from neck back (keep face dry). Rinse completely — leftover shampoo causes itching. Dry with a towel first, then a fan if no hairdryer.</p>
+<h4>Nail trimming (the scary part)</h4>
+<p>Clip only the curved tip — avoid the pink "quick" which bleeds if cut. If nails are dark and you can't see the quick, take small slivers and stop when you see a grey/pink oval in the center. One nail per session is fine when starting out.</p>`,
+  },
+];
+
+
+function goHome(){ window.location.href = 'index.html'; }
+
+function showAllPosts(){
+  document.getElementById('allPostsPage').style.display = 'block';
+  document.getElementById('articlePage').style.display = 'none';
+  document.getElementById('notFound').style.display = 'none';
+  document.title = 'Blog — PuppyPlace';
+  renderAllPosts();
+}
+
+function renderAllPosts(){
+  const grid = document.getElementById('allPostsGrid');
+  grid.innerHTML = blogPosts.map(p => `
+    <div class="post-card" onclick="navigateTo('${p.id}')">
+      <div class="post-card-img" style="background:${p.bg || '#f1f3f5'}">
+        <span>${p.emoji || '📰'}</span>
+        <div class="post-card-cat" style="background:${p.catColor || '#ed6436'}">${p.cat}</div>
+      </div>
+      <div class="post-card-body">
+        <div class="post-card-title">${p.title}</div>
+        <div class="post-card-excerpt">${p.excerpt || ''}</div>
+        <div class="post-card-meta">
+          <span>${p.author || ''}</span>
+          <span>·</span>
+          <span>${p.date || ''}</span>
+        </div>
+        <div class="post-card-read">Read article →</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function navigateTo(id){
+  const url = new URL(window.location);
+  url.searchParams.set('id', id);
+  window.history.pushState({}, '', url);
+  loadPost(id);
+}
+
+function loadPost(id){
+  const post = blogPosts.find(p => p.id === id);
+  if(!post){ 
+    document.getElementById('articlePage').style.display = 'none';
+    document.getElementById('allPostsPage').style.display = 'none';
+    document.getElementById('notFound').style.display = 'block';
+    return; 
+  }
+  
+  document.title = post.title + ' — PuppyPlace Blog';
+  document.getElementById('artCat').textContent = post.cat;
+  document.getElementById('artCat').style.background = post.catColor || '#ed6436';
+  document.getElementById('artTitle').textContent = post.title;
+  document.getElementById('artAuthor').textContent = post.author || 'PuppyPlace';
+  document.getElementById('artDate').textContent = post.date || '';
+  document.getElementById('artReadTime').textContent = post.readTime || '5 min read';
+  document.getElementById('artHero').style.background = 'var(--dark)';
+  document.getElementById('artBody').innerHTML = post.body;
+  
+  // Related posts
+  const others = blogPosts.filter(p => p.id !== id).slice(0, 3);
+  document.getElementById('relatedGrid').innerHTML = others.map(p => `
+    <div class="rel-card" onclick="navigateTo('${p.id}')">
+      <div class="rel-card-cat">${p.cat}</div>
+      <div class="rel-card-title">${p.title}</div>
+      <div class="rel-card-meta">${p.date || ''} · ${p.readTime || '5 min read'}</div>
+    </div>
+  `).join('');
+  
+  document.getElementById('articlePage').style.display = 'block';
+  document.getElementById('allPostsPage').style.display = 'none';
+  document.getElementById('notFound').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+// Handle browser back/forward
+window.addEventListener('popstate', function(){
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if(id) loadPost(id);
+  else showAllPosts();
+});
+
+// Init
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if(id) loadPost(id);
+  else showAllPosts();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PuppyPlace.ng — Nigeria's #1 Pet Shop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+/* === RESET === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-x: hidden; width: 100%; max-width: 100vw; font-size: 14px; scroll-behavior: smooth; }
+body { font-family: 'Nunito', sans-serif; background: #f8f9fa; color: #333; position: relative; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+img { max-width: 100%; height: auto; display: block; }
+
+/* === UNIFIED DESIGN TOKENS === */
+:root {
+  --orange: #ed6436; --orange-d: #c9530a;
+  --black: #0e0e0c; --gray: #868686;
+  --light: #f1f3f5; --border: #e9ecef; --white: #fff;
+  --green: #2ecc71; --red: #e74c3c; --blue: #3498db; --yellow: #f39c12;
+  --r: 12px; --rsm: 10px; --rxs: 6px; 
+  --shadow: 0 4px 20px rgba(0,0,0,0.06);
+  --shadow2: 0 10px 30px rgba(0,0,0,0.1);
+  --trans: .3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === TOPBAR === */
+#topbar { background: var(--white); border-bottom: 1px solid var(--border); height: 45px; line-height: 45px; font-size: 13px; font-weight: 700; }
+.topbar-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+.tb-left { display: flex; align-items: center; gap: 0; }
+.tb-item { display: flex; align-items: center; gap: 8px; padding-right: 15px; margin-right: 10px; position: relative; }
+.tb-item:not(:last-child)::after { content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 1px; height: 18px; background: #d4d4d4; }
+.tb-item i { font-size: 16px; color: var(--orange); }
+.tb-right { display: flex; align-items: center; gap: 16px; }
+.tb-right a { color: var(--gray); font-size: 12px; font-weight: 700; transition: color var(--trans); }
+.tb-right a:hover { color: var(--orange); }
+
+/* === HEADER === */
+.site-header { background: var(--white); box-shadow: var(--shadow); position: sticky; top: 0; z-index: 300; border-bottom: 1px solid var(--border); }
+.header-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 20px; height: 80px; }
+.logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 200px; }
+.logo-icon { width: 42px; height: 42px; background: var(--orange); border-radius: var(--rsm); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.logo-name { font-size: 22px; font-weight: 900; color: var(--black); line-height: 1; }
+.logo-name span { color: var(--orange); }
+.logo-tag { font-size: 10px; color: var(--gray); letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+.header-search { flex: 1; max-width: 600px; min-width: 0; position: relative; }
+.header-search select { position: absolute; left: 0; top: 0; bottom: 0; border: none; background: transparent; border-right: 1px solid var(--border); border-radius: 50px 0 0 50px; padding: 0 12px 0 16px; font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 700; color: var(--black); cursor: pointer; outline: none; }
+.header-search input { width: 100%; height: 46px; padding: 0 54px 0 110px; border: 1.5px solid var(--border); border-radius: 50px; font-family: 'Nunito', sans-serif; font-size: 13px; outline: none; background: var(--light); color: var(--black); transition: all var(--trans); }
+.header-search input:focus { border-color: var(--orange); background: var(--white); box-shadow: 0 0 0 4px rgba(237,100,54,0.1); }
+.search-submit { position: absolute; right: 0; top: 0; bottom: 0; width: 46px; border-radius: 0 50px 50px 0; background: var(--orange); border: none; cursor: pointer; font-size: 17px; color: #fff; display: flex; align-items: center; justify-content: center; transition: background var(--trans); }
+.search-submit:hover { background: var(--orange-d); }
+.header-icons { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.hico { display: flex; flex-direction: column; align-items: center; padding: 6px 12px; cursor: pointer; position: relative; border-radius: var(--rsm); transition: background var(--trans); }
+.hico:hover { background: var(--light); }
+.hico-icon { font-size: 22px; line-height: 1; position: relative; }
+.hico-badge { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; background: var(--orange); color: #fff; font-size: 9px; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--white); }
+.hico-label { font-size: 10px; color: var(--gray); font-weight: 700; margin-top: 2px; }
+
+/* === BUTTONS === */
+.btn-primary { background: var(--orange); color: #fff; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 13px; padding: 10px 24px; border-radius: 50px; border: none; cursor: pointer; transition: all var(--trans); display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+.btn-primary:hover { background: var(--orange-d); transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-dark { background: var(--black); color: #fff; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 13px; padding: 10px 24px; border-radius: 50px; border: none; cursor: pointer; transition: all var(--trans); display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+.btn-dark:hover { background: #333; transform: translateY(-1px); box-shadow: var(--shadow); }
+
+/* === NAV === */
+.main-nav { background: var(--white); border-bottom: 1px solid var(--border); overflow-x: auto; }
+.main-nav::-webkit-scrollbar { display: none; }
+.nav-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; height: 48px; }
+.nav-link { font-size: 13px; font-weight: 700; color: var(--gray); padding: 0 14px; height: 48px; display: flex; align-items: center; gap: 6px; border-bottom: 3px solid transparent; white-space: nowrap; transition: all var(--trans); }
+.nav-link:hover, .nav-link.on { color: var(--orange); border-bottom-color: var(--orange); }
+.nav-badge { background: var(--orange); color: #fff; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 50px; text-transform: uppercase; }
+
+/* === MOBILE HEADER === */
+.mob-bar { display: none; background: var(--white); border-bottom: 1px solid var(--border); padding: 0 16px; height: 60px; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 400; box-shadow: var(--shadow); }
+.mob-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.mob-logo-icon { width: 34px; height: 34px; background: var(--orange); border-radius: var(--rsm); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.mob-logo-text { font-size: 18px; font-weight: 900; color: var(--black); }
+.mob-logo-text span { color: var(--orange); }
+.mob-right { display: flex; align-items: center; gap: 12px; }
+.mob-ico { font-size: 22px; cursor: pointer; position: relative; padding: 4px; }
+.mob-ico .mob-badge { position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: var(--orange); color: #fff; font-size: 9px; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--white); }
+.mob-ham { background: none; border: none; cursor: pointer; padding: 4px; display: flex; flex-direction: column; gap: 5px; }
+.mob-ham span { display: block; width: 24px; height: 2.5px; background: var(--black); border-radius: 3px; }
+.mob-search-bar { display: none; padding: 12px 16px; background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 60px; z-index: 399; box-shadow: var(--shadow); }
+.mob-search-bar.show { display: block; }
+.mob-search-inner { display: flex; align-items: center; background: var(--light); border: 1.5px solid var(--border); border-radius: 50px; overflow: hidden; }
+.mob-search-inner input { flex: 1; border: none; background: transparent; padding: 12px 16px; font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; }
+.mob-search-inner button { background: var(--orange); border: none; width: 50px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; color: #fff; }
+
+/* === DRAWERS === */
+.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 500; display: none; backdrop-filter: blur(4px); }
+.drawer-overlay.open { display: block; }
+.drawer { position: fixed; top: 0; bottom: 0; width: 440px; max-width: 100vw; background: var(--white); z-index: 501; display: flex; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,.1); right: -100%; transition: right .3s cubic-bezier(0.4, 0, 0.2, 1); }
+.drawer.open { right: 0; }
+.mob-nav { position: fixed; top: 0; bottom: 0; width: 300px; max-width: 100vw; background: var(--white); z-index: 501; display: flex; flex-direction: column; left: -100%; transition: left .3s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto; }
+.mob-nav.open { left: 0; }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.drawer-title { font-size: 18px; font-weight: 900; display: flex; align-items: center; gap: 12px; }
+.drawer-count { background: var(--orange); color: #fff; font-size: 12px; font-weight: 800; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.drawer-close, .mob-nav-close { background: var(--light); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all var(--trans); }
+.drawer-close:hover, .mob-nav-close:hover { background: var(--orange); color: #fff; }
+.drawer-checkout { width: 100%; border-radius: 50px; padding: 14px; font-size: 15px; }
+.drawer-continue { width: 100%; background: transparent; color: var(--black); border: 1.5px solid var(--border); border-radius: 50px; padding: 12px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; margin-top: 10px; transition: all var(--trans); }
+
+.mob-nav-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.mob-nav-logo { font-size: 18px; font-weight: 900; color: var(--black); }
+.mob-nav-logo span { color: var(--orange); }
+.mob-nav-body { flex: 1; padding: 12px 0; }
+.mob-nav-section { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--gray); padding: 14px 20px 6px; }
+.mob-nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 20px; font-size: 14px; font-weight: 700; color: var(--black); cursor: pointer; border-left: 3px solid transparent; }
+.mob-nav-link:hover, .mob-nav-link.on { background: rgba(237,100,54,.06); color: var(--orange); border-left-color: var(--orange); }
+.mob-nav-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+
+/* === CHECKOUT === */
+.co-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+.co-bg.open { display: flex; }
+.co-modal { background: var(--white); border-radius: var(--r); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; animation: popUp .25s ease; display: flex; flex-direction: column; box-shadow: var(--shadow2); }
+.co-hd { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.co-hd-title { font-size: 18px; font-weight: 900; }
+.co-close { background: var(--light); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all var(--trans); }
+.co-close:hover { background: var(--orange); color: #fff; }
+.co-steps { display: flex; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.co-step { display: flex; align-items: center; gap: 8px; flex: 1; }
+.co-step-num { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); background: var(--white); font-size: 12px; font-weight: 900; color: var(--gray); display: flex; align-items: center; justify-content: center; transition: all var(--trans); flex-shrink: 0; }
+.co-step-label { font-size: 13px; font-weight: 700; color: var(--gray); }
+.co-step.active .co-step-num { background: var(--orange); border-color: var(--orange); color: #fff; }
+.co-step.active .co-step-label { color: var(--black); }
+.co-step.done .co-step-num { background: var(--black); border-color: var(--black); color: #fff; }
+.co-step.done .co-step-label { color: var(--black); }
+.co-step-line { flex: 1; height: 2px; background: var(--border); margin: 0 10px; }
+.co-step-line.done { background: var(--black); }
+.co-body { padding: 24px; flex: 1; }
+.co-section { display: none; }
+.co-section.active { display: block; }
+.co-summary { background: var(--light); border-radius: var(--r); padding: 16px; margin-bottom: 24px; }
+.co-sum-title { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--gray); margin-bottom: 12px; }
+.co-sum-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.co-sum-item { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+.co-sum-item-left { display: flex; align-items: center; gap: 10px; }
+.co-sum-emoji { font-size: 20px; }
+.co-sum-name { font-weight: 700; }
+.co-sum-qty { color: var(--gray); font-size: 12px; }
+.co-sum-price { font-weight: 900; }
+.co-sum-divider { height: 1px; background: var(--border); margin: 12px 0; }
+.co-sum-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; }
+.co-form { display: flex; flex-direction: column; gap: 16px; }
+.co-field { display: flex; flex-direction: column; gap: 6px; }
+.co-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.co-label { font-size: 12px; font-weight: 800; color: var(--black); text-transform: uppercase; letter-spacing: 0.05em; }
+.co-label span { color: var(--orange); }
+.co-input { border: 1.5px solid var(--border); border-radius: var(--r); padding: 12px 16px; font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; background: var(--light); transition: all var(--trans); }
+.co-input:focus { border-color: var(--orange); background: var(--white); }
+.co-input.error { border-color: var(--red); }
+.co-select { appearance: none; cursor: pointer; padding-right: 36px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23868686' d='M5 7L0 0h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+.co-err { font-size: 11px; color: var(--red); font-weight: 700; display: none; margin-top: 4px; }
+.co-err.show { display: block; }
+.co-pay-info { background: linear-gradient(135deg,#fff8f5,#fdeee7); border: 1px solid rgba(237,100,54,.2); border-radius: var(--r); padding: 20px; margin-bottom: 24px; display: flex; gap: 16px; align-items: center; }
+.co-pay-ico { font-size: 28px; flex-shrink: 0; }
+.co-pay-text h4 { font-size: 15px; font-weight: 900; margin-bottom: 4px; }
+.co-pay-text p { font-size: 13px; color: var(--gray); line-height: 1.6; }
+.co-test-banner { background: #e8f4fd; border: 1px solid #bee3f8; border-radius: var(--rxs); padding: 12px 16px; font-size: 13px; font-weight: 700; color: #2b6cb0; margin-bottom: 20px; }
+.co-success { text-align: center; padding: 24px 0; }
+.co-success-ico { font-size: 80px; margin-bottom: 20px; }
+.co-success h3 { font-size: 26px; font-weight: 900; margin-bottom: 10px; }
+.co-success p { font-size: 15px; color: var(--gray); line-height: 1.7; margin-bottom: 24px; }
+.co-success-ref { background: var(--light); border-radius: var(--rxs); padding: 14px 20px; font-size: 14px; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; }
+.co-success-steps { text-align: left; background: var(--light); border-radius: var(--r); padding: 20px; margin-bottom: 24px; }
+.co-success-steps h4 { font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--gray); margin-bottom: 12px; }
+.co-ss-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; padding: 6px 0; }
+.co-ss-dot { width: 24px; height: 24px; background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.co-footer { border-top: 1px solid var(--border); padding: 20px 24px; display: flex; gap: 12px; flex-shrink: 0; background: var(--white); }
+.co-btn-back { flex: 0 0 auto; background: transparent; border: 1.5px solid var(--border); border-radius: 50px; padding: 12px 24px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all var(--trans); }
+.co-btn-back:hover { border-color: var(--black); }
+.co-btn-next { flex: 1; background: var(--orange); color: #fff; border: none; border-radius: 50px; padding: 14px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background var(--trans); }
+.co-btn-next:hover { background: var(--orange-d); transform: translateY(-1px); box-shadow: var(--shadow); }
+.co-btn-next:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+.co-spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+.co-spinner.show { display: block; }
+@keyframes popUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* === PAGE WRAP === */
+.page-wrap { max-width: 1400px; margin: 0 auto; padding: 32px 20px; width: 100%; }
+.content-grid { display: grid; grid-template-columns: 260px 1fr; gap: 32px; align-items: start; }
+
+/* === SIDEBAR === */
+.sidebar-widget { background: var(--white); border-radius: var(--r); border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; box-shadow: var(--shadow); }
+.cat-menu-header { background: var(--orange); color: #fff; padding: 16px 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; }
+.cat-menu-bars { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.cat-bar { height: 2px; background: #fff; border-radius: 2px; }
+.cat-bar:nth-child(1) { width: 20px; } .cat-bar:nth-child(2) { width: 14px; } .cat-bar:nth-child(3) { width: 17px; }
+.cat-menu-title { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.cat-menu-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--light); cursor: pointer; transition: all var(--trans); }
+.cat-menu-item:hover, .cat-menu-item.on { background: #fff7f5; padding-left: 26px; }
+.cat-menu-item.on .cat-menu-item-name { color: var(--orange); font-weight: 800; }
+.cat-menu-item-left { display: flex; align-items: center; gap: 10px; }
+.cat-ico { font-size: 16px; width: 20px; text-align: center; }
+.cat-menu-item-name { font-size: 14px; font-weight: 600; color: var(--black); }
+.cat-count-badge { background: var(--light); color: var(--gray); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 50px; }
+.sb-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--black); padding: 18px 20px 12px; border-bottom: 2px solid var(--orange); }
+.sb-body { padding: 16px 20px; }
+.price-inputs { display: flex; gap: 8px; margin-bottom: 12px; }
+.price-inp { flex: 1; border: 1.5px solid var(--border); border-radius: var(--rxs); width: 100%; padding: 8px 12px; font-size: 13px; outline: none; }
+.check-list { display: flex; flex-direction: column; gap: 8px; }
+.chk-row { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; }
+.chk-row input { accent-color: var(--orange); cursor: pointer; width: 16px; height: 16px; }
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
+.stag { padding: 6px 14px; border-radius: 50px; border: 1.5px solid var(--border); font-size: 12px; font-weight: 700; color: var(--gray); cursor: pointer; }
+.stag.on { background: var(--orange); border-color: var(--orange); color: #fff; }
+
+/* === HERO === */
+.hero-banner { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; border-radius: var(--r); overflow: hidden; margin-bottom: 32px; min-height: 380px; }
+.hero-left { background: linear-gradient(135deg,#fff9f6,#fdeee7); border-radius: var(--r); padding: 56px 48px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+.hero-left::before { content: '🐾'; position: absolute; right: -20px; bottom: -20px; font-size: 180px; opacity: .06; line-height: 1; pointer-events: none; }
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 7px; background: rgba(237,100,54,.1); border-radius: 50px; padding: 6px 16px; font-size: 12px; font-weight: 800; color: var(--orange); text-transform: uppercase; margin-bottom: 18px; width: fit-content; }
+.hero-left h1 { font-size: clamp(28px, 3.5vw, 48px); font-weight: 900; color: var(--black); line-height: 1.15; margin-bottom: 16px; }
+.hero-left h1 em { color: var(--orange); font-style: normal; }
+.hero-desc { font-size: 16px; color: var(--gray); margin-bottom: 32px; line-height: 1.7; max-width: 90%; }
+.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.hero-right { display: grid; grid-template-rows: 1fr 1fr; gap: 24px; }
+.hero-mini { padding: 32px; display: flex; flex-direction: column; border-radius: var(--r); box-shadow: var(--shadow); justify-content: flex-end; position: relative; overflow: hidden; cursor: pointer; transition: all var(--trans); }
+.hero-mini:hover { transform: translateY(-4px); box-shadow: var(--shadow2); }
+.hero-mini:first-child { background: linear-gradient(135deg,#e8f4f8,#c8e6f0); }
+.hero-mini:last-child { background: linear-gradient(135deg,#f0f8e8,#c8e8c0); }
+.hero-mini-emoji { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); font-size: 90px; opacity: .2; }
+.hm-tag { background: rgba(0,0,0,.15); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 50px; display: inline-block; text-transform: uppercase; margin-bottom: 10px; width: fit-content; }
+.hm-title { font-size: 20px; font-weight: 800; color: var(--black); margin-bottom: 4px; }
+.hm-sub { font-size: 14px; color: #555; margin-bottom: 12px; }
+.hm-price { font-size: 16px; font-weight: 800; color: var(--orange); }
+
+/* === TRUST STRIP === */
+.trust-strip { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 24px 32px; display: grid; grid-template-columns: repeat(5,1fr); gap: 24px; margin-bottom: 36px; box-shadow: var(--shadow); }
+.trust-item { display: flex; align-items: center; gap: 16px; }
+.trust-ico { width: 52px; height: 52px; border-radius: 50%; background: rgba(237,100,54,.1); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; color: var(--orange); }
+.trust-label { font-size: 14px; font-weight: 800; color: var(--black); display: block; }
+.trust-sub { font-size: 12px; color: var(--gray); }
+
+/* === BANNER GRID === */
+.banner-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-bottom: 36px; }
+.banner-card { border-radius: var(--r); padding: 32px 28px; position: relative; overflow: hidden; cursor: pointer; min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end; transition: transform var(--trans); box-shadow: var(--shadow); }
+.banner-card:hover { transform: translateY(-4px); box-shadow: var(--shadow2); }
+.bc-emoji { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 84px; opacity: .15; }
+.bc-tag { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 50px; text-transform: uppercase; margin-bottom: 8px; color: #fff; background: rgba(0,0,0,.25); width: fit-content; }
+.bc-title { font-size: 20px; font-weight: 800; color: var(--black); margin-bottom: 4px; }
+.bc-price { font-size: 15px; font-weight: 700; color: var(--orange); }
+
+/* === SECTION === */
+.sec { margin-bottom: 40px; }
+.sec-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--border); }
+.sec-head-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--orange); margin-bottom: 4px; }
+.sec-head h2 { font-size: 26px; font-weight: 900; color: var(--black); }
+.sec-head h2 span { color: var(--orange); }
+
+/* === DEALS === */
+.deals-wrap { background: var(--white); border-radius: var(--r); border: 1px solid var(--border); overflow: hidden; margin-bottom: 36px; box-shadow: var(--shadow); }
+.deals-header { background: var(--black); padding: 24px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.deals-title { font-size: 22px; font-weight: 900; color: #fff; }
+.deals-title span { color: var(--orange); }
+.deals-countdown { display: flex; align-items: center; gap: 10px; }
+.deal-cbox { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: var(--rxs); width: 60px; text-align: center; padding: 10px 0; }
+.deal-cnum { font-size: 24px; font-weight: 900; color: #fff; display: block; line-height: 1; margin-bottom: 2px;}
+.deal-clbl { font-size: 11px; color: rgba(255,255,255,.5); text-transform: uppercase; font-weight: 700;}
+.deal-sep { font-size: 24px; color: rgba(255,255,255,.4); font-weight: 900; }
+.deals-body { padding: 24px; display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+.deal-item { border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer; transition: all var(--trans); }
+.deal-item:hover { border-color: var(--orange); transform: translateY(-4px); box-shadow: var(--shadow); }
+.di-img { height: 160px; background: var(--light); display: flex; align-items: center; justify-content: center; font-size: 70px; }
+.di-body { padding: 16px; }
+.di-name { font-size: 15px; font-weight: 700; color: var(--black); margin-bottom: 8px; }
+.di-prices { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.di-now { font-size: 18px; font-weight: 900; color: var(--orange); }
+.di-was { font-size: 13px; color: var(--gray); text-decoration: line-through; }
+.di-save { font-size: 11px; font-weight: 800; background: rgba(237,100,54,.1); color: var(--orange); padding: 3px 8px; border-radius: 6px; }
+
+/* === PRODUCT GRID === */
+.filter-tabs { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 20px; margin-bottom: 8px; }
+.filter-tabs::-webkit-scrollbar { display: none; }
+.ftab { display: flex; align-items: center; justify-content: center; padding: 12px 24px; border-radius: 50px; border: 1.5px solid var(--border); background: var(--white); font-weight: 700; font-size: 14px; cursor: pointer; transition: all var(--trans); white-space: nowrap; }
+.ftab:hover, .ftab.on { background: var(--black); color: white; border-color: var(--black); }
+.toolbar { display: flex; align-items: center; justify-content: space-between; background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 24px; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; box-shadow: var(--shadow); }
+.tb-result { font-size: 15px; color: var(--gray); font-weight: 600; }
+.tb-result strong { color: var(--black); }
+.sort-sel { border: 1.5px solid var(--border); border-radius: 50px; padding: 10px 20px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; outline: none; cursor: pointer; }
+
+.prod-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 20px; }
+.pcard { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer; transition: all var(--trans); position: relative; }
+.pcard:hover { border-color: var(--orange); transform: translateY(-6px); box-shadow: var(--shadow2); }
+.pc-thumb { aspect-ratio: 1; background: var(--light); display: flex; align-items: center; justify-content: center; font-size: 80px; position: relative; overflow: hidden; }
+.pc-badge { position: absolute; top: 12px; left: 12px; z-index: 2; }
+.pc-wish { position: absolute; top: 12px; right: 12px; z-index: 2; background: rgba(255,255,255,.9); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; border: none; opacity: 0; transition: all var(--trans); transform: scale(0.8); }
+.pcard:hover .pc-wish { opacity: 1; transform: scale(1); }
+.pc-wish:hover { background: var(--orange); color: white; }
+
+.pc-actions { position: absolute; bottom: -70px; left: 0; right: 0; z-index: 4; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; transition: bottom var(--trans); }
+.pcard:hover .pc-actions { bottom: 12px; }
+.pa-btn { height: 40px; background: var(--black); color: #fff; border: none; border-radius: 50px; font-weight: 800; padding: 0 20px; transition: background var(--trans); cursor: pointer; }
+.pa-btn:hover { background: var(--orange); }
+.pa-icon { width: 40px; height: 40px; background: #fff; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.pa-icon:hover { color: var(--orange); }
+
+.pc-body { padding: 16px; }
+.pc-cat { font-size: 11px; font-weight: 800; color: var(--gray); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.pc-name { font-size: 15px; font-weight: 700; color: var(--black); margin-bottom: 8px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: color var(--trans); }
+.pcard:hover .pc-name { color: var(--orange); }
+.pc-stars { color: var(--yellow); font-size: 13px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.pc-rc { font-size: 12px; color: var(--gray); }
+.pc-price-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.pc-price { font-size: 18px; font-weight: 900; color: var(--black); }
+.pc-del { font-size: 13px; color: var(--gray); text-decoration: line-through; }
+.pc-disc { font-size: 11px; font-weight: 800; color: var(--red); background: rgba(231,76,60,.1); padding: 3px 8px; border-radius: 6px; }
+
+/* === PILL LABELS === */
+.lbl-sale{background:var(--red);color:#fff} .lbl-new{background:var(--green);color:#fff} .lbl-hot{background:var(--orange);color:#fff} .lbl-best{background:var(--blue);color:#fff}
+.lbl-sale,.lbl-new,.lbl-hot,.lbl-best{font-size:11px;font-weight:900;padding:4px 12px;border-radius:50px;text-transform:uppercase;display:inline-block;letter-spacing:0.05em;}
+
+/* === PET CARDS === */
+.pet-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 20px; }
+.pet-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer; transition: all var(--trans); box-shadow: var(--shadow); }
+.pet-card:hover { border-color: var(--orange); transform: translateY(-5px); box-shadow: var(--shadow2); }
+.pt-img { aspect-ratio: 1.1; display: flex; align-items: center; justify-content: center; font-size: 80px; position: relative; }
+.pt-badge { position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 50px; color: #fff; text-transform: uppercase; }
+.pt-wish { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; border: none; opacity: 0; transition: all var(--trans); transform: scale(0.8); }
+.pet-card:hover .pt-wish { opacity: 1; transform: scale(1); }
+.pt-body { padding: 20px; }
+.pt-breed { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--gray); margin-bottom: 6px; }
+.pt-name { font-size: 20px; font-weight: 900; color: var(--black); margin-bottom: 10px; }
+.pt-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.pt-tag { font-size: 12px; padding: 4px 12px; border-radius: 50px; background: var(--light); color: var(--gray); font-weight: 700; border: 1px solid var(--border); }
+.pt-loc { font-size: 13px; color: var(--gray); margin-bottom: 18px; }
+.pt-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--border); }
+.pt-price { font-size: 20px; font-weight: 900; color: var(--black); }
+
+/* === VETS & BREEDERS === */
+.vet-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+.vet-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 28px; cursor: pointer; transition: all var(--trans); box-shadow: var(--shadow); }
+.vet-card:hover { border-color: var(--orange); transform: translateY(-4px); box-shadow: var(--shadow2); }
+.vc-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+.vc-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg,#fdeee7,#fbd4c3); display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+.vc-name { font-size: 16px; font-weight: 800; color: var(--black); margin-bottom: 4px; }
+.vc-spec { font-size: 13px; color: var(--gray); }
+.vc-stars { color: var(--yellow); font-size: 13px; margin-bottom: 4px; }
+.vc-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.vc-chip { font-size: 11px; padding: 4px 10px; border-radius: 50px; background: rgba(237,100,54,.1); color: var(--orange); font-weight: 800; }
+.vc-loc { font-size: 13px; color: var(--gray); margin-bottom: 18px; }
+.vc-footer { display: flex; gap: 10px; }
+
+.breeder-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; }
+.breeder-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 28px; text-align: center; cursor: pointer; transition: all var(--trans); box-shadow: var(--shadow); }
+.breeder-card:hover { border-color: var(--orange); transform: translateY(-4px); box-shadow: var(--shadow2); }
+.br-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--light); display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; }
+.br-name { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+.br-spec { font-size: 13px; color: var(--gray); margin-bottom: 12px; }
+.br-verified { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 800; color: var(--green); margin-bottom: 20px; }
+.br-stats { display: flex; justify-content: center; gap: 28px; padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.bstat-n { font-size: 20px; font-weight: 900; display: block; }
+.bstat-l { font-size: 12px; color: var(--gray); font-weight: 700; text-transform: uppercase; }
+.br-loc { font-size: 14px; color: var(--gray); margin-bottom: 20px; }
+
+.blog-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 24px; }
+.blog-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer; transition: all var(--trans); box-shadow: var(--shadow); }
+.blog-card:hover { border-color: var(--orange); transform: translateY(-4px); box-shadow: var(--shadow2); }
+.blog-img { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 70px; position: relative; }
+.blog-img.sm { height: 160px; }
+.blog-cat-pill { position: absolute; bottom: 16px; left: 20px; background: var(--orange); color: #fff; font-size: 12px; font-weight: 800; padding: 6px 16px; border-radius: 50px; text-transform: uppercase; }
+.blog-body { padding: 24px; }
+.blog-title { font-size: 18px; font-weight: 800; color: var(--black); line-height: 1.4; margin-bottom: 12px; transition: color var(--trans); }
+.blog-card:hover .blog-title { color: var(--orange); }
+.blog-meta { font-size: 13px; color: var(--gray); }
+.blog-read { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: var(--orange); margin-top: 16px; }
+/* Product description HTML formatting */
+#mDesc strong, #mDesc b { font-weight:800; color:var(--black); }
+#mDesc ul { margin:8px 0 0; padding-left:18px; }
+#mDesc li { margin-bottom:5px; }
+#mDesc p { margin:0 0 8px; }
+/* Blog article prose */
+#blogModalContent h4 { font-size:16px; font-weight:900; margin:20px 0 8px; color:var(--black); }
+#blogModalContent p { margin:0 0 14px; }
+#blogModalContent ul { margin:0 0 14px; padding-left:20px; }
+#blogModalContent li { margin-bottom:6px; }
+/* Product Modal — Variations */
+.pv-group { margin-bottom:14px; }
+.pv-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--gray); margin-bottom:7px; }
+.pv-options { display:flex; flex-wrap:wrap; gap:8px; }
+.pv-opt { border:1.5px solid var(--border); border-radius:50px; padding:6px 14px; font-size:13px; font-weight:700; cursor:pointer; transition:all var(--trans); background:var(--white); }
+.pv-opt:hover { border-color:var(--orange); color:var(--orange); }
+.pv-opt.selected { border-color:var(--orange); background:var(--orange); color:#fff; }
+.pv-opt.color-swatch { width:32px; height:32px; padding:0; border-radius:50%; position:relative; }
+.pv-opt.color-swatch.selected::after { content:'✓'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4); }
+/* Product Modal — Reviews */
+.rv-section { border-top:1px solid var(--border); margin:20px 0 0; padding-top:20px; }
+.rv-section-title { font-size:15px; font-weight:900; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.rv-summary { display:flex; align-items:center; gap:20px; background:var(--light); border-radius:var(--r); padding:16px 18px; margin-bottom:16px; }
+.rv-big-score { font-size:40px; font-weight:900; line-height:1; color:var(--black); }
+.rv-stars-row { display:flex; gap:3px; margin-bottom:4px; }
+.rv-star { font-size:18px; color:#e0e0e0; }
+.rv-star.on { color:#f4b400; }
+.rv-count { font-size:12px; color:var(--gray); font-weight:700; }
+.rv-bar-row { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
+.rv-bar-label { font-size:11px; font-weight:800; color:var(--gray); width:8px; text-align:right; }
+.rv-bar-track { flex:1; height:6px; background:var(--border); border-radius:4px; overflow:hidden; }
+.rv-bar-fill { height:100%; background:#f4b400; border-radius:4px; transition:width .4s ease; }
+.rv-bar-n { font-size:11px; color:var(--gray); font-weight:700; width:18px; }
+.rv-item { padding:14px 0; border-bottom:1px solid var(--border); }
+.rv-item:last-child { border-bottom:none; }
+.rv-item-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.rv-author { font-size:13px; font-weight:800; }
+.rv-date { font-size:11px; color:var(--gray); }
+.rv-item-stars { display:flex; gap:2px; margin-bottom:6px; }
+.rv-item-star { font-size:13px; color:#e0e0e0; }
+.rv-item-star.on { color:#f4b400; }
+.rv-item-text { font-size:13px; color:#555; line-height:1.6; }
+.rv-form { background:var(--light); border-radius:var(--r); padding:16px; margin-top:12px; }
+.rv-form-title { font-size:13px; font-weight:800; margin-bottom:12px; }
+.rv-star-picker { display:flex; gap:6px; margin-bottom:12px; cursor:pointer; }
+.rv-star-pick { font-size:26px; color:#e0e0e0; transition:color .15s; }
+.rv-star-pick.on { color:#f4b400; }
+.rv-textarea { width:100%; border:1.5px solid var(--border); border-radius:var(--r); padding:10px 12px; font-family:'Nunito',sans-serif; font-size:13px; resize:vertical; min-height:70px; outline:none; transition:border-color var(--trans); background:var(--white); box-sizing:border-box; }
+.rv-textarea:focus { border-color:var(--orange); }
+.rv-submit { margin-top:10px; background:var(--orange); color:#fff; border:none; border-radius:50px; padding:10px 22px; font-family:'Nunito',sans-serif; font-size:13px; font-weight:800; cursor:pointer; transition:background var(--trans); }
+.rv-submit:hover { background:var(--orange-d); }
+.rv-gate { text-align:center; padding:14px; font-size:13px; color:var(--gray); }
+.rv-gate a { color:var(--orange); font-weight:800; text-decoration:none; cursor:pointer; }
+.rv-empty { font-size:13px; color:var(--gray); text-align:center; padding:16px 0; }
+
+/* === NEWSLETTER === */
+.newsletter { background: var(--black); border-radius: var(--r); padding: 48px 40px; text-align: center; margin: 48px 0; position: relative; overflow: hidden; box-shadow: var(--shadow2); }
+.nl-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--orange); margin-bottom: 12px; }
+.nl-title { font-size: clamp(24px,3vw,36px); font-weight: 900; color: #fff; margin-bottom: 12px; }
+.nl-desc { font-size: 15px; color: rgba(255,255,255,.6); margin-bottom: 32px; }
+.nl-form { display: flex; gap: 10px; max-width: 100%; margin: 0 auto; }
+.nl-input { flex: 1; border: 2px solid transparent; border-radius: 50px; padding: 14px 22px; font-family: 'Nunito', sans-serif; font-size: 15px; color: var(--black); outline: none; transition: all var(--trans); }
+.nl-input:focus { border-color: var(--orange); }
+.nl-btn { background: var(--orange); color: #fff; border: none; border-radius: 50px; padding: 14px 28px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 15px; cursor: pointer; white-space: nowrap; transition: background var(--trans); }
+.nl-btn:hover { background: var(--orange-d); }
+
+/* === FOOTER === */
+footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
+.footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.fb-desc { font-size: 14px; line-height: 1.8; max-width: 280px; margin: 16px 0 20px; color: rgba(255,255,255,.6); }
+.fb-social { display: flex; gap: 10px; }
+.fsoc { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all var(--trans); color: white; }
+.fsoc:hover { background: var(--orange); border-color: var(--orange); }
+.fc h4 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #fff; margin-bottom: 16px; }
+.fc a { display: block; font-size: 14px; color: rgba(255,255,255,.6); padding: 4px 0; transition: color var(--trans); margin-bottom: 6px; }
+.fc a:hover { color: var(--orange); }
+.footer-bottom { max-width: 1400px; margin: 0 auto; padding: 24px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; font-size: 13px; color: rgba(255,255,255,.4); }
+.footer-bottom a { color: rgba(255,255,255,.4); margin-left: 16px; }
+.pay-row { display: flex; gap: 8px; }
+.pay-badge { background: rgba(255,255,255,.08); border-radius: var(--rxs); padding: 4px 12px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,.6); }
+
+/* Modals */
+.modal-bg { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0,0,0,.5); 
+  z-index: 800; 
+  display: none; /* Hidden by default */
+  align-items: center; 
+  justify-content: center; 
+  padding: 20px; 
+  backdrop-filter: blur(4px); 
+}
+.modal { border-radius: var(--r); }
+
+/* === CHECKOUT === */
+.co-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+.co-bg.open { display: flex; }
+.co-modal { background: var(--white); border-radius: var(--r); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; animation: popUp .25s ease; display: flex; flex-direction: column; box-shadow: var(--shadow2); }
+.co-hd { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.co-hd-title { font-size: 18px; font-weight: 900; }
+.co-close { background: var(--light); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all var(--trans); }
+.co-close:hover { background: var(--orange); color: #fff; }
+.co-steps { display: flex; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.co-step { display: flex; align-items: center; gap: 8px; flex: 1; }
+.co-step-num { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); background: var(--white); font-size: 12px; font-weight: 900; color: var(--gray); display: flex; align-items: center; justify-content: center; transition: all var(--trans); flex-shrink: 0; }
+.co-step-label { font-size: 13px; font-weight: 700; color: var(--gray); }
+.co-step.active .co-step-num { background: var(--orange); border-color: var(--orange); color: #fff; }
+.co-step.active .co-step-label { color: var(--black); }
+.co-step.done .co-step-num { background: var(--black); border-color: var(--black); color: #fff; }
+.co-step.done .co-step-label { color: var(--black); }
+.co-step-line { flex: 1; height: 2px; background: var(--border); margin: 0 10px; }
+.co-step-line.done { background: var(--black); }
+.co-body { padding: 24px; flex: 1; }
+.co-section { display: none; }
+.co-section.active { display: block; }
+.co-summary { background: var(--light); border-radius: var(--r); padding: 16px; margin-bottom: 24px; }
+.co-sum-title { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--gray); margin-bottom: 12px; }
+.co-sum-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.co-sum-item { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+.co-sum-item-left { display: flex; align-items: center; gap: 10px; }
+.co-sum-emoji { font-size: 20px; }
+.co-sum-name { font-weight: 700; }
+.co-sum-qty { color: var(--gray); font-size: 12px; }
+.co-sum-price { font-weight: 900; }
+.co-sum-divider { height: 1px; background: var(--border); margin: 12px 0; }
+.co-sum-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; }
+.co-form { display: flex; flex-direction: column; gap: 16px; }
+.co-field { display: flex; flex-direction: column; gap: 6px; }
+.co-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.co-label { font-size: 12px; font-weight: 800; color: var(--black); text-transform: uppercase; letter-spacing: 0.05em; }
+.co-label span { color: var(--orange); }
+.co-input { border: 1.5px solid var(--border); border-radius: var(--r); padding: 12px 16px; font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; background: var(--light); transition: all var(--trans); }
+.co-input:focus { border-color: var(--orange); background: var(--white); }
+.co-input.error { border-color: var(--red); }
+.co-select { appearance: none; cursor: pointer; padding-right: 36px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23868686' d='M5 7L0 0h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+.co-err { font-size: 11px; color: var(--red); font-weight: 700; display: none; margin-top: 4px; }
+.co-err.show { display: block; }
+.co-pay-info { background: linear-gradient(135deg,#fff8f5,#fdeee7); border: 1px solid rgba(237,100,54,.2); border-radius: var(--r); padding: 20px; margin-bottom: 24px; display: flex; gap: 16px; align-items: center; }
+.co-pay-ico { font-size: 28px; flex-shrink: 0; }
+.co-pay-text h4 { font-size: 15px; font-weight: 900; margin-bottom: 4px; }
+.co-pay-text p { font-size: 13px; color: var(--gray); line-height: 1.6; }
+.co-test-banner { background: #e8f4fd; border: 1px solid #bee3f8; border-radius: var(--rxs); padding: 12px 16px; font-size: 13px; font-weight: 700; color: #2b6cb0; margin-bottom: 20px; }
+.co-success { text-align: center; padding: 24px 0; }
+.co-success-ico { font-size: 80px; margin-bottom: 20px; }
+.co-success h3 { font-size: 26px; font-weight: 900; margin-bottom: 10px; }
+.co-success p { font-size: 15px; color: var(--gray); line-height: 1.7; margin-bottom: 24px; }
+.co-success-ref { background: var(--light); border-radius: var(--rxs); padding: 14px 20px; font-size: 14px; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; }
+.co-success-steps { text-align: left; background: var(--light); border-radius: var(--r); padding: 20px; margin-bottom: 24px; }
+.co-success-steps h4 { font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--gray); margin-bottom: 12px; }
+.co-ss-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; padding: 6px 0; }
+.co-ss-dot { width: 24px; height: 24px; background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.co-footer { border-top: 1px solid var(--border); padding: 20px 24px; display: flex; gap: 12px; flex-shrink: 0; background: var(--white); }
+.co-btn-back { flex: 0 0 auto; background: transparent; border: 1.5px solid var(--border); border-radius: 50px; padding: 12px 24px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all var(--trans); }
+.co-btn-back:hover { border-color: var(--black); }
+.co-btn-next { flex: 1; background: var(--orange); color: #fff; border: none; border-radius: 50px; padding: 14px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background var(--trans); }
+.co-btn-next:hover { background: var(--orange-d); transform: translateY(-1px); box-shadow: var(--shadow); }
+.co-btn-next:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+.co-spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+.co-spinner.show { display: block; }
+@keyframes popUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ============================================================
+   RESPONSIVE — written once, cleanly, no patches
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* Base scaling */
+  html { font-size: 13px; }
+
+  /* Kill overflow at root */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  /* Every direct child of body must fit */
+  body > * {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hide desktop UI */
+  #topbar { display: none !important; }
+  .site-header { display: none !important; }
+  .main-nav { display: none !important; }
+  .mob-bar { display: flex !important; }
+  .hero-right { display: none !important; }
+  .sidebar { display: none !important; }
+
+  /* Page wrap */
+  .page-wrap {
+    padding: 12px 14px !important;
+    overflow: hidden !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Grid — collapse to 1 col, contain child */
+  .content-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+  .main-content {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  /* Hero */
+  .hero-banner {
+    display: block !important;
+    min-height: auto !important;
+    margin-bottom: 16px !important;
+    overflow: hidden !important;
+    max-width: 100% !important;
+  }
+  .hero-left {
+    padding: 22px 16px 26px !important;
+    overflow: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+  .hero-left::before { display: none !important; }
+  .hero-left h1 { font-size: 24px !important; }
+  .hero-desc { font-size: 13px !important; max-width: 100% !important; }
+  .hero-stats { gap: 16px !important; padding-top: 18px !important; margin-top: 18px !important; }
+  .hstat-n { font-size: 18px !important; }
+
+  /* Buttons */
+  .hero-btns {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .hero-btns button,
+  .hero-btns .btn-primary,
+  .hero-btns .btn-dark {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    padding: 13px 16px !important;
+    border-radius: 10px !important;
+    white-space: normal !important;
+  }
+
+  /* Trust strip */
+  .trust-strip {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 14px !important;
+    overflow: hidden !important;
+    max-width: 100% !important;
+  }
+  .trust-ico { width: 38px !important; height: 38px !important; font-size: 16px !important; flex-shrink: 0 !important; }
+  .trust-label { font-size: 12px !important; }
+  .trust-sub { font-size: 10px !important; }
+
+  /* Banner, blog */
+  .banner-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .blog-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+
+  /* Deals */
+  .deals-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 18px 16px !important;
+  }
+  .deals-body { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .di-img { height: 88px !important; font-size: 36px !important; }
+  .di-name { font-size: 11px !important; }
+  .di-now { font-size: 13px !important; }
+
+  /* Product grid */
+  .prod-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .pc-thumb {
+    aspect-ratio: 1 !important;
+    min-height: unset !important;
+    font-size: 48px !important;
+  }
+  .pc-actions { display: none !important; }
+  .pc-body { padding: 9px 10px 11px !important; }
+  .pc-name { font-size: 12px !important; margin-bottom: 4px !important; }
+  .pc-price { font-size: 14px !important; }
+
+  /* Pet grid */
+  .pet-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .pt-img { font-size: 48px !important; }
+  .pt-name { font-size: 14px !important; }
+  .pt-body { padding: 10px 11px 12px !important; }
+
+  /* Vets / breeders */
+  .vet-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .breeder-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+
+  /* Toolbar */
+  .toolbar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+
+  /* Newsletter */
+  .newsletter { padding: 28px 18px !important; margin: 24px 0 !important; }
+  .nl-form { flex-direction: column !important; }
+  .nl-input, .nl-btn { width: 100% !important; }
+
+  /* Footer */
+  .footer-inner { grid-template-columns: 1fr 1fr !important; gap: 18px !important; }
+  .footer-bottom { flex-direction: column !important; text-align: center !important; gap: 8px !important; }
+
+  /* Section headings */
+  .sec-head { flex-direction: column !important; align-items: flex-start !important; gap: 5px !important; }
+  .sec-head-left h2 { font-size: 18px !important; }
+  .sec { margin-bottom: 24px !important; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 12px; }
+  .page-wrap { padding: 10px 10px !important; }
+  .hero-left { padding: 18px 12px 22px !important; }
+  .hero-left h1 { font-size: 20px !important; }
+  .trust-strip { grid-template-columns: 1fr !important; }
+  .breeder-grid { grid-template-columns: 1fr !important; }
+  .footer-inner { grid-template-columns: 1fr !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="topbar-inner">
+    <div class="tb-left">
+      <div class="tb-item"><i>📍</i><span>Lagos, Nigeria</span></div>
+      <div class="tb-item"><i>📞</i><span>0800-PUPPY-NG</span></div>
+      <div class="tb-item"><i>✉️</i><span>hello@puppyplace.ng</span></div>
+    </div>
+    <div class="tb-right">
+      <a href="account.html">Sign In</a>
+      <div class="tb-sep"></div>
+      <a href="account.html">Register</a>
+      <div class="tb-sep"></div>
+      <a href="#">Track Order</a>
+    </div>
+  </div>
+</div>
+
+<div class="mob-bar">
+  <a href="#" class="mob-logo">
+    <div class="mob-logo-icon">🐾</div>
+    <div class="mob-logo-text">Puppy<span>Place</span></div>
+  </a>
+  <div class="mob-right">
+    <div class="mob-ico" onclick="toggleMobSearch()">🔍</div>
+    <div class="mob-ico" onclick="openWishlist()">❤️<span class="mob-badge" id="mwBadge">0</span></div>
+    <div class="mob-ico" onclick="openCart()">🛒<span class="mob-badge" id="mcBadge">0</span></div>
+    <button class="mob-ham" onclick="openMobNav()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</div>
+<div class="mob-search-bar" id="mobSearch">
+  <div class="mob-search-inner">
+    <input type="text" placeholder="Search products, pets, vets…" oninput="liveSearch(this.value)"/>
+    <button onclick="toggleMobSearch()">✕</button>
+  </div>
+</div>
+
+<div class="mob-nav-overlay" id="mobNavOverlay" onclick="closeMobNav()"></div>
+<div class="mob-nav" id="mobNav">
+  <div class="mob-nav-head">
+    <div class="mob-nav-logo">Puppy<span>Place</span>.ng</div>
+    <button class="mob-nav-close" onclick="closeMobNav()">✕</button>
+  </div>
+  <div class="mob-nav-body">
+    <div class="mob-nav-section">Shop</div>
+    <div class="mob-nav-link on" onclick="closeMobNav()"><span>🏠</span> Home</div>
+    <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('products').scrollIntoView({behavior:'smooth'})"><span>🛍️</span> Shop All Products</div>
+    <div class="mob-nav-link" onclick="filterCat(null,'Food');closeMobNav()"><span>🥩</span> Food &amp; Treats</div>
+    <div class="mob-nav-link" onclick="filterCat(null,'Toy');closeMobNav()"><span>🧸</span> Toys &amp; Play</div>
+    <div class="mob-nav-link" onclick="filterCat(null,'Grooming');closeMobNav()"><span>🛁</span> Grooming</div>
+    <div class="mob-nav-link" onclick="filterCat(null,'Housing');closeMobNav()"><span>🏠</span> Housing &amp; Beds</div>
+    <div class="mob-nav-link" onclick="filterCat(null,'Health');closeMobNav()"><span>💊</span> Health &amp; Vet</div>
+    <div class="mob-nav-link" onclick="filterCat(null,'Accessories');closeMobNav()"><span>🐾</span> Accessories</div>
+    <div class="mob-nav-section">More</div>
+    <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('pets').scrollIntoView({behavior:'smooth'})"><span>🐶</span> Adopt a Pet</div>
+    <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('vets').scrollIntoView({behavior:'smooth'})"><span>🏥</span> Vet Directory</div>
+    <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('breeders').scrollIntoView({behavior:'smooth'})"><span>🤝</span> Breeders</div>
+    <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('blog').scrollIntoView({behavior:'smooth'})"><span>📖</span> Blog</div>
+    <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('deals').scrollIntoView({behavior:'smooth'})"><span>🎁</span> Deals &amp; Offers</div>
+  </div>
+  <div class="mob-nav-footer">
+    <button class="btn-primary" onclick="window.location.href='account.html'" style="width:100%; justify-content:center;">👤 My Account</button>
+    <button class="btn-dark" onclick="closeMobNav();openCart()" style="width:100%; justify-content:center; background:transparent; color:var(--black); border:1px solid var(--border);">🛒 View Cart</button>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">🐾</div>
+      <div>
+        <div class="logo-name">Puppy<span>Place</span></div>
+        <div class="logo-tag">.ng — Nigeria's Pet Shop</div>
+      </div>
+    </a>
+    <div class="header-search">
+      <select>
+        <option>All Categories</option>
+        <option>Dog Food</option>
+        <option>Cat Food</option>
+        <option>Toys</option>
+        <option>Grooming</option>
+        <option>Live Pets</option>
+      </select>
+      <input id="sInput" type="text" placeholder="Search products, pets, vets…" oninput="liveSearch(this.value)"/>
+      <button class="search-submit">🔍</button>
+    </div>
+    <div class="header-icons">
+      <div class="hico" onclick="openWishlist()">
+        <div class="hico-icon">❤️<span class="hico-badge" id="wBadge">0</span></div>
+        <div class="hico-label">Wishlist</div>
+      </div>
+      <div class="hico" onclick="openCart()">
+        <div class="hico-icon">🛒<span class="hico-badge" id="cBadge">0</span></div>
+        <div class="hico-label">Cart</div>
+      </div>
+      <button class="btn-dark" style="margin-left:8px" onclick="window.location.href='account.html'">👤 Account</button>
+    </div>
+  </div>
+</header>
+
+<nav class="main-nav">
+  <div class="nav-inner wrap">
+    <a class="nav-link on" href="#">🏠 Home</a>
+    <a class="nav-link" href="#products" onclick="setNav(this)">🛍️ Shop All</a>
+    <a class="nav-link" href="#" onclick="setNav(this)">🥩 Food &amp; Treats</a>
+    <a class="nav-link" href="#" onclick="setNav(this)">🧸 Toys</a>
+    <a class="nav-link" href="#" onclick="setNav(this)">🛁 Grooming</a>
+    <a class="nav-link" href="#" onclick="setNav(this)">🏠 Housing</a>
+    <a class="nav-link" href="#" onclick="setNav(this)">💊 Health <span class="nav-badge">New</span></a>
+    <a class="nav-link" href="#" onclick="setNav(this)">👗 Clothing</a>
+    <div class="nav-sep"></div>
+    <a class="nav-link" href="#pets" onclick="setNav(this)">🐶 Adopt a Pet</a>
+    <a class="nav-link" href="#vets" onclick="setNav(this)">🏥 Vets</a>
+    <a class="nav-link" href="#breeders" onclick="setNav(this)">🤝 Breeders</a>
+    <a class="nav-link" href="#blog" onclick="setNav(this)">📖 Blog</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="content-grid">
+
+    <aside class="sidebar">
+
+      <div class="sidebar-widget">
+        <div class="cat-menu-header">
+          <div class="cat-menu-bars">
+            <div class="cat-bar"></div>
+            <div class="cat-bar"></div>
+            <div class="cat-bar"></div>
+          </div>
+          <span class="cat-menu-title">Categories</span>
+        </div>
+        <ul class="cat-menu-list" id="catMenu">
+          <li class="cat-menu-item on" onclick="filterCat(this,'All')"><div class="cat-menu-item-left"><span class="cat-ico">🐾</span><span class="cat-menu-item-name">All Products</span></div><span class="cat-count-badge">8.4k</span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Food')"><div class="cat-menu-item-left"><span class="cat-ico">🥩</span><span class="cat-menu-item-name">Food &amp; Treats</span></div><span class="cat-count-badge">2.4k</span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Toy')"><div class="cat-menu-item-left"><span class="cat-ico">🧸</span><span class="cat-menu-item-name">Toys &amp; Play</span></div><span class="cat-count-badge">980</span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Grooming')"><div class="cat-menu-item-left"><span class="cat-ico">🛁</span><span class="cat-menu-item-name">Grooming</span></div><span class="cat-count-badge">640</span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Housing')"><div class="cat-menu-item-left"><span class="cat-ico">🏠</span><span class="cat-menu-item-name">Housing &amp; Beds</span></div><span class="cat-count-badge">520</span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Health')"><div class="cat-menu-item-left"><span class="cat-ico">💊</span><span class="cat-menu-item-name">Health &amp; Vet</span></div><span class="cat-count-badge">430</span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Accessories')"><div class="cat-menu-item-left"><span class="cat-ico">🐾</span><span class="cat-menu-item-name">Accessories</span></div><span class="cat-count-badge">870</span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Clothing')"><div class="cat-menu-item-left"><span class="cat-ico">👗</span><span class="cat-menu-item-name">Clothing</span></div><span class="cat-count-badge">290</span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Travel')"><div class="cat-menu-item-left"><span class="cat-ico">🚗</span><span class="cat-menu-item-name">Travel</span></div><span class="cat-count-badge">215</span></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-widget">
+        <div class="sb-title">Filter by Price</div>
+        <div class="sb-body">
+          <div class="price-inputs"><input class="price-inp" placeholder="Min ₦"/><input class="price-inp" placeholder="Max ₦"/></div>
+          <button class="btn-dark sb-btn" onclick="alert('Price filter applied!')">Apply</button>
+        </div>
+      </div>
+
+      <div class="sidebar-widget">
+        <div class="sb-title">Pet Type</div>
+        <div class="sb-body">
+          <div class="check-list">
+            <label class="chk-row"><input type="checkbox" checked/> 🐶 Dogs (3,200)</label>
+            <label class="chk-row"><input type="checkbox" checked/> 🐱 Cats (2,100)</label>
+            <label class="chk-row"><input type="checkbox"/> 🦜 Birds (780)</label>
+            <label class="chk-row"><input type="checkbox"/> 🐰 Rabbits (340)</label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-widget">
+        <div class="sb-title">Brands</div>
+        <div class="sb-body">
+          <div class="tag-cloud">
+            <span class="stag on">Royal Canin</span>
+            <span class="stag" onclick="this.classList.toggle('on')">Pedigree</span>
+            <span class="stag" onclick="this.classList.toggle('on')">Whiskas</span>
+            <span class="stag" onclick="this.classList.toggle('on')">Kong</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <div class="main-content">
+
+      <div class="hero-banner sec">
+        <div class="hero-left">
+          <div class="hero-eyebrow">🇳🇬 Nigeria's #1 Pet Shop</div>
+          <h1>Everything Your Pet<br><em>Loves</em>, Delivered.</h1>
+          <p class="hero-desc">Food, toys, grooming, accessories &amp; healthcare — plus find your next companion from verified breeders nationwide.</p>
+          <div class="hero-btns">
+            <button class="btn-primary" onclick="document.getElementById('products').scrollIntoView({behavior:'smooth'})">🛍️ Shop Now</button>
+            <button class="btn-dark" onclick="document.getElementById('pets').scrollIntoView({behavior:'smooth'})">🐾 Adopt a Pet</button>
+          </div>
+        </div>
+        <div class="hero-right">
+          <div class="hero-mini" onclick="filterCat(null,'Food')">
+            <span class="hero-mini-emoji">🥩</span>
+            <div class="hm-tag">Up to 30% off</div>
+            <div class="hm-title">Premium Pet Food</div>
+            <div class="hm-sub">Royal Canin, Pedigree &amp; more</div>
+            <div class="hm-price">From ₦3,500 →</div>
+          </div>
+          <div class="hero-mini" onclick="document.getElementById('vets').scrollIntoView({behavior:'smooth'})">
+            <span class="hero-mini-emoji">🏥</span>
+            <div class="hm-tag" style="background:var(--orange)">Book now</div>
+            <div class="hm-title">Find a Vet Near You</div>
+            <div class="hm-sub">200+ vets across Nigeria</div>
+            <div class="hm-price" style="color:#2ecc71">Free consultation →</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="trust-strip sec">
+        <div class="trust-item"><div class="trust-ico">🚚</div><div><span class="trust-label">Fast Delivery</span><span class="trust-sub">Lagos &amp; Abuja</span></div></div>
+        <div class="trust-item"><div class="trust-ico">↩️</div><div><span class="trust-label">7-Day Returns</span><span class="trust-sub">Hassle-free</span></div></div>
+        <div class="trust-item"><div class="trust-ico">✅</div><div><span class="trust-label">100% Authentic</span><span class="trust-sub">Verified sellers</span></div></div>
+        <div class="trust-item"><div class="trust-ico">🔒</div><div><span class="trust-label">Secure Pay</span><span class="trust-sub">Paystack &amp; Bank</span></div></div>
+        <div class="trust-item"><div class="trust-ico">🏥</div><div><span class="trust-label">Vet-Backed</span><span class="trust-sub">Expert picks</span></div></div>
+      </div>
+
+      <div class="banner-grid sec">
+        <div class="banner-card" style="background:linear-gradient(135deg,#fdeee7,#fbd4c3)" onclick="filterCat(null,'Food')"><span class="bc-emoji">🥩</span><div class="bc-tag">Sale</div><div class="bc-title">Food &amp; Treats</div><div class="bc-price">From ₦3,500</div></div>
+        <div class="banner-card" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9)" onclick="filterCat(null,'Toy')"><span class="bc-emoji">🧸</span><div class="bc-tag" style="background:var(--green)">New</div><div class="bc-title">Toys &amp; Play</div><div class="bc-price" style="color:#2ecc71">From ₦1,200</div></div>
+        <div class="banner-card" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb)" onclick="filterCat(null,'Grooming')"><span class="bc-emoji">✂️</span><div class="bc-tag" style="background:var(--blue)">Popular</div><div class="bc-title">Grooming Kits</div><div class="bc-price" style="color:#2196f3">From ₦2,800</div></div>
+      </div>
+
+      <div class="deals-wrap sec" id="deals">
+        <div class="deals-header">
+          <div class="deals-title">⚡ Flash Deals — <span>Up to 40% Off</span></div>
+          <div class="deals-countdown">
+            <span style="color:rgba(255,255,255,.5);font-size:12px;font-weight:700">Ends in:</span>
+            <div class="deal-cbox"><span class="deal-cnum" id="dh">08</span><span class="deal-clbl">hrs</span></div>
+            <span class="deal-sep">:</span>
+            <div class="deal-cbox"><span class="deal-cnum" id="dm">42</span><span class="deal-clbl">min</span></div>
+            <span class="deal-sep">:</span>
+            <div class="deal-cbox"><span class="deal-cnum" id="ds">17</span><span class="deal-clbl">sec</span></div>
+          </div>
+        </div>
+        <div class="deals-body">
+          <div class="deal-item" onclick="openModal('d0')"><div class="di-img">🐶</div><div class="di-body"><div class="di-name">Booster Puppy Dry Food 10kg</div><div class="di-prices"><span class="di-now">₦34,000</span><span class="di-was">₦44,000</span><span class="di-save">-23%</span></div></div></div>
+          <div class="deal-item" onclick="openModal('d1')"><div class="di-img">🍗</div><div class="di-body"><div class="di-name">Diamond Naturals Adult 18kg</div><div class="di-prices"><span class="di-now">₦65,000</span><span class="di-was">₦72,000</span><span class="di-save">-10%</span></div></div></div>
+          <div class="deal-item" onclick="openModal('d2')"><div class="di-img">🍗</div><div class="di-body"><div class="di-name">Karl Chicken Jerky Treats</div><div class="di-prices"><span class="di-now">₦7,000</span><span class="di-was">₦8,500</span><span class="di-save">-18%</span></div></div></div>
+          <div class="deal-item" onclick="openModal('d3')"><div class="di-img">💊</div><div class="di-body"><div class="di-name">Bravecto Flea & Tick Chew</div><div class="di-prices"><span class="di-now">₦42,000</span><span class="di-was">₦49,000</span><span class="di-save">-14%</span></div></div></div>
+        </div>
+      </div>
+
+      <div class="sec" id="products">
+        <div class="sec-head">
+          <div class="sec-head-left">
+            <div class="sec-head-label">Shop</div>
+            <h2 id="shopTitle">Featured <span>Products</span></h2>
+          </div>
+        </div>
+        <div class="filter-tabs" id="petTypeTabs">
+          <span class="ftab on" onclick="filterType(this,'All')">All Pets</span>
+          <span class="ftab" onclick="filterType(this,'Dog')">🐶 Dogs</span>
+          <span class="ftab" onclick="filterType(this,'Cat')">🐱 Cats</span>
+          <span class="ftab" onclick="filterType(this,'Bird')">🦜 Birds</span>
+          <span class="ftab" onclick="filterType(this,'Rabbit')">🐰 Rabbits</span>
+        </div>
+        <div class="toolbar">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span class="tb-result">Showing <strong id="pCount">24</strong> products</span>
+            <span class="af-chip" id="afChip">All Products <button class="af-x" onclick="resetFilter()">✕</button></span>
+          </div>
+          <select class="sort-sel" onchange="sortProds(this.value)">
+            <option>Sort: Featured</option>
+            <option>Price: Low to High</option>
+            <option>Price: High to Low</option>
+            <option>Best Rated</option>
+          </select>
+        </div>
+        
+        <div class="prod-grid" id="prodGrid"></div>
+        
+      </div>
+
+      <div class="sec" id="pets">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-head-label">Adopt &amp; Buy</div><h2>Find Your <span>Companion</span></h2></div>
+        </div>
+        <div class="pet-grid" id="petGrid"></div>
+      </div>
+
+      <div class="sec" id="vets">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-head-label">Healthcare</div><h2>Vet <span>Directory</span></h2></div>
+        </div>
+        <div class="vet-grid">
+          <div class="vet-card"><div class="vc-head"><div class="vc-avatar">👩‍⚕️</div><div><div class="vc-name">Dr. Adaeze Obi</div><div class="vc-spec">Small Animal Medicine</div><div class="vc-stars">★★★★★</div></div></div><div class="vc-chips"><span class="vc-chip">Dogs</span><span class="vc-chip">Cats</span><span class="vc-chip">Surgery</span></div><div class="vc-loc">📍 Lekki Phase 1, Lagos</div><div class="vc-footer"><button class="btn-dark vc-book" onclick="alert('Booking Dr. Adaeze…')">Book</button><button class="vc-call">📞</button></div></div>
+          <div class="vet-card"><div class="vc-head"><div class="vc-avatar">👨‍⚕️</div><div><div class="vc-name">Dr. Emeka Chukwu</div><div class="vc-spec">Exotic Animals Specialist</div><div class="vc-stars">★★★★★</div></div></div><div class="vc-chips"><span class="vc-chip">Birds</span><span class="vc-chip">Reptiles</span><span class="vc-chip">Fish</span></div><div class="vc-loc">📍 Wuse 2, Abuja</div><div class="vc-footer"><button class="btn-dark vc-book" onclick="alert('Booking Dr. Emeka…')">Book</button><button class="vc-call">📞</button></div></div>
+          <div class="vet-card"><div class="vc-head"><div class="vc-avatar">👩‍⚕️</div><div><div class="vc-name">Dr. Ngozi Eze</div><div class="vc-spec">Veterinary Dermatology</div><div class="vc-stars">★★★★☆</div></div></div><div class="vc-chips"><span class="vc-chip">Dogs</span><span class="vc-chip">Cats</span><span class="vc-chip">Skin Care</span></div><div class="vc-loc">📍 GRA, Port Harcourt</div><div class="vc-footer"><button class="btn-dark vc-book" onclick="alert('Booking Dr. Ngozi…')">Book</button><button class="vc-call">📞</button></div></div>
+        </div>
+      </div>
+
+      <div class="sec" id="breeders">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-head-label">Trusted Breeders</div><h2>Breeder <span>Profiles</span></h2></div>
+        </div>
+        <div class="breeder-grid">
+          <div class="breeder-card"><div class="br-avatar">🐕</div><div class="br-name">Lagos K9 Kennels</div><div class="br-spec">Golden Retriever · Labrador</div><div class="br-verified">✅ Verified</div><div class="br-stats"><div><span class="bstat-n">48</span><span class="bstat-l">Sold</span></div><div><span class="bstat-n">4.9★</span><span class="bstat-l">Rating</span></div></div><div class="br-loc">📍 Ikorodu, Lagos</div><button class="br-btn">View Profile</button></div>
+          <div class="breeder-card"><div class="br-avatar">🐱</div><div class="br-name">AbujaKitty Farm</div><div class="br-spec">Persian · Siamese · Fold</div><div class="br-verified">✅ Verified</div><div class="br-stats"><div><span class="bstat-n">31</span><span class="bstat-l">Sold</span></div><div><span class="bstat-n">4.8★</span><span class="bstat-l">Rating</span></div></div><div class="br-loc">📍 Garki, Abuja</div><button class="br-btn">View Profile</button></div>
+          <div class="breeder-card"><div class="br-avatar">🦮</div><div class="br-name">EliteGuard Breeds</div><div class="br-spec">Rottweiler · Boerboel</div><div class="br-verified">✅ Verified</div><div class="br-stats"><div><span class="bstat-n">76</span><span class="bstat-l">Sold</span></div><div><span class="bstat-n">5.0★</span><span class="bstat-l">Rating</span></div></div><div class="br-loc">📍 GRA, PH</div><button class="br-btn">View Profile</button></div>
+          <div class="breeder-card"><div class="br-avatar">🦜</div><div class="br-name">BirdWorld Nigeria</div><div class="br-spec">African Grey · Cockatiel</div><div class="br-verified">✅ Verified</div><div class="br-stats"><div><span class="bstat-n">94</span><span class="bstat-l">Sold</span></div><div><span class="bstat-n">4.7★</span><span class="bstat-l">Rating</span></div></div><div class="br-loc">📍 Benin City, Edo</div><button class="br-btn">View Profile</button></div>
+        </div>
+      </div>
+
+      <!-- ══ BLOG SECTION ══ -->
+      <div class="sec" id="blog">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-head-label">Pet Care Tips</div><h2>From the <span>Blog</span></h2></div>
+          <button class="sec-link" onclick="window.location.href='blog.html'">View All Posts →</button>
+        </div>
+        <div class="blog-grid" id="blogGrid"></div>
+      </div>
+
+      <!-- Blog Article Modal -->
+      <div class="modal-bg" id="blogModal" onclick="if(event.target===this)closeBlogModal()" style="display:none; z-index:9999;">
+        <div style="background:#fff; border-radius:var(--r); max-width:680px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow2); animation:popUp .25s ease; margin:20px;">
+          <div id="blogModalContent"></div>
+        </div>
+      </div>
+
+      <div class="newsletter sec">
+        <div class="nl-label">Stay Connected</div>
+        <div class="nl-title">Join the PuppyPlace Family 🐾</div>
+        <div class="nl-desc">Weekly deals, new arrivals &amp; expert pet care tips straight to your inbox.</div>
+        <div class="nl-form">
+          <input class="nl-input" type="email" placeholder="Enter your email address"/>
+          <button class="nl-btn" onclick="alert('Subscribed! 🐾')">Subscribe Free</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="drawer" id="cartDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">🛒 Your Cart <span class="drawer-count" id="cartDrawerCount">0</span></div>
+    <button class="drawer-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="drawer-body" id="cartBody">
+    <div class="drawer-empty" id="cartEmpty" style="text-align:center; padding: 60px 20px; color: var(--gray);">
+      <div style="font-size: 56px; margin-bottom: 14px; opacity: .35;">🛒</div>
+      <p style="font-size:16px; font-weight:700;">Your cart is empty</p>
+    </div>
+    <div id="cartItems"></div>
+  </div>
+  <div class="drawer-footer" id="cartFooter" style="display:none; padding:20px; border-top:1px solid var(--border);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <span style="font-size: 14px; color: var(--gray); font-weight: 700;">Subtotal</span>
+      <span style="font-size: 20px; font-weight: 900;" id="cartTotal">₦0</span>
+    </div>
+    <button class="btn-primary drawer-checkout" onclick="openCheckout()">Proceed to Checkout →</button>
+    <button class="drawer-continue" onclick="closeCart()">← Continue Shopping</button>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="wishOverlay" onclick="closeWishlist()"></div>
+<div class="drawer" id="wishDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">❤️ Wishlist <span class="drawer-count" id="wishDrawerCount">0</span></div>
+    <button class="drawer-close" onclick="closeWishlist()">✕</button>
+  </div>
+  <div class="drawer-body" id="wishBody">
+    <div class="drawer-empty" id="wishEmpty" style="text-align:center; padding: 60px 20px; color: var(--gray);">
+      <div style="font-size: 56px; margin-bottom: 14px; opacity: .35;">❤️</div>
+      <p style="font-size:16px; font-weight:700;">Your wishlist is empty</p>
+    </div>
+    <div id="wishItems"></div>
+  </div>
+  <div class="drawer-footer" id="wishFooter" style="display:none; padding:20px; border-top:1px solid var(--border);">
+    <button class="btn-dark drawer-checkout" onclick="moveAllToCart()">🛒 Move All to Cart</button>
+    <button class="drawer-continue" onclick="closeWishlist()">← Keep Browsing</button>
+  </div>
+</div>
+
+<div class="co-bg" id="coBg" onclick="if(event.target===this)closeCheckout()">
+  <div class="co-modal" onclick="event.stopPropagation()">
+    <div class="co-hd">
+      <div class="co-hd-title">🛒 Checkout</div>
+      <button class="co-close" onclick="closeCheckout()">✕</button>
+    </div>
+    <div class="co-steps">
+      <div class="co-step active" id="step1ind"><span class="co-step-num">1</span><span class="co-step-label">Details</span></div>
+      <div class="co-step-line" id="line1"></div>
+      <div class="co-step" id="step2ind"><span class="co-step-num">2</span><span class="co-step-label">Review</span></div>
+      <div class="co-step-line" id="line2"></div>
+      <div class="co-step" id="step3ind"><span class="co-step-num">3</span><span class="co-step-label">Payment</span></div>
+    </div>
+    <div class="co-body">
+      <div class="co-section active" id="coStep1">
+        <div class="co-form">
+          <div class="co-field-row">
+            <div class="co-field">
+              <label class="co-label">Full Name <span>*</span></label>
+              <input class="co-input" id="coName" type="text" placeholder="e.g. Emeka Okafor"/>
+              <span class="co-err" id="coNameErr">Please enter your full name</span>
+            </div>
+            <div class="co-field">
+              <label class="co-label">Phone <span>*</span></label>
+              <input class="co-input" id="coPhone" type="tel" placeholder="e.g. 08012345678"/>
+              <span class="co-err" id="coPhoneErr">Please enter a valid phone number</span>
+            </div>
+          </div>
+          <div class="co-field">
+            <label class="co-label">Email Address <span>*</span></label>
+            <input class="co-input" id="coEmail" type="email" placeholder="emeka@example.com"/>
+            <span class="co-err" id="coEmailErr">Please enter a valid email address</span>
+          </div>
+          <div class="co-field">
+            <label class="co-label">Delivery Address <span>*</span></label>
+            <input class="co-input" id="coAddress" type="text" placeholder="Street address, area, landmark…"/>
+            <span class="co-err" id="coAddressErr">Please enter your delivery address</span>
+          </div>
+          <div class="co-field">
+            <label class="co-label">State <span>*</span></label>
+            <select class="co-input co-select" id="coState">
+              <option value="">Select your state…</option>
+              <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option><option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option><option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option><option>Ekiti</option><option>Enugu</option><option>FCT — Abuja</option><option>Gombe</option><option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option><option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option><option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option><option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option><option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+            </select>
+            <span class="co-err" id="coStateErr">Please select your state</span>
+          </div>
+          <div class="co-field">
+            <label class="co-label">Order Notes <span style="color:var(--gray);font-weight:600;text-transform:none;">(optional)</span></label>
+            <input class="co-input" id="coNotes" type="text" placeholder="Any special instructions for delivery…"/>
+          </div>
+        </div>
+      </div>
+      <div class="co-section" id="coStep2">
+        <div class="co-summary" id="coSummaryBlock"></div>
+        <div style="background:var(--light);border-radius:var(--r);padding:16px;font-size:13px">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-bottom:10px">Delivering to</div>
+          <div id="coReviewDetails" style="display:flex;flex-direction:column;gap:5px"></div>
+        </div>
+      </div>
+      <div class="co-section" id="coStep3">
+        <div class="co-test-banner">🧪 Test mode — use card <strong>4084 0840 8408 4081</strong> · Exp: any future date · CVV: any 3 digits</div>
+        <div class="co-pay-info">
+          <div class="co-pay-ico">🔒</div>
+          <div class="co-pay-text">
+            <h4>Secure payment via Paystack</h4>
+            <p>Your payment is encrypted and processed securely. PuppyPlace.ng never stores your card details.</p>
+          </div>
+        </div>
+        <div class="co-summary" id="coPaySummary"></div>
+        <div style="text-align:center; font-size:11px; color:var(--gray); font-weight:700;">🔐 SSL Encrypted &nbsp;·&nbsp; ✅ Paystack Secured &nbsp;·&nbsp; 🇳🇬 Nigerian Payment Gateway</div>
+      </div>
+      <div class="co-section" id="coStep4">
+        <div class="co-success">
+          <div class="co-success-ico">🎉</div>
+          <h3>Order Confirmed!</h3>
+          <p>Thank you for shopping with PuppyPlace.ng. A confirmation email is on its way to you.</p>
+          <div class="co-success-ref">
+            <span>Order Reference</span>
+            <strong id="coOrderRef">—</strong>
+          </div>
+          <div class="co-success-steps">
+            <h4>What happens next</h4>
+            <div class="co-ss-item"><div class="co-ss-dot">1</div><div><strong>Confirmation email</strong> sent to your inbox within 2 minutes with your order details.</div></div>
+            <div class="co-ss-item"><div class="co-ss-dot">2</div><div><strong>Order processing</strong> begins immediately. We'll pack and dispatch your items.</div></div>
+            <div class="co-ss-item"><div class="co-ss-dot">3</div><div><strong>Delivery update</strong> — you'll get a follow-up message with tracking info and expected delivery date.</div></div>
+          </div>
+          <button class="btn-primary" style="width:100%;justify-content:center" onclick="closeCheckout()">Continue Shopping 🐾</button>
+        </div>
+      </div>
+    </div>
+    <div class="co-footer" id="coFooter">
+      <button class="co-btn-back" id="coBtnBack" onclick="coBack()" style="display:none">← Back</button>
+      <button class="co-btn-next" id="coBtnNext" onclick="coNext()">
+        <span id="coBtnLabel">Continue to Review</span>
+        <div class="co-spinner" id="coSpinner"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="background:#fff; border-radius:var(--r); max-width:580px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow2); animation:popUp .25s ease;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px 0; margin-bottom:0;">
+      <h3 style="font-size:18px; font-weight:900;" id="mT">Product</h3>
+      <button onclick="closeModal()" style="background:var(--light); border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:var(--trans); flex-shrink:0;">✕</button>
+    </div>
+    <div id="mImgWrap" style="margin:16px 24px; border-radius:var(--r); overflow:hidden; background:var(--light); display:flex; align-items:center; justify-content:center; min-height:180px;">
+      <img id="mImg" src="" alt="" style="width:100%; max-height:260px; object-fit:cover; display:none;"/>
+      <span id="mE" style="font-size:72px; padding:24px;">📦</span>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <div style="display:flex; align-items:flex-end; gap:12px; margin-bottom:4px;">
+        <div style="font-size:26px; font-weight:900;" id="mP">₦0</div>
+        <div style="font-size:14px; color:var(--gray); text-decoration:line-through; padding-bottom:4px;" id="mO"></div>
+      </div>
+      <div id="mDescWrap" style="margin:14px 0; display:none; border-top:1px solid var(--border); padding-top:14px;">
+        <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--orange); margin-bottom:8px;">Product Details</div>
+        <div id="mDesc" style="font-size:14px; color:#555; line-height:1.8; margin:0;"></div>
+      </div>
+      <!-- Variation selectors -->
+      <div id="mVarGroups" style="margin-bottom:16px;"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;" id="mG"></div>
+      <div style="display:flex; gap:12px;">
+        <button id="modalCartBtn" class="btn-primary" style="flex:1; justify-content:center;">🛒 Add to Cart</button>
+        <button id="modalWishBtn" class="btn-dark" style="flex:1; justify-content:center;">❤️ Wishlist</button>
+      </div>
+      <!-- Reviews Section -->
+      <div class="rv-section" id="mReviews"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+/* ══════════════════════════════════════════
+   CHECKOUT + PAYSTACK + N8N INTEGRATION
+   ══════════════════════════════════════════ */
+const PAYSTACK_PUBLIC_KEY = 'pk_live_3ec94e6b82677539d10636c7a0f6087a91a8f0ea';
+const N8N_WEBHOOK_URL     = 'https://idon2.app.n8n.cloud/webhook/puppyplace-orders';
+const SUPABASE_URL  = 'https://fsrkzhknqonpjjkjwqlw.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzcmt6aGtucW9ucGpqa2p3cWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDA2MDcsImV4cCI6MjA5MjAxNjYwN30.8xi7-tb0X7Bp-_Eknlb8Kxdi5J9DGut-RYewEvB2-fk';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const FALLBACK_PRODUCTS = [
+  {id:'p1',n:'Royal Canin Adult Maxi 15kg',e:'🐶',cat:'Food',pet:'Dog',brand:'Royal Canin',p:28000,o:32000,r:4.8,rv:124,tag:'best'},
+  {id:'p2',n:'Whiskas Adult Tuna Pouch 85g (x12)',e:'🐱',cat:'Food',pet:'Cat',brand:'Whiskas',p:7500,o:null,r:4.6,rv:87,tag:'hot'},
+  {id:'p3',n:'Pedigree Puppy Chicken 3kg',e:'🐾',cat:'Food',pet:'Dog',brand:'Pedigree',p:9500,o:11000,r:4.7,rv:96,tag:'sale'},
+  {id:'p4',n:'Cat Litter Silica Gel 5L',e:'🧴',cat:'Accessories',pet:'Cat',brand:'Fresh Step',p:6800,o:null,r:4.5,rv:43,tag:'new'},
+  {id:'p5',n:'Dog Collar Adjustable Medium',e:'🦮',cat:'Accessories',pet:'Dog',brand:'Ruffwear',p:4200,o:5500,r:4.4,rv:61,tag:'sale'},
+  {id:'p6',n:'Frontline Flea & Tick Spray 250ml',e:'💊',cat:'Health',pet:'Dog',brand:'Frontline',p:18500,o:null,r:4.9,rv:212,tag:'best'},
+];
+
+let prods = [...FALLBACK_PRODUCTS]; // starts with fallback, replaced on load
+
+async function loadProductsFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from('shop_products')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      // Map Supabase column names → existing app field names
+      prods = data.map(row => ({
+        id:    row.id,
+        n:     row.name,
+        e:     row.emoji      || '📦',
+        cat:   row.category,
+        pet:   row.pet_type   || 'All',
+        brand: row.brand      || '',
+        p:     row.price,
+        o:     row.original_price || null,
+        r:     row.rating     || 4.5,
+        rv:    row.review_count || 0,
+        tag:   row.tag        || '',
+        img:   row.image_url  || null,
+        desc:  row.description || '',
+        vars:  row.variants   || [],
+        varGroups: row.var_groups || [],
+      }));
+    }
+    // If Supabase returns 0 rows, FALLBACK_PRODUCTS stays in prods
+  } catch (err) {
+    console.warn('Supabase load failed, using fallback products:', err.message);
+    // prods already set to FALLBACK_PRODUCTS above — nothing more needed
+  }
+
+  renderProds(prods);
+  renderPets();
+}
+
+const dealData=[
+  {n:'Booster Puppy Dry Food 10kg',e:'🐶',p:34000,o:44000,cat:'Food',pet:'Dog',brand:'Booster',r:4.8,rv:188,desc:"Specially created recipe for highly active puppies. Balanced nutrition from peas, carrot and spinach."},
+  {n:'Diamond Naturals Adult 18kg',e:'🍗',p:65000,o:72000,cat:'Food',pet:'Dog',brand:'Diamond',r:4.8,rv:143,desc:"Beef as #1 ingredient. Superfoods: kale, quinoa, chia seed, coconut. Added probiotics. No artificial flavours."},
+  {n:'Karl Chicken Jerky Treats',e:'🍗',p:7000,o:8500,cat:'Accessories',pet:'Dog',brand:'Karl',r:4.7,rv:134,desc:"66% real chicken breast. High crude protein. Natural ingredients, no artificial preservatives."},
+  {n:'Bravecto Flea & Tick Chew',e:'💊',p:42000,o:49000,cat:'Health',pet:'Dog',brand:'Bravecto',r:4.9,rv:176,desc:"12-week protection in one chewable tablet. Kills fleas within 2 hours. Vet recommended."},
+];
+const petsData=[
+  {n:'Biscuit',breed:'Golden Retriever',cat:'Dog',e:'🐕',age:'8 wks',p:220000,loc:'Lagos',badge:'Hot',bdg:'lbl-hot',health:'Vaccinated',bg:'linear-gradient(135deg,#fdeee7,#fbd4c3)'},
+  {n:'Luna',breed:'Persian Cat',cat:'Cat',e:'🐈',age:'10 wks',p:95000,loc:'Abuja',badge:'New',bdg:'lbl-new',health:'Vet Checked',bg:'linear-gradient(135deg,#e8f5e9,#c8e6c9)'},
+  {n:'Zeus',breed:'Rottweiler',cat:'Dog',e:'🦮',age:'12 wks',p:280000,loc:'PH',badge:'Rare',bdg:'lbl-sale',health:'Microchipped',bg:'linear-gradient(135deg,#fdeee7,#fae0d8)'},
+  {n:'Koko',breed:'African Grey',cat:'Bird',e:'🦜',age:'6 mo',p:220000,loc:'Lagos',badge:'',bdg:'',health:'Dewormed',bg:'linear-gradient(135deg,#e3f2fd,#bbdefb)'}
+];
+
+let cartItems = JSON.parse(localStorage.getItem('pp_cart') || '[]');
+let wishItems = JSON.parse(localStorage.getItem('pp_wish') || '[]');
+const fmt = n => '₦' + n.toLocaleString('en-NG');
+
+function saveCart() { localStorage.setItem('pp_cart', JSON.stringify(cartItems)); }
+function saveWish() { localStorage.setItem('pp_wish', JSON.stringify(wishItems)); }
+
+function updateBadges() {
+  const cartQty = cartItems.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cBadge').textContent = cartQty;
+  document.getElementById('wBadge').textContent = wishItems.length;
+  document.getElementById('cartDrawerCount').textContent = cartQty;
+  document.getElementById('wishDrawerCount').textContent = wishItems.length;
+  if(document.getElementById('mcBadge')) document.getElementById('mcBadge').textContent = cartQty;
+  if(document.getElementById('mwBadge')) document.getElementById('mwBadge').textContent = wishItems.length;
+}
+
+function addCart(id, name, emoji, cat, price) {
+  const existing = cartItems.find(i => i.id === id);
+  if (existing) { existing.qty++; }
+  else { cartItems.push({ id, n: name, e: emoji, cat, p: price, qty: 1 }); }
+  saveCart();
+  updateBadges();
+  renderCartDrawer();
+  openCart();
+}
+
+function removeFromCart(id) {
+  cartItems = cartItems.filter(i => i.id !== id);
+  saveCart();
+  updateBadges();
+  renderCartDrawer();
+}
+
+function changeQty(id, delta) {
+  const item = cartItems.find(i => i.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) { removeFromCart(id); return; }
+  saveCart();
+  updateBadges();
+  renderCartDrawer();
+}
+
+function renderCartDrawer() {
+  const itemsEl = document.getElementById('cartItems');
+  const emptyEl = document.getElementById('cartEmpty');
+  const footerEl = document.getElementById('cartFooter');
+  const totalEl = document.getElementById('cartTotal');
+
+  if (cartItems.length === 0) {
+    emptyEl.style.display = '';
+    itemsEl.innerHTML = '';
+    footerEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  footerEl.style.display = 'block';
+
+  itemsEl.innerHTML = cartItems.map(item => `
+    <div style="display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); position:relative;">
+      <div style="width:64px; height:64px; background:var(--light); border-radius:var(--rxs); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;">${item.e}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:10px; color:var(--gray); font-weight:700; text-transform:uppercase; margin-bottom:2px;">${item.cat}</div>
+        <div style="font-size:14px; font-weight:800; color:var(--black); margin-bottom:5px;">${item.n}</div>
+        <div style="font-size:15px; font-weight:900; color:var(--orange);">${fmt(item.p * item.qty)}</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${item.id}',-1)">−</button>
+          <span style="font-size:13px; font-weight:800;">${item.qty}</span>
+          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${item.id}',1)">+</button>
+        </div>
+      </div>
+      <button style="position:absolute; top:14px; right:0; background:none; border:none; color:#ccc; font-size:16px; cursor:pointer;" onclick="removeFromCart('${item.id}')">✕</button>
+    </div>`).join('');
+
+  totalEl.textContent = fmt(cartItems.reduce((s, i) => s + i.p * i.qty, 0));
+}
+
+function openCart() {
+  document.getElementById('cartDrawer').classList.add('open');
+  document.getElementById('cartOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCart() {
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function addWish(id, name, emoji, cat, price) {
+  if (wishItems.find(i => i.id === id)) return;
+  wishItems.push({ id, n: name, e: emoji, cat, p: price });
+  saveWish();
+  updateBadges();
+  renderWishDrawer();
+  openWishlist();
+}
+
+function removeFromWish(id) {
+  wishItems = wishItems.filter(i => i.id !== id);
+  saveWish();
+  updateBadges();
+  renderWishDrawer();
+}
+
+function moveToCart(id) {
+  const item = wishItems.find(i => i.id === id);
+  if (!item) return;
+  removeFromWish(id);
+  addCart(item.id, item.n, item.e, item.cat, item.p);
+}
+
+function moveAllToCart() {
+  [...wishItems].forEach(i => {
+    const existing = cartItems.find(c => c.id === i.id);
+    if (existing) existing.qty++;
+    else cartItems.push({ ...i, qty: 1 });
+  });
+  wishItems = [];
+  updateBadges();
+  renderWishDrawer();
+  renderCartDrawer();
+  closeWishlist();
+  openCart();
+}
+
+function renderWishDrawer() {
+  const itemsEl = document.getElementById('wishItems');
+  const emptyEl = document.getElementById('wishEmpty');
+  const footerEl = document.getElementById('wishFooter');
+
+  if (wishItems.length === 0) {
+    emptyEl.style.display = '';
+    itemsEl.innerHTML = '';
+    footerEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  footerEl.style.display = 'block';
+
+  itemsEl.innerHTML = wishItems.map(item => `
+    <div style="display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); position:relative;">
+      <div style="width:64px; height:64px; background:var(--light); border-radius:var(--rxs); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;">${item.e}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:10px; color:var(--gray); font-weight:700; text-transform:uppercase; margin-bottom:2px;">${item.cat}</div>
+        <div style="font-size:14px; font-weight:800; color:var(--black); margin-bottom:5px;">${item.n}</div>
+        <div style="font-size:15px; font-weight:900; color:var(--black);">${fmt(item.p)}</div>
+        <button class="btn-dark" style="margin-top:8px; padding:6px 12px; font-size:11px;" onclick="moveToCart('${item.id}')">🛒 Add to Cart</button>
+      </div>
+      <button style="position:absolute; top:14px; right:0; background:none; border:none; color:#ccc; font-size:16px; cursor:pointer;" onclick="removeFromWish('${item.id}')">✕</button>
+    </div>`).join('');
+}
+
+function openWishlist() {
+  document.getElementById('wishDrawer').classList.add('open');
+  document.getElementById('wishOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeWishlist() {
+  document.getElementById('wishDrawer').classList.remove('open');
+  document.getElementById('wishOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+const lblMap={sale:'lbl-sale',new:'lbl-new',hot:'lbl-hot',best:'lbl-best',popular:'lbl-sale'};
+const lblText={sale:'Sale',new:'New',hot:'Hot',best:'Best Seller',popular:'Popular'};
+
+function renderProds(list) {
+  const g = document.getElementById('prodGrid');
+  g.innerHTML = '';
+  list.forEach(p => {
+    const disc = p.o ? Math.round((1 - p.p / p.o) * 100) : 0;
+    g.innerHTML += `<div class="pcard" onclick="openModal('${p.id}')">
+      <div class="pc-thumb">
+        ${p.tag ? `<span class="pc-badge ${lblMap[p.tag]||'lbl-sale'}">${lblText[p.tag]||p.tag}</span>` : ''}
+        <button class="pc-wish" onclick="event.stopPropagation();addWishFromCard(this,'${p.id}')">♡</button>
+        ${p.img ? `<img src="${p.img}" alt="${p.n}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${p.e}</span>`}
+        <div class="pc-actions">
+          <button class="pa-btn" onclick="event.stopPropagation();addCart('${p.id}','${p.n.replace(/'/g,"\\'")}','${p.e}','${p.cat}',${p.p})">🛒 Add to Cart</button>
+          <span class="pa-icon" onclick="event.stopPropagation();openModal('${p.id}')">👁</span>
+        </div>
+      </div>
+      <div class="pc-body">
+        <div class="pc-cat">${p.cat} · ${p.pet}</div>
+        <div class="pc-name">${p.n}</div>
+        <div class="pc-stars">★★★★${p.r>=5?'★':'☆'}<span class="pc-rc">${p.r} (${p.rv})</span></div>
+        <div class="pc-price-row">
+          <span class="pc-price">${fmt(p.p)}</span>
+          ${p.o ? `<span class="pc-del">${fmt(p.o)}</span><span class="pc-disc">-${disc}%</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('pCount').textContent = list.length;
+}
+
+function addWishFromCard(btn, id) {
+  const p = prods.find(x => x.id === id);
+  if (!p) return;
+  const isAdded = btn.textContent === '♥';
+  if (isAdded) { removeFromWish(id); btn.textContent = '♡'; }
+  else { btn.textContent = '♥'; addWish(id, p.n, p.e, p.cat, p.p); }
+}
+
+function renderPets() {
+  const g = document.getElementById('petGrid');
+  g.innerHTML = '';
+  petsData.forEach(p => {
+    g.innerHTML += `<div class="pet-card" onclick="alert('Contact seller for ${p.n}\\n${p.breed} — ${fmt(p.p)}')">
+      <div class="pt-img" style="background:${p.bg}">
+        ${p.badge ? `<span class="pt-badge ${p.bdg}">${p.badge}</span>` : ''}
+        <button class="pt-wish" onclick="event.stopPropagation();this.textContent=this.textContent==='♡'?'♥':'♡'">♡</button>
+        <span style="font-size:58px">${p.e}</span>
+      </div>
+      <div class="pt-body">
+        <div class="pt-breed">${p.breed}</div>
+        <div class="pt-name">${p.n}</div>
+        <div class="pt-tags"><span class="pt-tag">${p.age}</span><span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">${p.health}</span></div>
+        <div class="pt-loc">📍 ${p.loc}</div>
+        <div class="pt-footer">
+          <span class="pt-price">${fmt(p.p)}</span>
+          <button class="btn-primary pt-cta" onclick="event.stopPropagation();alert('Opening WhatsApp for ${p.n}…')">Contact</button>
+        </div>
+      </div>
+    </div>`;
+  });
+}
+
+function openModal(id) {
+  let p = null;
+  if (id.startsWith('d')) { p = dealData[parseInt(id.slice(1))]; }
+  else { p = prods.find(x => x.id === id); }
+  if (!p) return;
+
+  // Store current product id for reviews
+  openModal._pid = p.id || ('d' + id.slice(1));
+
+  document.getElementById('mT').textContent = p.n || p.name;
+  document.getElementById('mP').textContent = fmt(p.p || p.price);
+  document.getElementById('mO').textContent = (p.o || p.orig) ? 'Was ' + fmt(p.o || p.orig) : '';
+
+  // Image vs emoji
+  const imgEl = document.getElementById('mImg');
+  const emojiEl = document.getElementById('mE');
+  if (p.img) {
+    imgEl.src = p.img; imgEl.style.display = 'block'; emojiEl.style.display = 'none';
+  } else {
+    imgEl.style.display = 'none'; emojiEl.style.display = 'block'; emojiEl.textContent = p.e;
+  }
+
+  // Description
+  const descWrap = document.getElementById('mDescWrap');
+  if (p.desc) { document.getElementById('mDesc').innerHTML = p.desc; descWrap.style.display = 'block'; }
+  else { descWrap.style.display = 'none'; }
+
+  // Info tiles
+  document.getElementById('mG').innerHTML = `
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Category</span><span style="font-weight:700;">${p.cat}</span></div>
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">For</span><span style="font-weight:700;">${p.pet}</span></div>
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Brand</span><span style="font-weight:700;">${p.brand || '—'}</span></div>
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Rating</span><span style="font-weight:700;">⭐ ${p.r || '4.7'}</span></div>`;
+
+  // Variation groups
+  const vgEl = document.getElementById('mVarGroups');
+  const groups = p.varGroups || (p.vars && p.vars.length ? [{type:'Size', customLabel:'', values: p.vars}] : []);
+  if (groups.length) {
+    // Known color names for swatch rendering
+    const COLOR_MAP = {
+      red:'#e74c3c',orange:'#e67e22',yellow:'#f1c40f',green:'#2ecc71',
+      blue:'#3498db',purple:'#9b59b6',pink:'#e91e8c',brown:'#8B4513',
+      black:'#2c2c2c',white:'#f5f5f5',grey:'#95a5a6',gray:'#95a5a6',
+      cream:'#f5f0dc',beige:'#d4c5a9',navy:'#1a237e',teal:'#00796b',
+    };
+    vgEl.innerHTML = groups.map((g, gi) => {
+      const label = g.type === 'Other' ? (g.customLabel || 'Option') : g.type;
+      const isColor = g.type === 'Color';
+      const opts = g.values.map((v, vi) => {
+        if (isColor) {
+          const cssColor = COLOR_MAP[v.toLowerCase()] || v;
+          const isLight = ['white','cream','beige','yellow'].includes(v.toLowerCase());
+          return `<button class="pv-opt color-swatch" title="${v}"
+            style="background:${cssColor};border-color:${cssColor};${isLight?'border-color:#ccc;':''}"
+            onclick="selectVarOpt(this,${gi})">${''}</button>`;
+        }
+        return `<button class="pv-opt" onclick="selectVarOpt(this,${gi})">${v}</button>`;
+      }).join('');
+      return `<div class="pv-group"><div class="pv-label">${label}</div><div class="pv-options" id="pvg${gi}">${opts}</div></div>`;
+    }).join('');
+    // Auto-select first option in each group
+    groups.forEach((_, gi) => {
+      const first = document.querySelector(`#pvg${gi} .pv-opt`);
+      if (first) first.classList.add('selected');
+    });
+  } else {
+    vgEl.innerHTML = '';
+  }
+
+  document.getElementById('modalCartBtn').onclick = () => { addCart(p.id || 'd', p.n, p.e, p.cat, p.p); closeModal(); };
+  document.getElementById('modalWishBtn').onclick = () => { addWish(p.id || 'd', p.n, p.e, p.cat, p.p); closeModal(); };
+
+  // Reviews
+  renderReviews(openModal._pid);
+
+  document.getElementById('modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function selectVarOpt(btn, groupIdx) {
+  // Deselect siblings in same group
+  btn.closest('.pv-options').querySelectorAll('.pv-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function filterCat(el, cat) {
+  if (el) { document.querySelectorAll('#catMenu .cat-menu-item').forEach(i => i.classList.remove('on')); el.classList.add('on'); }
+  document.getElementById('afChip').innerHTML = `${cat} <button class="af-x" onclick="resetFilter()">✕</button>`;
+  renderProds(cat === 'All' ? prods : prods.filter(p => p.cat === cat));
+  document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+}
+function resetFilter() {
+  document.querySelectorAll('#catMenu .cat-menu-item').forEach((i, x) => { i.classList.remove('on'); if (x === 0) i.classList.add('on'); });
+  document.getElementById('afChip').innerHTML = 'All Products <button class="af-x" onclick="resetFilter()">✕</button>';
+  renderProds(prods);
+}
+function filterType(el, type) {
+  document.querySelectorAll('#petTypeTabs .ftab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  renderProds(type === 'All' ? prods : prods.filter(p => p.pet === type));
+}
+function sortProds(v) {
+  let s = [...prods];
+  if (v.includes('Low')) s.sort((a, b) => a.p - b.p);
+  else if (v.includes('High')) s.sort((a, b) => b.p - a.p);
+  else if (v.includes('Rated')) s.sort((a, b) => b.r - a.r);
+  renderProds(s);
+}
+function liveSearch(q) {
+  if (!q) { renderProds(prods); return; }
+  q = q.toLowerCase();
+  renderProds(prods.filter(p => p.n.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q) || p.pet.toLowerCase().includes(q)));
+}
+function setNav(el) { document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('on')); el.classList.add('on'); }
+
+/* Mobile nav */
+function openMobNav(){
+  document.getElementById('mobNav').classList.add('open');
+  document.getElementById('mobNavOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeMobNav(){
+  document.getElementById('mobNav').classList.remove('open');
+  document.getElementById('mobNavOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function toggleMobSearch(){
+  document.getElementById('mobSearch').classList.toggle('show');
+}
+
+/* ── CHECKOUT LOGIC ── */
+let coCurrentStep = 1;
+
+function openCheckout() {
+  if (cartItems.length === 0) { alert('Your cart is empty!'); return; }
+  closeCart();
+  coCurrentStep = 1;
+  renderCoStep(1);
+  document.getElementById('coBg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCheckout() {
+  document.getElementById('coBg').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderCoStep(step) {
+  document.querySelectorAll('.co-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('coStep' + step).classList.add('active');
+
+  [1,2,3].forEach(n => {
+    const el = document.getElementById('step' + n + 'ind');
+    el.classList.remove('active','done');
+    if (n < step) el.classList.add('done');
+    else if (n === step) el.classList.add('active');
+  });
+  document.getElementById('line1').classList.toggle('done', step > 1);
+  document.getElementById('line2').classList.toggle('done', step > 2);
+
+  const footer  = document.getElementById('coFooter');
+  const btnBack = document.getElementById('coBtnBack');
+  const btnNext = document.getElementById('coBtnNext');
+  const btnLbl  = document.getElementById('coBtnLabel');
+
+  if (step === 4) { footer.style.display = 'none'; return; }
+  footer.style.display = '';
+  btnBack.style.display = step > 1 ? '' : 'none';
+
+  if (step === 1) btnLbl.textContent = 'Continue to Review →';
+  if (step === 2) { btnLbl.textContent = 'Proceed to Payment →'; buildReview(); }
+  if (step === 3) { btnLbl.textContent = '🔒 Pay Now — ' + fmt(cartTotal()); buildPaySummary(); }
+}
+
+function cartTotal() {
+  return cartItems.reduce((s, i) => s + i.p * i.qty, 0);
+}
+
+function coNext() {
+  if (coCurrentStep === 1) { if (!validateStep1()) return; coCurrentStep = 2; }
+  else if (coCurrentStep === 2) { coCurrentStep = 3; }
+  else if (coCurrentStep === 3) { launchPaystack(); return; }
+  renderCoStep(coCurrentStep);
+}
+function coBack() {
+  if (coCurrentStep > 1) { coCurrentStep--; renderCoStep(coCurrentStep); }
+}
+
+function validateStep1() {
+  let ok = true;
+  const fields = [
+    { id: 'coName',    err: 'coNameErr',    test: v => v.trim().length >= 2 },
+    { id: 'coPhone',   err: 'coPhoneErr',   test: v => /^0[7-9][01]\d{8}$/.test(v.replace(/\s/g,'')) },
+    { id: 'coEmail',   err: 'coEmailErr',   test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+    { id: 'coAddress', err: 'coAddressErr', test: v => v.trim().length >= 5 },
+    { id: 'coState',   err: 'coStateErr',   test: v => v !== '' },
+  ];
+  fields.forEach(f => {
+    const inp = document.getElementById(f.id);
+    const err = document.getElementById(f.err);
+    const valid = f.test(inp.value);
+    inp.classList.toggle('error', !valid);
+    err.classList.toggle('show', !valid);
+    if (!valid) ok = false;
+  });
+  return ok;
+}
+
+['coName','coPhone','coEmail','coAddress','coState'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', function() {
+    this.classList.remove('error');
+    const err = document.getElementById(id + 'Err');
+    if (err) err.classList.remove('show');
+  });
+});
+
+function buildReview() {
+  const sb = document.getElementById('coSummaryBlock');
+  const itemsHtml = cartItems.map(i =>
+    `<div class="co-sum-item">
+      <div class="co-sum-item-left">
+        <span class="co-sum-emoji">${i.e}</span>
+        <span class="co-sum-name">${i.n}</span>
+        <span class="co-sum-qty">×${i.qty}</span>
+      </div>
+      <span class="co-sum-price">${fmt(i.p * i.qty)}</span>
+    </div>`).join('');
+  sb.innerHTML = `
+    <div class="co-sum-title">Order Summary</div>
+    <div class="co-sum-items">${itemsHtml}</div>
+    <div class="co-sum-divider"></div>
+    <div class="co-sum-total"><span>Total</span><span>${fmt(cartTotal())}</span></div>`;
+
+  const rd = document.getElementById('coReviewDetails');
+  rd.innerHTML = [
+    ['👤 Name',    document.getElementById('coName').value],
+    ['📞 Phone',   document.getElementById('coPhone').value],
+    ['✉️ Email',   document.getElementById('coEmail').value],
+    ['📍 Address', document.getElementById('coAddress').value],
+    ['🗺️ State',   document.getElementById('coState').value],
+  ].map(([l,v]) => `<div style="display:flex;gap:8px;font-size:13px"><span style="color:var(--gray);width:90px;flex-shrink:0">${l}</span><strong>${v}</strong></div>`).join('');
+}
+
+function buildPaySummary() {
+  const ps = document.getElementById('coPaySummary');
+  ps.innerHTML = `
+    <div class="co-sum-title">Order Total</div>
+    <div class="co-sum-divider"></div>
+    <div class="co-sum-total" style="font-size:20px"><span>Amount to pay</span><span style="color:var(--orange)">${fmt(cartTotal())}</span></div>`;
+}
+
+function launchPaystack() {
+  const btnNext = document.getElementById('coBtnNext');
+  const spinner = document.getElementById('coSpinner');
+  const btnLbl  = document.getElementById('coBtnLabel');
+  btnNext.disabled = true;
+  spinner.classList.add('show');
+  btnLbl.textContent = 'Opening payment…';
+
+  const ref = 'PP-' + Date.now() + '-' + Math.random().toString(36).slice(2,7).toUpperCase();
+  document.getElementById('coOrderRef').textContent = ref;
+
+  const handler = PaystackPop.setup({
+    key:      PAYSTACK_PUBLIC_KEY,
+    email:    document.getElementById('coEmail').value,
+    amount:   cartTotal() * 100, // Paystack uses kobo
+    currency: 'NGN',
+    ref:      ref,
+    metadata: {
+      custom_fields: [
+        { display_name: 'Customer Name',  variable_name: 'name',    value: document.getElementById('coName').value },
+        { display_name: 'Phone',          variable_name: 'phone',   value: document.getElementById('coPhone').value },
+        { display_name: 'Address',        variable_name: 'address', value: document.getElementById('coAddress').value },
+        { display_name: 'State',          variable_name: 'state',   value: document.getElementById('coState').value },
+      ]
+    },
+    callback: function(response) {
+      sendToN8n(ref, response.transaction);
+    },
+    onClose: function() {
+      btnNext.disabled = false;
+      spinner.classList.remove('show');
+      btnLbl.textContent = '🔒 Pay Now — ' + fmt(cartTotal());
+    }
+  });
+  handler.openIframe();
+}
+
+async function sendToN8n(ref, transactionId) {
+  const orderData = {
+    reference:      ref,
+    transaction_id: transactionId || 'N/A',
+    timestamp:      new Date().toISOString(),
+    customer: {
+      name:    document.getElementById('coName').value,
+      phone:   document.getElementById('coPhone').value,
+      email:   document.getElementById('coEmail').value,
+      address: document.getElementById('coAddress').value,
+      state:   document.getElementById('coState').value,
+      notes:   document.getElementById('coNotes').value || '',
+    },
+    items: cartItems.map(i => ({
+      id:       i.id,
+      name:     i.n,
+      category: i.cat,
+      price:    i.p,
+      quantity: i.qty,
+      subtotal: i.p * i.qty,
+    })),
+    total:    cartTotal(),
+    currency: 'NGN',
+    source:   'puppyplace.ng',
+  };
+
+  try {
+    const res = await fetch(N8N_WEBHOOK_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(orderData),
+    });
+
+    const result = await res.json();
+
+    if (res.ok && result.status === 'confirmed') {
+      showSuccess();
+    } else {
+      showToast('Payment could not be verified. Please contact support.', 'err');
+    }
+  } catch (err) {
+    console.warn('⚠️ n8n webhook failed:', err.message);
+    showToast('Connection error. Your payment was taken — please contact us to confirm your order.', 'err');
+  }
+}
+
+async function showSuccess() {
+  coCurrentStep = 4;
+  renderCoStep(4);
+
+  // Save order to Supabase if user is logged in
+  const user = getLoggedInUser();
+  if(user) {
+    const order = {
+      user_id:       user.id,
+      reference:     document.getElementById('coOrderRef').textContent,
+      status:        'processing',
+      customer_name: document.getElementById('coName').value,
+      email:         document.getElementById('coEmail').value,
+      phone:         document.getElementById('coPhone').value,
+      address:       document.getElementById('coAddress').value + ', ' + document.getElementById('coState').value,
+      items:         cartItems.map(i=>({id:i.id, n:i.n, e:i.e, p:i.p, qty:i.qty})),
+      total:         cartTotal(),
+    };
+    await supabase.from('orders').insert(order);
+  }
+
+  cartItems = [];
+  saveCart();
+  updateBadges();
+  renderCartDrawer();
+}
+
+/* Countdown */
+let secs = 8*3600 + 42*60 + 17;
+setInterval(() => {
+  if (secs <= 0) return; secs--;
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  document.getElementById('dh').textContent = String(h).padStart(2,'0');
+  document.getElementById('dm').textContent = String(m).padStart(2,'0');
+  document.getElementById('ds').textContent = String(s).padStart(2,'0');
+}, 1000);
+
+/* Init */
+loadProductsFromSupabase();
+updateBadges();
+renderCartDrawer();
+renderWishDrawer();
+
+/* ══════════════════════════════════════════
+   BLOG
+   ══════════════════════════════════════════ */
+const blogPosts = [
+  {
+    id:'b0',
+    cat:'Nutrition',
+    catColor:'#ED6436',
+    emoji:'🥩',
+    bg:'#fff5f0',
+    title:'What to Really Feed Your Dog in Nigeria',
+    date:'Apr 10, 2025',
+    author:'Dr. Amaka Osei',
+    readTime:'5 min read',
+    excerpt:'Local options, imported brands, and the hidden dangers lurking in cheap kibble sold at Lagos markets.',
+    body:`<p>Feeding your dog correctly in Nigeria requires balancing availability, cost, and nutritional quality. Many dog owners default to cheap local kibble — but not all products are equal.</p>
+<h4>What to look for on the label</h4>
+<p>The first ingredient should be a named meat source (chicken, beef, fish) — not "meat meal" or "animal by-products" without specification. Protein content should be at least 18% for adult dogs and 22% for puppies.</p>
+<h4>Best imported brands available in Nigeria</h4>
+<ul><li><strong>Royal Canin</strong> — breed-specific formulas, widely available in Lagos and Abuja</li><li><strong>Pedigree</strong> — budget-friendly, decent baseline nutrition</li><li><strong>Purina ProPlan</strong> — premium option for working/active dogs</li></ul>
+<h4>Local alternatives that work</h4>
+<p>Plain cooked rice and chicken (no onion, no seasoning) is a solid home-cooked supplement. Eja osan (smoked fish) in small amounts adds omega-3. Avoid raw cassava, chocolate, grapes, and onions entirely.</p>
+<h4>How much to feed</h4>
+<p>A 10kg adult dog needs roughly 200–250g of dry food per day. Adjust based on activity level and body condition — you should feel ribs but not see them.</p>`,
+  },
+  {
+    id:'b1',
+    cat:'Health',
+    catColor:'#2d9d78',
+    emoji:'💉',
+    bg:'#f0fff8',
+    title:'Vaccination Schedule Every Nigerian Pet Owner Needs',
+    date:'Mar 22, 2025',
+    author:'Dr. Emeka Nwachukwu',
+    readTime:'4 min read',
+    excerpt:'Rabies, parvo, distemper — which vaccines are critical, when to give them, and what they cost in Nigeria.',
+    body:`<p>Vaccination is the single most cost-effective thing you can do for your pet's health. Yet many Nigerian pet owners skip or delay vaccines — often because they don't know the schedule.</p>
+<h4>Core vaccines for dogs</h4>
+<ul><li><strong>Rabies</strong> — legally required. First dose at 12 weeks, booster at 1 year, then every 3 years.</li><li><strong>DHPPi (5-in-1)</strong> — covers Distemper, Hepatitis, Parvovirus, Parainfluenza. Start at 6–8 weeks, repeat every 3–4 weeks until 16 weeks, then annually.</li><li><strong>Leptospirosis</strong> — important in Lagos, Port Harcourt due to flooding risk. Annual.</li></ul>
+<h4>Core vaccines for cats</h4>
+<ul><li><strong>FVRCP (3-in-1)</strong> — Feline Viral Rhinotracheitis, Calicivirus, Panleukopenia. Start at 8 weeks.</li><li><strong>Rabies</strong> — even for indoor cats. Annual.</li></ul>
+<h4>Cost in Nigeria (2025)</h4>
+<p>Expect to pay ₦3,500–₦8,000 per vaccination visit at a registered vet clinic. DHPPi multi-dose kits cost vets around ₦1,200 wholesale — so anything above ₦5,000 per visit includes a fair consultation fee.</p>`,
+  },
+  {
+    id:'b2',
+    cat:'Training',
+    catColor:'#6c5ce7',
+    emoji:'🐾',
+    bg:'#f5f3ff',
+    title:'5 Commands Every Lagos Dog Should Know',
+    date:'Mar 5, 2025',
+    author:'Tunde Adeyemi',
+    readTime:'6 min read',
+    excerpt:'Sit, stay, leave it — plus two Nigerian-specific commands that could save your dog\'s life in traffic.',
+    body:`<p>Training in Lagos presents unique challenges: dense traffic, open gutters, street food vendors, and other free-roaming dogs. These 5 commands are non-negotiables.</p>
+<h4>1. Sit</h4>
+<p>The foundation of everything. Hold a treat above your dog's nose, move it backward over their head — their bottom naturally drops. Say "Sit" the moment it happens. Reward immediately. Practice 5 minutes daily.</p>
+<h4>2. Stay</h4>
+<p>Ask your dog to sit. Open your palm toward them and say "Stay." Take one step back. Return and reward. Gradually increase distance over days. Critical before crossing roads.</p>
+<h4>3. Leave It</h4>
+<p>Lagos streets are full of dangerous scraps. Place a treat on the floor, cover with your foot, say "Leave it." When they stop trying, reward with a <em>different</em> treat from your hand. Never reward with the item you asked them to leave.</p>
+<h4>4. Come (Recall)</h4>
+<p>The life-saving one. Start in a small room, crouch down, say "Come!" enthusiastically. Reward massively. Practice on a long lead before trying off-lead. Never punish a dog that comes to you — even if they were misbehaving before.</p>
+<h4>5. Off (for gates and strangers)</h4>
+<p>Nigerian visitors are often scared of dogs jumping. When they jump, turn completely away — no eye contact, no knee, no talking. Only give attention when all four paws are on the floor. Consistency is everything.</p>`,
+  },
+  {
+    id:'b3',
+    cat:'Housing',
+    catColor:'#e17055',
+    emoji:'🏠',
+    bg:'#fff8f5',
+    title:'Setting Up the Perfect Cage for Your Bird',
+    date:'Feb 18, 2025',
+    author:'Chisom Eze',
+    readTime:'3 min read',
+    excerpt:'Bar spacing, perch placement, toys that actually stimulate — everything for a happy Nigerian parrot or lovebird.',
+    body:`<p>A bird's cage is its entire world. Getting it right is the most impactful thing you'll do as a bird owner.</p>
+<h4>Size rules</h4>
+<p>The cage should be wide enough for your bird to fully extend both wings simultaneously. For lovebirds: minimum 60×45cm. For African Greys: minimum 90×90cm. When in doubt, go bigger.</p>
+<h4>Bar spacing</h4>
+<ul><li>Finches, canaries: 1–1.2cm spacing</li><li>Lovebirds, budgies: 1.5cm</li><li>African Grey, cockatoo: 2–2.5cm (wider allows beak exercise)</li></ul>
+<h4>Perch placement</h4>
+<p>Use natural wood perches of varying diameters (mango, guava branches work well) — not just the plastic dowels that come with cages. Place highest perch away from food bowls to prevent contamination from droppings.</p>
+<h4>Enrichment</h4>
+<p>Rotate 3–4 toys every 2 weeks. Birds get bored quickly. Foraging toys (hiding food inside) are the most stimulating. Avoid mirrors for single birds — it causes obsessive behavior.</p>`,
+  },
+  {
+    id:'b4',
+    cat:'Lifestyle',
+    catColor:'#0984e3',
+    emoji:'🌊',
+    bg:'#f0f7ff',
+    title:'Keeping Fish Alive Through NEPA Outages',
+    date:'Jan 30, 2025',
+    author:'Segun Lawal',
+    readTime:'4 min read',
+    excerpt:'Power cuts kill fish faster than anything else. Here\'s a Nigerian fish keeper\'s survival guide for your aquarium.',
+    body:`<p>Nothing is more heartbreaking than returning to a tank of dead fish after a long power cut. Oxygen depletion is the primary killer — within 2–4 hours in a heavily stocked tank. Here's how to prepare.</p>
+<h4>Battery-powered backup aerators</h4>
+<p>A ₦3,500–5,000 battery aerator from computer village or any pet shop is your first line of defense. Keep spare AA batteries. Run it anytime power goes out.</p>
+<h4>Reduce feeding during outages</h4>
+<p>Fish can survive 5–7 days without food. But uneaten food decomposes rapidly without filtration, spiking ammonia and killing fish. Don't feed if power has been out more than 4 hours.</p>
+<h4>UPS for filtration</h4>
+<p>A small 650VA UPS can run a submersible filter for 3–5 hours. This maintains biological filtration (the beneficial bacteria that process ammonia). It's worth the ₦25,000–40,000 investment for serious tanks.</p>
+<h4>Reduce stocking density</h4>
+<p>In Nigeria, stock your tank at 60–70% of theoretical capacity to build in resilience for outage periods. More fish = more oxygen demand = faster crash when power fails.</p>`,
+  },
+  {
+    id:'b5',
+    cat:'Grooming',
+    catColor:'#fd79a8',
+    emoji:'✂️',
+    bg:'#fff0f6',
+    title:'At-Home Dog Grooming on a Nigerian Budget',
+    date:'Jan 12, 2025',
+    author:'Adaeze Okafor',
+    readTime:'5 min read',
+    excerpt:'Professional grooming costs ₦8,000–₦25,000 per session. Here\'s how to do 80% of it yourself at home.',
+    body:`<p>Regular grooming isn't just cosmetic — it prevents skin infections, matting, and allows you to spot health issues early. You don't need a salon for every session.</p>
+<h4>What you need (one-time investment: ~₦12,000)</h4>
+<ul><li>Slicker brush + metal comb — ₦2,500–4,000</li><li>Nail clippers (guillotine type) — ₦1,500–2,500</li><li>Dog shampoo (not human shampoo — pH is different) — ₦1,800–3,500</li><li>Ear cleaning solution — ₦1,200</li></ul>
+<h4>Brushing (3× weekly for most breeds)</h4>
+<p>Always brush before bathing — washing matted fur makes it tighter. Work in sections, from head to tail. The slicker brush gets surface tangles; the metal comb goes deeper to check for mats near the skin.</p>
+<h4>Bathing (monthly for most dogs)</h4>
+<p>Use lukewarm water. Wet thoroughly, apply shampoo working from neck back (keep face dry). Rinse completely — leftover shampoo causes itching. Dry with a towel first, then a fan if no hairdryer.</p>
+<h4>Nail trimming (the scary part)</h4>
+<p>Clip only the curved tip — avoid the pink "quick" which bleeds if cut. If nails are dark and you can't see the quick, take small slivers and stop when you see a grey/pink oval in the center. One nail per session is fine when starting out.</p>`,
+  },
+];
+
+function renderBlog(){
+  const grid = document.getElementById('blogGrid');
+  if(!grid) return;
+  // Show first 3 posts: featured (large) + 2 smaller
+  const featured = blogPosts[0];
+  const others = blogPosts.slice(1,3);
+  grid.innerHTML = `
+    <div class="blog-card" onclick="openBlogModal('${featured.id}')">
+      <div class="blog-img" style="background:${featured.bg};">
+        <span style="font-size:80px;">${featured.emoji}</span>
+        <span class="blog-cat-pill" style="background:${featured.catColor}">${featured.cat}</span>
+      </div>
+      <div class="blog-body">
+        <div class="blog-title">${featured.title}</div>
+        <div class="blog-meta">${featured.author} · ${featured.date} · ${featured.readTime}</div>
+        <p style="font-size:13px;color:#666;margin:10px 0 0;line-height:1.6;">${featured.excerpt}</p>
+        <span class="blog-read">Read Article →</span>
+      </div>
+    </div>
+    ${others.map(p=>`
+    <div class="blog-card" onclick="openBlogModal('${p.id}')">
+      <div class="blog-img sm" style="background:${p.bg};">
+        <span style="font-size:56px;">${p.emoji}</span>
+        <span class="blog-cat-pill" style="background:${p.catColor}">${p.cat}</span>
+      </div>
+      <div class="blog-body">
+        <div class="blog-title" style="font-size:16px;">${p.title}</div>
+        <div class="blog-meta">${p.author} · ${p.date} · ${p.readTime}</div>
+        <span class="blog-read">Read →</span>
+      </div>
+    </div>`).join('')}`;
+}
+
+
+function openBlogModal(id, mode){
+  if(id && mode !== 'all'){
+    window.location.href = 'blog.html?id=' + id;
+    return;
+  }
+  const modal = document.getElementById('blogModal');
+  const content = document.getElementById('blogModalContent');
+  if(mode === 'all'){
+    // Show all posts as a list
+    content.innerHTML = `
+      <div style="padding:24px 28px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:20px;">
+        <h2 style="font-size:22px;font-weight:900;">All Blog Posts</h2>
+        <button onclick="closeBlogModal()" style="background:var(--light);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <div style="padding:24px 28px;">
+        ${blogPosts.map(p=>`
+          <div onclick="openBlogModal('${p.id}')" style="display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);cursor:pointer;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+            <div style="width:64px;height:64px;background:${p.bg};border-radius:var(--rxs);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;">${p.emoji}</div>
+            <div>
+              <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:${p.catColor};margin-bottom:4px;">${p.cat}</div>
+              <div style="font-size:15px;font-weight:800;color:var(--black);line-height:1.4;margin-bottom:4px;">${p.title}</div>
+              <div style="font-size:12px;color:var(--gray);">${p.author} · ${p.readTime}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  } else {
+    const p = blogPosts.find(x=>x.id===id);
+    if(!p) return;
+    content.innerHTML = `
+      <div style="background:${p.bg};padding:40px 28px 28px;position:relative;">
+        <button onclick="closeBlogModal()" style="position:absolute;top:16px;right:16px;background:rgba(0,0,0,.08);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+        <span style="font-size:64px;display:block;margin-bottom:16px;">${p.emoji}</span>
+        <span style="background:${p.catColor};color:#fff;font-size:11px;font-weight:800;padding:5px 14px;border-radius:50px;text-transform:uppercase;letter-spacing:.06em;">${p.cat}</span>
+        <h2 style="font-size:24px;font-weight:900;line-height:1.35;margin:14px 0 10px;color:var(--black);">${p.title}</h2>
+        <div style="font-size:13px;color:var(--gray);">${p.author} · ${p.date} · ${p.readTime}</div>
+      </div>
+      <div style="padding:28px;font-size:15px;line-height:1.8;color:#333;">
+        ${p.body}
+      </div>
+      <div style="padding:0 28px 28px;display:flex;gap:12px;flex-wrap:wrap;">
+        ${blogPosts.filter(x=>x.id!==p.id).slice(0,3).map(x=>`
+          <div onclick="openBlogModal('${x.id}')" style="flex:1;min-width:160px;padding:14px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all var(--trans);" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:${x.catColor};margin-bottom:4px;">${x.cat}</div>
+            <div style="font-size:13px;font-weight:800;line-height:1.4;">${x.title}</div>
+          </div>`).join('')}
+      </div>`;
+  }
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeBlogModal(){
+  document.getElementById('blogModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+renderBlog();
+
+/* ══════════════════════════════════════════
+   REVIEWS & COMMENTS SYSTEM
+   Storage key: 'pp_reviews'  →  { [productId]: [{id, userId, name, rating, text, date}] }
+   Only registered/logged-in members can post.
+   ══════════════════════════════════════════ */
+
+const REVIEWS_KEY = 'pp_reviews';
+
+function getReviews(pid) {
+  const all = JSON.parse(localStorage.getItem(REVIEWS_KEY) || '{}');
+  return all[pid] || [];
+}
+
+function saveReview(pid, review) {
+  const all = JSON.parse(localStorage.getItem(REVIEWS_KEY) || '{}');
+  if (!all[pid]) all[pid] = [];
+  all[pid].unshift(review); // newest first
+  localStorage.setItem(REVIEWS_KEY, JSON.stringify(all));
+}
+
+function getLoggedInUser() {
+  // Reads Supabase session synchronously from localStorage token
+  const raw = localStorage.getItem('sb-fsrkzhknqonpjjkjwqlw-auth-token');
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    const u = parsed?.user;
+    if (!u) return null;
+    return {
+      id:    u.id,
+      name:  u.user_metadata?.name || u.email.split('@')[0],
+      email: u.email,
+      phone: u.user_metadata?.phone || '',
+    };
+  } catch(e) { return null; }
+}
+
+function starsHtml(rating, cls = 'rv-item-star', size = '') {
+  return [1,2,3,4,5].map(i =>
+    `<span class="${cls}${i <= Math.round(rating) ? ' on' : ''}" ${size ? `style="font-size:${size}"` : ''}>★</span>`
+  ).join('');
+}
+
+function renderReviews(pid) {
+  const el = document.getElementById('mReviews');
+  if (!el) return;
+  const reviews = getReviews(pid);
+  const user = getLoggedInUser();
+
+  // --- Summary bar ---
+  let summaryHtml = '';
+  if (reviews.length) {
+    const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
+    const counts = [5,4,3,2,1].map(n => ({ n, c: reviews.filter(r => r.rating === n).length }));
+    summaryHtml = `
+      <div class="rv-summary">
+        <div style="text-align:center;flex-shrink:0;">
+          <div class="rv-big-score">${avg.toFixed(1)}</div>
+          <div class="rv-stars-row">${starsHtml(avg, 'rv-star', '16px')}</div>
+          <div class="rv-count">${reviews.length} review${reviews.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div style="flex:1;">
+          ${counts.map(({ n, c }) => `
+            <div class="rv-bar-row">
+              <span class="rv-bar-label">${n}</span>
+              <div class="rv-bar-track"><div class="rv-bar-fill" style="width:${reviews.length ? Math.round(c/reviews.length*100) : 0}%"></div></div>
+              <span class="rv-bar-n">${c}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // --- Review items ---
+  const itemsHtml = reviews.length
+    ? reviews.map(r => `
+        <div class="rv-item">
+          <div class="rv-item-header">
+            <span class="rv-author">${escHtml(r.name)}</span>
+            <span class="rv-date">${new Date(r.date).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})}</span>
+          </div>
+          <div class="rv-item-stars">${starsHtml(r.rating, 'rv-item-star')}</div>
+          <div class="rv-item-text">${escHtml(r.text)}</div>
+        </div>`).join('')
+    : `<div class="rv-empty">No reviews yet — be the first!</div>`;
+
+  // --- Write form (members only) ---
+  let formHtml = '';
+  if (user) {
+    // Check if this user already reviewed this product
+    const alreadyReviewed = reviews.some(r => r.userId === user.id);
+    if (alreadyReviewed) {
+      formHtml = `<div class="rv-gate" style="color:var(--green);font-weight:700;">✅ You've already reviewed this product.</div>`;
+    } else {
+      formHtml = `
+        <div class="rv-form">
+          <div class="rv-form-title">Write a Review — posting as <strong>${escHtml(user.name || user.email)}</strong></div>
+          <div class="rv-star-picker" id="rvPickerWrap" onmouseleave="resetPickerPreview()">
+            ${[1,2,3,4,5].map(i => `<span class="rv-star-pick" data-val="${i}" onmouseover="previewStars(${i})" onclick="pickStar(${i})">★</span>`).join('')}
+          </div>
+          <input type="hidden" id="rvRating" value="0">
+          <textarea class="rv-textarea" id="rvText" placeholder="Share your experience with this product…" maxlength="600"></textarea>
+          <button class="rv-submit" onclick="submitReview('${pid}')">Post Review</button>
+        </div>`;
+    }
+  } else {
+    formHtml = `
+      <div class="rv-gate">
+        <span>🔒 <a onclick="closeModal();document.getElementById('myaccBtn')?.click()">Sign in</a> or <a onclick="closeModal();document.getElementById('myaccBtn')?.click()">create an account</a> to leave a review.</span>
+      </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="rv-section-title">⭐ Reviews & Comments <span style="font-size:13px;color:var(--gray);font-weight:700;">(${reviews.length})</span></div>
+    ${summaryHtml}
+    ${itemsHtml}
+    ${formHtml}`;
+}
+
+function previewStars(val) {
+  document.querySelectorAll('.rv-star-pick').forEach(s => {
+    s.classList.toggle('on', parseInt(s.dataset.val) <= val);
+  });
+}
+function resetPickerPreview() {
+  const picked = parseInt(document.getElementById('rvRating')?.value || '0');
+  document.querySelectorAll('.rv-star-pick').forEach(s => {
+    s.classList.toggle('on', parseInt(s.dataset.val) <= picked);
+  });
+}
+function pickStar(val) {
+  const inp = document.getElementById('rvRating');
+  if (inp) inp.value = val;
+  previewStars(val);
+}
+
+function submitReview(pid) {
+  const user = getLoggedInUser();
+  if (!user) { alert('Please sign in to post a review.'); return; }
+  const rating = parseInt(document.getElementById('rvRating')?.value || '0');
+  const text = (document.getElementById('rvText')?.value || '').trim();
+  if (!rating) { alert('Please select a star rating.'); return; }
+  if (!text) { alert('Please write a comment.'); return; }
+
+  const review = {
+    id: 'rv' + Date.now(),
+    userId: user.id,
+    name: user.name || user.email,
+    rating,
+    text,
+    date: new Date().toISOString(),
+  };
+  saveReview(pid, review);
+  renderReviews(pid); // re-render inline
+
+  // Scroll reviews section into view smoothly
+  setTimeout(() => {
+    const el = document.getElementById('mReviews');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

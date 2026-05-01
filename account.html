@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>My Account — PuppyPlace.ng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+/* === UNIFIED DESIGN TOKENS === */
+:root {
+  --orange: #ed6436; --orange-d: #c9530a; --orange-l: rgba(237,100,54,.08);
+  --black: #0e0e0c; --dark: #1a1a18; --gray: #868686;
+  --light: #f1f3f5; --border: #e9ecef; --white: #fff;
+  --green: #2ecc71; --green-l: rgba(46,204,113,.1);
+  --red: #e74c3c; --red-l: rgba(231,76,60,.1);
+  --blue: #3498db; --blue-l: rgba(52,152,219,.1);
+  --yellow: #f39c12; --yellow-l: rgba(243,156,18,.1);
+  --r: 12px; --rsm: 10px; --rxs: 6px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.06);
+  --shadow2: 0 10px 30px rgba(0,0,0,0.1);
+  --trans: .3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:var(--black);line-height:1.6;min-height:100vh}
+a{text-decoration:none;color:inherit}
+input,select,textarea{font-family:'Nunito',sans-serif}
+::selection{background:var(--orange);color:#fff}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--black);color:rgba(255,255,255,.8);font-size:12px;font-weight:600;text-align:center;padding:10px 16px}
+.topbar strong{color:var(--orange)}
+
+/* ── HEADER ── */
+.site-header{background:var(--white);box-shadow:var(--shadow);position:sticky;top:0;z-index:200;border-bottom:1px solid var(--border)}
+.header-inner{max-width:1140px;margin:0 auto;padding:0 20px;height:70px;display:flex;align-items:center;gap:20px}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-icon{width:42px;height:42px;background:var(--orange);border-radius:var(--rsm);display:flex;align-items:center;justify-content:center;font-size:22px}
+.logo-name{font-size:22px;font-weight:900;color:var(--black);line-height:1}
+.logo-name span{color:var(--orange)}
+.logo-tag{font-size:10px;color:var(--gray);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.header-nav{display:flex;align-items:center;gap:4px;margin-left:auto}
+.nav-a{font-size:13px;font-weight:700;color:var(--gray);padding:8px 14px;border-radius:50px;transition:all var(--trans)}
+.nav-a:hover{color:var(--black);background:var(--light)}
+.nav-a.on{color:var(--orange);background:rgba(237,100,54,.1)}
+
+/* ══ AUTH SCREEN ══════════════════════════ */
+#authScreen{max-width:460px;margin:48px auto;padding:0 20px}
+.auth-card{background:var(--white);border-radius:20px;border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow2);padding:16px}
+
+/* Auth tabs - Soft UI */
+.auth-tabs{display:flex;background:var(--light);border-radius:14px;padding:4px;margin-bottom:16px}
+.auth-tab{flex:1;padding:12px;text-align:center;font-size:14px;font-weight:800;color:var(--gray);cursor:pointer;transition:all var(--trans);border-radius:10px}
+.auth-tab.on{color:var(--black);background:var(--white);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+
+/* Login method toggle */
+.method-toggle{display:flex;gap:8px;padding:0 8px 16px}
+.method-btn{flex:1;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:var(--white);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--gray);cursor:pointer;transition:all var(--trans)}
+.method-btn.on{background:var(--black);border-color:var(--black);color:#fff}
+
+.auth-body{padding:0 8px 8px}
+.auth-field{margin-bottom:16px}
+.auth-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--black);display:block;margin-bottom:6px}
+.auth-input{width:100%;border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-size:14px;color:var(--black);outline:none;transition:all var(--trans);background:var(--light)}
+.auth-input:focus{border-color:var(--orange);background:var(--white);box-shadow:0 0 0 3px rgba(237,100,54,.1)}
+.auth-input::placeholder{color:#bbb}
+.auth-input.err{border-color:var(--red)}
+.phone-wrap{display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--r);background:var(--light);overflow:hidden;transition:all var(--trans)}
+.phone-wrap:focus-within{border-color:var(--orange);background:var(--white);box-shadow:0 0 0 3px rgba(237,100,54,.1)}
+.phone-prefix{padding:12px 14px;font-size:14px;font-weight:700;color:var(--black);flex-shrink:0;border-right:1.5px solid var(--border)}
+.phone-wrap .auth-input{border:none;border-radius:0;background:transparent;box-shadow:none}
+.auth-err{font-size:11px;color:var(--red);font-weight:700;margin-top:4px;display:none}
+.auth-err.show{display:block}
+
+/* OTP box */
+.otp-wrap{display:flex;gap:10px;justify-content:center;margin:8px 0}
+.otp-digit{width:52px;height:58px;border:1.5px solid var(--border);border-radius:var(--r);text-align:center;font-size:24px;font-weight:900;color:var(--black);outline:none;transition:all var(--trans);background:var(--light)}
+.otp-digit:focus{border-color:var(--orange);background:var(--white);box-shadow:0 0 0 3px rgba(237,100,54,.1)}
+.otp-hint{font-size:12px;color:var(--gray);text-align:center;margin-bottom:16px}
+.otp-hint strong{color:var(--orange);cursor:pointer}
+
+.auth-btn{width:100%;background:var(--orange);color:#fff;border:none;border-radius:50px;padding:14px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:background var(--trans);display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-btn:hover{background:var(--orange-d);transform:translateY(-1px);box-shadow:var(--shadow)}
+.auth-footer{text-align:center;font-size:13px;color:var(--gray);margin-top:20px}
+.auth-footer strong{color:var(--orange);cursor:pointer;font-weight:800}
+
+/* Spinner */
+.spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.spin.show{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══ MEMBER DASHBOARD ═════════════════════ */
+#dashboard{display:none;max-width:1140px;margin:0 auto;padding:32px 20px 48px}
+
+/* Welcome bar */
+.welcome-bar{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px;box-shadow:var(--shadow)}
+.welcome-left{display:flex;align-items:center;gap:16px}
+.member-avatar{width:56px;height:56px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;font-weight:900;flex-shrink:0;box-shadow:0 4px 12px rgba(237,100,54,.2)}
+.member-name{font-size:20px;font-weight:900;color:var(--black)}
+.member-since{font-size:13px;color:var(--gray)}
+.member-badge{background:var(--orange-l);border:1px solid rgba(237,100,54,.2);border-radius:50px;padding:6px 16px;font-size:12px;font-weight:800;color:var(--orange)}
+.logout-btn{background:transparent;border:1.5px solid var(--border);border-radius:50px;padding:8px 20px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--gray);cursor:pointer;transition:all var(--trans)}
+.logout-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* Stats strip */
+.member-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.mstat{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:transform var(--trans)}
+.mstat:hover{transform:translateY(-3px)}
+.mstat::before{content:attr(data-ico);position:absolute;right:-6px;top:-6px;font-size:64px;opacity:.05;line-height:1;pointer-events:none}
+.mstat-val{font-size:28px;font-weight:900;color:var(--black);line-height:1;margin-bottom:4px}
+.mstat-label{font-size:12px;color:var(--gray);font-weight:700}
+
+/* Nav tabs */
+.dash-tabs{display:flex;gap:8px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
+.dash-tabs::-webkit-scrollbar{display:none}
+.dtab{padding:10px 24px;border-radius:50px;border:1.5px solid var(--border);background:var(--white);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--gray);cursor:pointer;transition:all var(--trans);white-space:nowrap;flex-shrink:0}
+.dtab:hover{border-color:var(--orange);color:var(--orange)}
+.dtab.on{background:var(--black);border-color:var(--black);color:#fff}
+
+/* Panels */
+.dash-panel{display:none}
+.dash-panel.active{display:block}
+
+/* Section card */
+.sec-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px;box-shadow:var(--shadow)}
+.sec-card-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sec-card-title{font-size:16px;font-weight:900;color:var(--black);display:flex;align-items:center;gap:10px}
+.sec-card-body{padding:24px}
+.empty-state{text-align:center;padding:48px 20px;color:var(--gray)}
+.empty-ico{font-size:54px;margin-bottom:12px;opacity:.3}
+.empty-msg{font-size:16px;font-weight:800;color:var(--black);margin-bottom:6px}
+.empty-sub{font-size:13px}
+
+/* ── ORDER HISTORY ── */
+.order-card{border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px;transition:all var(--trans)}
+.order-card:hover{border-color:var(--orange);box-shadow:var(--shadow)}
+.order-head{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;background:var(--light);flex-wrap:wrap;gap:10px;cursor:pointer}
+.order-ref{font-size:14px;font-weight:800;color:var(--black)}
+.order-date{font-size:12px;color:var(--gray)}
+.order-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:50px}
+.status-delivered{background:var(--green-l);color:var(--green)}
+.status-processing{background:var(--yellow-l);color:var(--yellow)}
+.status-shipped{background:var(--blue-l);color:var(--blue)}
+.status-cancelled{background:var(--red-l);color:var(--red)}
+.order-body{padding:16px 20px;border-top:1px solid var(--border);display:none}
+.order-body.open{display:block}
+.order-items{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.oi{display:flex;align-items:center;gap:14px;padding:12px;background:var(--light);border-radius:var(--rxs)}
+.oi-emoji{font-size:32px;width:44px;text-align:center;flex-shrink:0}
+.oi-name{font-size:14px;font-weight:700;color:var(--black);flex:1}
+.oi-qty{font-size:13px;color:var(--gray)}
+.oi-price{font-size:14px;font-weight:800;color:var(--black)}
+.order-footer{display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid var(--border)}
+.order-total{font-size:18px;font-weight:900;color:var(--black)}
+.reorder-btn{background:var(--black);color:#fff;border:none;border-radius:50px;padding:8px 20px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:background var(--trans)}
+.reorder-btn:hover{background:var(--orange)}
+
+/* ── DISCOUNTS ── */
+.discount-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.coupon{border:2px dashed var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;transition:all var(--trans);background:var(--white)}
+.coupon:hover{border-color:var(--orange);transform:translateY(-3px);box-shadow:var(--shadow)}
+.coupon::before{content:attr(data-emoji);position:absolute;right:-10px;top:-10px;font-size:80px;opacity:.05;line-height:1;pointer-events:none}
+.coupon-type{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--orange);margin-bottom:8px}
+.coupon-code{font-size:24px;font-weight:900;color:var(--black);letter-spacing:.04em;margin-bottom:6px;font-family:monospace}
+.coupon-desc{font-size:13px;color:var(--gray);margin-bottom:16px}
+.coupon-footer{display:flex;align-items:center;justify-content:space-between}
+.coupon-expiry{font-size:12px;color:var(--gray);font-weight:700}
+.coupon-copy{background:var(--orange-l);color:var(--orange);border:1px solid rgba(237,100,54,.2);border-radius:50px;padding:6px 16px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:all var(--trans)}
+.coupon-copy:hover{background:var(--orange);color:#fff}
+.coupon.used{opacity:.5;filter:grayscale(.4)}
+.coupon.used .coupon-copy{background:var(--light);color:var(--gray);border-color:var(--border);cursor:not-allowed}
+.used-stamp{position:absolute;top:16px;right:16px;background:var(--red-l);color:var(--red);font-size:10px;font-weight:800;padding:4px 10px;border-radius:50px;text-transform:uppercase;letter-spacing:.05em}
+
+/* Loyalty points */
+.points-bar{background:linear-gradient(135deg,var(--black),#2d2d2a);border-radius:var(--r);padding:32px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:20px;position:relative;overflow:hidden;box-shadow:var(--shadow2)}
+.points-bar::before{content:'⭐';position:absolute;right:-20px;bottom:-20px;font-size:140px;opacity:.05;line-height:1}
+.points-left h3{font-size:14px;font-weight:800;color:rgba(255,255,255,.6);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+.points-num{font-size:48px;font-weight:900;color:#fff;line-height:1}
+.points-sub{font-size:13px;color:rgba(255,255,255,.5);margin-top:6px}
+.points-right{text-align:right}
+.points-next{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:8px}
+.points-progress-wrap{width:200px;height:8px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;display:inline-block;}
+.points-progress{height:100%;background:var(--orange);border-radius:4px;transition:width .6s ease}
+.points-tier{font-size:12px;color:rgba(255,255,255,.5);margin-top:8px}
+
+/* ── ADDRESSES ── */
+.address-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.addr-card{border:1.5px solid var(--border);border-radius:var(--r);padding:20px;position:relative;background:var(--white);transition:all var(--trans)}
+.addr-card:hover{border-color:var(--orange);box-shadow:var(--shadow)}
+.addr-card.default{border-color:var(--orange);background:rgba(237,100,54,.03)}
+.addr-default-badge{position:absolute;top:16px;right:16px;background:var(--orange);color:#fff;font-size:10px;font-weight:800;padding:4px 10px;border-radius:50px;text-transform:uppercase}
+.addr-name{font-size:15px;font-weight:800;color:var(--black);margin-bottom:6px}
+.addr-text{font-size:14px;color:var(--gray);line-height:1.65;margin-bottom:16px}
+.addr-actions{display:flex;gap:8px}
+.addr-btn{flex:1;padding:8px;border-radius:50px;border:1.5px solid var(--border);background:var(--white);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all var(--trans);color:var(--black)}
+.addr-btn:hover{border-color:var(--orange);color:var(--orange)}
+.addr-btn.del:hover{border-color:var(--red);color:var(--red)}
+.add-addr-btn{border:2px dashed var(--border);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:all var(--trans);background:transparent;font-family:'Nunito',sans-serif;color:var(--gray);font-size:14px;font-weight:700;min-height:150px}
+.add-addr-btn:hover{border-color:var(--orange);color:var(--orange);background:var(--white);box-shadow:var(--shadow)}
+
+/* ── WISHLIST ── */
+.wish-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.wish-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all var(--trans)}
+.wish-card:hover{border-color:var(--orange);transform:translateY(-4px);box-shadow:var(--shadow2)}
+.wc-img{aspect-ratio:1;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:64px;position:relative}
+.wc-remove{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.9);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border:none;transition:all var(--trans)}
+.wc-remove:hover{background:var(--red);color:#fff}
+.wc-body{padding:16px}
+.wc-cat{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);margin-bottom:4px}
+.wc-name{font-size:14px;font-weight:800;color:var(--black);margin-bottom:8px;line-height:1.3}
+.wc-price{font-size:16px;font-weight:900;color:var(--black);margin-bottom:12px}
+.wc-cart{width:100%;background:var(--black);color:#fff;border:none;border-radius:50px;padding:10px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:background var(--trans)}
+.wc-cart:hover{background:var(--orange)}
+
+/* ── PROFILE SETTINGS ── */
+.profile-form{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.pf-field{display:flex;flex-direction:column;gap:6px}
+.pf-field.full{grid-column:1/-1}
+.pf-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--black)}
+.pf-input{border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-family:'Nunito',sans-serif;font-size:14px;color:var(--black);outline:none;transition:border-color var(--trans);background:var(--light)}
+.pf-input:focus{border-color:var(--orange);background:var(--white)}
+.pf-input::placeholder{color:#bbb}
+.pf-save{background:var(--orange);color:#fff;border:none;border-radius:50px;padding:12px 32px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:background var(--trans);margin-top:10px}
+.pf-save:hover{background:var(--orange-d)}
+
+/* Address modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--white);border-radius:var(--r);max-width:500px;width:100%;max-height:90vh;overflow-y:auto;animation:popUp .25s ease;box-shadow:var(--shadow2)}
+@keyframes popUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--white);z-index:2}
+.modal-title{font-size:18px;font-weight:900}
+.modal-close{background:var(--light);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:background var(--trans)}
+.modal-close:hover{background:var(--orange);color:#fff}
+.modal-body{padding:24px}
+.modal-field{margin-bottom:16px}
+.modal-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--black);display:block;margin-bottom:6px}
+.modal-input{width:100%;border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-family:'Nunito',sans-serif;font-size:14px;color:var(--black);outline:none;transition:all var(--trans);background:var(--light)}
+.modal-input:focus{border-color:var(--orange);background:var(--white)}
+.modal-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23868686' d='M5 7L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
+.modal-footer{padding:20px 24px;border-top:1px solid var(--border);display:flex;gap:12px}
+.modal-cancel{flex:0 0 auto;background:transparent;border:1.5px solid var(--border);border-radius:50px;padding:12px 24px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--black);transition:all var(--trans)}
+.modal-cancel:hover{border-color:var(--black)}
+.modal-save{flex:1;background:var(--orange);color:#fff;border:none;border-radius:50px;padding:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:background var(--trans)}
+.modal-save:hover{background:var(--orange-d)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;z-index:900;background:var(--black);color:#fff;border-radius:var(--r);padding:14px 20px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;max-width:320px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-left:5px solid var(--green)}
+.toast.err{border-left:5px solid var(--red)}
+
+/* Responsive */
+@media(max-width:768px){
+  .member-stats{grid-template-columns:1fr 1fr}
+  .profile-form{grid-template-columns:1fr}
+  .pf-field.full{grid-column:1}
+  .header-nav{display:none}
+}
+@media(max-width:480px){
+  .member-stats{grid-template-columns:1fr 1fr}
+  .discount-grid{grid-template-columns:1fr}
+  .wish-grid{grid-template-columns:1fr 1fr}
+  .address-grid{grid-template-columns:1fr}
+  .welcome-bar{flex-direction:column;align-items:flex-start}
+  .points-progress-wrap{width:140px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">🚚 Free delivery in Lagos on orders above <strong>₦10,000</strong> &nbsp;·&nbsp; Code <strong>PUPPY15</strong> = 15% off first order</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">🐾</div>
+      <div><div class="logo-name">Puppy<span>Place</span></div><div class="logo-tag">.ng</div></div>
+    </a>
+    <nav class="header-nav">
+      <a class="nav-a" href="index.html">🛍️ Shop</a>
+      <a class="nav-a" href="index.html#pets">🐾 Pets</a>
+      <a class="nav-a" href="index.html#vets">🏥 Vets</a>
+      <a class="nav-a on" href="account.html">👤 My Account</a>
+    </nav>
+  </div>
+</header>
+
+<div id="authScreen">
+  <div style="text-align:center;padding:32px 0 24px">
+    <div style="font-size:14px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Welcome to</div>
+    <div style="font-size:28px;font-weight:900;color:var(--black)">Puppy<span style="color:var(--orange)">Place</span> Members</div>
+    <div style="font-size:14px;color:var(--gray);margin-top:6px">Sign in to view your orders, discounts &amp; more</div>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab on" id="tabLogin" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Create Account</div>
+    </div>
+
+    <div class="method-toggle">
+      <button class="method-btn on" id="methEmail" onclick="switchMethod('email')">✉️ Email</button>
+      <button class="method-btn" id="methPhone" onclick="switchMethod('phone')">📱 Phone + OTP</button>
+    </div>
+
+    <div class="auth-body" id="loginForm">
+      <div id="loginEmail">
+        <div class="auth-field" style="margin-top:6px">
+          <label class="auth-label">Email Address</label>
+          <input class="auth-input" id="liEmail" type="email" placeholder="you@example.com"/>
+          <div class="auth-err" id="liEmailErr">Please enter a valid email</div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <input class="auth-input" id="liPass" type="password" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <div class="auth-err" id="liPassErr">Password must be at least 6 characters</div>
+        </div>
+        <div style="text-align:right;margin-bottom:18px"><span style="font-size:13px;color:var(--orange);cursor:pointer;font-weight:800" onclick="showToast('Password reset coming soon!','ok')">Forgot password?</span></div>
+        <button class="auth-btn" onclick="doLogin()"><span>Sign In</span><div class="spin" id="loginSpin"></div></button>
+      </div>
+      <div id="loginPhone" style="display:none">
+        <div class="auth-field" style="margin-top:6px" id="phoneStep1">
+          <label class="auth-label">Phone Number</label>
+          <div class="phone-wrap">
+            <span class="phone-prefix">🇳🇬 +234</span>
+            <input class="auth-input" id="liPhone" type="tel" placeholder="08012345678" maxlength="11"/>
+          </div>
+          <div class="auth-err" id="liPhoneErr">Enter a valid Nigerian phone number</div>
+          <button class="auth-btn" style="margin-top:20px" onclick="sendOTP()"><span>Send OTP</span><div class="spin" id="otpSpin"></div></button>
+        </div>
+        <div id="phoneStep2" style="display:none">
+          <div class="auth-field">
+            <label class="auth-label" style="text-align:center">Enter OTP sent to your phone</label>
+            <div class="otp-wrap">
+              <input class="otp-digit" maxlength="1" type="tel" oninput="otpMove(this,0)"/>
+              <input class="otp-digit" maxlength="1" type="tel" oninput="otpMove(this,1)"/>
+              <input class="otp-digit" maxlength="1" type="tel" oninput="otpMove(this,2)"/>
+              <input class="otp-digit" maxlength="1" type="tel" oninput="otpMove(this,3)"/>
+            </div>
+            <div class="otp-hint">Didn't receive it? <strong onclick="resendOTP()">Resend OTP</strong></div>
+          </div>
+          <button class="auth-btn" onclick="verifyOTP()">Verify &amp; Sign In</button>
+          <div style="text-align:center;margin-top:14px"><span style="font-size:13px;color:var(--gray);font-weight:700;cursor:pointer" onclick="document.getElementById('phoneStep1').style.display='';document.getElementById('phoneStep2').style.display='none'">← Change number</span></div>
+        </div>
+      </div>
+      <div class="auth-footer">Don't have an account? <strong onclick="switchAuthTab('register')">Create one free</strong></div>
+    </div>
+
+    <div class="auth-body" id="registerForm" style="display:none">
+      <div id="regEmail">
+        <div class="auth-field" style="margin-top:6px">
+          <label class="auth-label">Full Name</label>
+          <input class="auth-input" id="regName" type="text" placeholder="e.g. Emeka Okafor"/>
+          <div class="auth-err" id="regNameErr">Please enter your name</div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input class="auth-input" id="regEmail2" type="email" placeholder="you@example.com"/>
+          <div class="auth-err" id="regEmailErr">Please enter a valid email</div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Phone Number</label>
+          <div class="phone-wrap">
+            <span class="phone-prefix">🇳🇬 +234</span>
+            <input class="auth-input" id="regPhone" type="tel" placeholder="08012345678" maxlength="11"/>
+          </div>
+          <div class="auth-err" id="regPhoneErr">Enter a valid Nigerian phone number</div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <input class="auth-input" id="regPass" type="password" placeholder="Min 6 characters"/>
+          <div class="auth-err" id="regPassErr">Password must be at least 6 characters</div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Confirm Password</label>
+          <input class="auth-input" id="regPass2" type="password" placeholder="Repeat your password" onkeydown="if(event.key==='Enter')doRegister()"/>
+          <div class="auth-err" id="regPass2Err">Passwords do not match</div>
+        </div>
+        <button class="auth-btn" style="margin-top:20px" onclick="doRegister()">Create Account →</button>
+      </div>
+      <div id="regPhone2" style="display:none">
+        <div class="auth-field" style="margin-top:6px">
+          <label class="auth-label">Full Name</label>
+          <input class="auth-input" id="regNameP" type="text" placeholder="e.g. Emeka Okafor"/>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Phone Number</label>
+          <div class="phone-wrap">
+            <span class="phone-prefix">🇳🇬 +234</span>
+            <input class="auth-input" id="regPhoneP" type="tel" placeholder="08012345678" maxlength="11"/>
+          </div>
+        </div>
+        <button class="auth-btn" style="margin-top:20px" onclick="sendRegOTP()">Send OTP →</button>
+      </div>
+      <div class="auth-footer">Already have an account? <strong onclick="switchAuthTab('login')">Sign in</strong></div>
+    </div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="welcome-bar">
+    <div class="welcome-left">
+      <div class="member-avatar" id="dashAvatar">😊</div>
+      <div>
+        <div class="member-name" id="dashName">Welcome back!</div>
+        <div class="member-since" id="dashSince">Member since today</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="member-badge" id="dashTier">🐾 Standard Member</div>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="member-stats">
+    <div class="mstat" data-ico="📦"><div class="mstat-val" id="statOrders">0</div><div class="mstat-label">Orders Placed</div></div>
+    <div class="mstat" data-ico="⭐"><div class="mstat-val" id="statPoints">0</div><div class="mstat-label">Loyalty Points</div></div>
+    <div class="mstat" data-ico="🏷️"><div class="mstat-val" id="statCoupons">0</div><div class="mstat-label">Active Coupons</div></div>
+    <div class="mstat" data-ico="❤️"><div class="mstat-val" id="statWishlist">0</div><div class="mstat-label">Wishlist Items</div></div>
+  </div>
+
+  <div class="dash-tabs">
+    <div class="dtab on" onclick="showDash('orders',this)">📦 Orders</div>
+    <div class="dtab" onclick="showDash('discounts',this)">🏷️ Discounts</div>
+    <div class="dtab" onclick="showDash('addresses',this)">📍 Addresses</div>
+    <div class="dtab" onclick="showDash('wishlist',this)">❤️ Wishlist</div>
+    <div class="dtab" onclick="showDash('profile',this)">👤 Profile</div>
+  </div>
+
+  <div class="dash-panel active" id="panelOrders">
+    <div class="sec-card">
+      <div class="sec-card-head">
+        <div class="sec-card-title">📦 Order History</div>
+      </div>
+      <div class="sec-card-body" id="ordersBody"></div>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="panelDiscounts">
+    <div class="points-bar">
+      <div class="points-left">
+        <h3>Loyalty Points</h3>
+        <div class="points-num" id="pointsNum">0</div>
+        <div class="points-sub">≈ <span id="pointsVal">₦0</span> discount value</div>
+      </div>
+      <div class="points-right">
+        <div class="points-next" id="pointsNext">200 points to next tier</div>
+        <div class="points-progress-wrap"><div class="points-progress" id="pointsBar" style="width:0%"></div></div>
+        <div class="points-tier" id="pointsTierLabel">🐾 Standard → 🥇 Gold at 500pts</div>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-head">
+        <div class="sec-card-title">🏷️ Your Coupons &amp; Discounts</div>
+      </div>
+      <div class="sec-card-body">
+        <div class="discount-grid" id="discountGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="panelAddresses">
+    <div class="sec-card">
+      <div class="sec-card-head">
+        <div class="sec-card-title">📍 Saved Addresses</div>
+        <button class="reorder-btn" onclick="openAddrModal()">＋ Add Address</button>
+      </div>
+      <div class="sec-card-body">
+        <div class="address-grid" id="addrGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="panelWishlist">
+    <div class="sec-card">
+      <div class="sec-card-head">
+        <div class="sec-card-title">❤️ Saved Items</div>
+        <a href="index.html" style="font-size:14px;color:var(--orange);font-weight:800">Browse Shop →</a>
+      </div>
+      <div class="sec-card-body">
+        <div class="wish-grid" id="wishGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="panelProfile">
+    <div class="sec-card">
+      <div class="sec-card-head"><div class="sec-card-title">👤 Profile Settings</div></div>
+      <div class="sec-card-body">
+        <div class="profile-form">
+          <div class="pf-field"><label class="pf-label">Full Name</label><input class="pf-input" id="pfName" type="text" placeholder="Your full name"/></div>
+          <div class="pf-field"><label class="pf-label">Email</label><input class="pf-input" id="pfEmail" type="email" placeholder="your@email.com"/></div>
+          <div class="pf-field"><label class="pf-label">Phone</label><input class="pf-input" id="pfPhone" type="tel" placeholder="08012345678"/></div>
+          <div class="pf-field"><label class="pf-label">Date of Birth</label><input class="pf-input" id="pfDob" type="date"/></div>
+          <div class="pf-field full"><label class="pf-label">New Password <span style="color:var(--gray);font-weight:600;text-transform:none;">(leave blank to keep current)</span></label><input class="pf-input" id="pfPass" type="password" placeholder="New password…"/></div>
+        </div>
+        <button class="pf-save" onclick="saveProfile()">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+</div><div class="modal-bg" id="addrModal" onclick="if(event.target===this)closeAddrModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title" id="addrModalTitle">Add Address</div>
+      <button class="modal-close" onclick="closeAddrModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="addrId"/>
+      <div class="modal-field"><label class="modal-label">Label (e.g. Home, Office)</label><input class="modal-input" id="addrLabel" type="text" placeholder="e.g. Home"/></div>
+      <div class="modal-field"><label class="modal-label">Full Address</label><input class="modal-input" id="addrText" type="text" placeholder="Street, area, landmark…"/></div>
+      <div class="modal-field"><label class="modal-label">State</label>
+        <select class="modal-input modal-select" id="addrState">
+          <option value="">Select state…</option>
+          <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option>
+          <option>Anambra</option><option>Bauchi</option><option>Bayelsa</option>
+          <option>Benue</option><option>Borno</option><option>Cross River</option>
+          <option>Delta</option><option>Ebonyi</option><option>Edo</option>
+          <option>Ekiti</option><option>Enugu</option><option>FCT — Abuja</option>
+          <option>Gombe</option><option>Imo</option><option>Jigawa</option>
+          <option>Kaduna</option><option>Kano</option><option>Katsina</option>
+          <option>Kebbi</option><option>Kogi</option><option>Kwara</option>
+          <option>Lagos</option><option>Nasarawa</option><option>Niger</option>
+          <option>Ogun</option><option>Ondo</option><option>Osun</option>
+          <option>Oyo</option><option>Plateau</option><option>Rivers</option>
+          <option>Sokoto</option><option>Taraba</option><option>Yobe</option>
+          <option>Zamfara</option>
+        </select>
+      </div>
+      <div class="modal-field"><label class="modal-label">Phone for Delivery</label><input class="modal-input" id="addrPhone" type="tel" placeholder="08012345678"/></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <input type="checkbox" id="addrDefault" style="accent-color:var(--orange);width:18px;height:18px"/>
+        <label for="addrDefault" style="font-size:14px;font-weight:700;cursor:pointer">Set as default address</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="closeAddrModal()">Cancel</button>
+      <button class="modal-save" onclick="saveAddress()">💾 Save Address</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script>
+/* ══════════════════════════════════════
+   STORAGE KEYS
+   ══════════════════════════════════════ */
+const USERS_KEY   = 'pp_users';
+const SESSION_KEY = 'pp_session';
+const PROD_KEY    = 'puppyplace_products';
+
+/* ── SUPABASE CLIENT ── */
+const SUPABASE_URL  = 'https://fsrkzhknqonpjjkjwqlw.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzcmt6aGtucW9ucGpqa2p3cWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDA2MDcsImV4cCI6MjA5MjAxNjYwN30.8xi7-tb0X7Bp-_Eknlb8Kxdi5J9DGut-RYewEvB2-fk';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ── HELPERS ── */
+const fmt = n => '₦' + n.toLocaleString('en-NG');
+const genId = () => 'u' + Date.now() + Math.random().toString(36).slice(2,5);
+
+let toastTimer;
+function showToast(msg, type='ok'){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ── USER STORAGE ── */
+function getUsers(){ return JSON.parse(localStorage.getItem(USERS_KEY)||'[]'); }
+function saveUsers(u){ localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+function getSession(){ return JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null'); }
+function setSession(u){ sessionStorage.setItem(SESSION_KEY, JSON.stringify(u)); }
+function clearSession(){ sessionStorage.removeItem(SESSION_KEY); }
+
+function getCurrentUser(){
+  const s = getSession();
+  if(!s) return null;
+  return getUsers().find(u => u.id === s.id) || null;
+}
+function refreshUser(u){
+  const users = getUsers();
+  const idx = users.findIndex(x => x.id === u.id);
+  if(idx >= 0){ users[idx] = u; saveUsers(users); }
+  setSession({id: u.id});
+}
+
+/* ── DEFAULT COUPONS for new members ── */
+function defaultCoupons(){
+  return [
+    {code:'WELCOME10', desc:'10% off your first order', type:'Welcome Offer', expiry:'31 Dec 2025', used:false},
+    {code:'PUPPY15',   desc:'₦1,500 off orders above ₦10,000', type:'Promo Code', expiry:'30 Jun 2025', used:false},
+    {code:'FREESHIP',  desc:'Free delivery anywhere in Lagos', type:'Free Delivery', expiry:'31 Aug 2025', used:false},
+  ];
+}
+
+/* ── AUTH TABS ── */
+let currentTab = 'login';
+let currentMethod = 'email';
+
+function switchAuthTab(tab){
+  currentTab = tab;
+  document.getElementById('tabLogin').classList.toggle('on', tab==='login');
+  document.getElementById('tabRegister').classList.toggle('on', tab==='register');
+  document.getElementById('loginForm').style.display = tab==='login' ? '' : 'none';
+  document.getElementById('registerForm').style.display = tab==='register' ? '' : 'none';
+  updateMethodViews();
+}
+
+function switchMethod(m){
+  currentMethod = m;
+  document.getElementById('methEmail').classList.toggle('on', m==='email');
+  document.getElementById('methPhone').classList.toggle('on', m==='phone');
+  updateMethodViews();
+}
+
+function updateMethodViews(){
+  const isEmail = currentMethod === 'email';
+  // Login
+  document.getElementById('loginEmail').style.display = isEmail ? '' : 'none';
+  document.getElementById('loginPhone').style.display = isEmail ? 'none' : '';
+  // Register
+  document.getElementById('regEmail').style.display = isEmail ? '' : 'none';
+  document.getElementById('regPhone2').style.display = isEmail ? 'none' : '';
+}
+
+/* ── LOGIN (email) ── */
+async function doLogin(){
+  const email = document.getElementById('liEmail').value.trim();
+  const pass  = document.getElementById('liPass').value;
+  let ok = true;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    document.getElementById('liEmail').classList.add('err');
+    document.getElementById('liEmailErr').classList.add('show'); ok=false;
+  } else {
+    document.getElementById('liEmail').classList.remove('err');
+    document.getElementById('liEmailErr').classList.remove('show');
+  }
+  if(pass.length < 6){
+    document.getElementById('liPass').classList.add('err');
+    document.getElementById('liPassErr').classList.add('show'); ok=false;
+  } else {
+    document.getElementById('liPass').classList.remove('err');
+    document.getElementById('liPassErr').classList.remove('show');
+  }
+  if(!ok) return;
+
+  const spin = document.getElementById('loginSpin');
+  spin.classList.add('show');
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  spin.classList.remove('show');
+
+  if(error){ showToast('Incorrect email or password','err'); return; }
+
+  const user = {
+    id:    data.user.id,
+    name:  data.user.user_metadata?.name || email.split('@')[0],
+    email: data.user.email,
+    phone: data.user.user_metadata?.phone || '',
+    points: 0,
+    orders: [],
+    addresses: [],
+    coupons: defaultCoupons(),
+  };
+  setSession({ id: user.id });
+  loadDashboard(user);
+}
+
+/* ── REGISTER (email) ── */
+async function doRegister(){
+  const name  = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail2').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  const pass  = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+  let ok = true;
+
+  const checks = [
+    [name.length>=2,        'regName',  'regNameErr'],
+    [/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), 'regEmail2','regEmailErr'],
+    [/^0[7-9][01]\d{8}$/.test(phone.replace(/\s/g,'')), 'regPhone','regPhoneErr'],
+    [pass.length>=6,        'regPass',  'regPassErr'],
+    [pass===pass2,          'regPass2', 'regPass2Err'],
+  ];
+  checks.forEach(([valid, field, errId])=>{
+    document.getElementById(field).classList.toggle('err',!valid);
+    document.getElementById(errId).classList.toggle('show',!valid);
+    if(!valid) ok=false;
+  });
+  if(!ok) return;
+
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password: pass,
+    options: { data: { name, phone } }
+  });
+
+  if(error){ showToast(error.message, 'err'); return; }
+
+  const user = {
+    id:    data.user.id,
+    name,
+    email: email.toLowerCase(),
+    phone,
+    joined: new Date().toISOString(),
+    points: 50,
+    addresses: [],
+    wishlist: [],
+    orders: [],
+    coupons: defaultCoupons(),
+  };
+  setSession({ id: user.id });
+  showToast('🎉 Welcome to PuppyPlace! You earned 50 welcome points','ok');
+  loadDashboard(user);
+}
+
+/* ── OTP FLOW (simulated) ── */
+let otpCode = '';
+let otpPhone = '';
+
+function sendOTP(){
+  const phone = document.getElementById('liPhone').value.trim();
+  if(!/^0[7-9][01]\d{8}$/.test(phone)){
+    document.getElementById('liPhone').classList.add('err');
+    document.getElementById('liPhoneErr').classList.add('show'); return;
+  }
+  otpPhone = phone;
+  otpCode  = Math.floor(1000 + Math.random()*9000).toString();
+  const spin = document.getElementById('otpSpin');
+  spin.classList.add('show');
+  setTimeout(()=>{
+    spin.classList.remove('show');
+    document.getElementById('phoneStep1').style.display = 'none';
+    document.getElementById('phoneStep2').style.display = '';
+    document.querySelectorAll('.otp-digit').forEach(d=>d.value='');
+    document.querySelectorAll('.otp-digit')[0].focus();
+    // In production, SMS goes here. For demo, show code in toast.
+    showToast(`Demo OTP: ${otpCode} (SMS would send in production)`,'ok');
+  }, 1000);
+}
+
+function resendOTP(){
+  otpCode = Math.floor(1000 + Math.random()*9000).toString();
+  showToast(`New OTP: ${otpCode} (demo mode)`,'ok');
+}
+
+function otpMove(inp, idx){
+  if(inp.value.length===1 && idx<3){
+    document.querySelectorAll('.otp-digit')[idx+1].focus();
+  }
+}
+
+function verifyOTP(){
+  const entered = [...document.querySelectorAll('.otp-digit')].map(d=>d.value).join('');
+  if(entered.length < 4){ showToast('Enter the 4-digit OTP','err'); return; }
+  if(entered !== otpCode){ showToast('Incorrect OTP. Try again','err'); return; }
+
+  // OTP verified — find or create user by phone
+  const users = getUsers();
+  let user = users.find(u => u.phone === otpPhone);
+  if(!user){
+    user = {
+      id:genId(), name:'PuppyPlace Member', email:'', phone:otpPhone, pass:'',
+      joined:new Date().toISOString(), points:50,
+      addresses:[], wishlist:[], orders:[], coupons:defaultCoupons(),
+    };
+    users.push(user);
+    saveUsers(users);
+    showToast('🎉 Account created! 50 welcome points added','ok');
+  }
+  setSession({id:user.id});
+  loadDashboard(user);
+}
+
+function sendRegOTP(){
+  const name  = document.getElementById('regNameP').value.trim();
+  const phone = document.getElementById('regPhoneP').value.trim();
+  if(!name||name.length<2){ showToast('Please enter your name','err'); return; }
+  if(!/^0[7-9][01]\d{8}$/.test(phone)){ showToast('Enter a valid Nigerian phone number','err'); return; }
+  // Switch to OTP verify flow
+  document.getElementById('liPhone').value = phone;
+  document.getElementById('regNameP').dataset.name = name;
+  switchAuthTab('login'); switchMethod('phone');
+  sendOTP();
+}
+
+/* ── DASHBOARD ── */
+async function loadDashboard(user){
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+
+  // Welcome bar
+  const initial = (user.name||'M')[0].toUpperCase();
+  document.getElementById('dashAvatar').textContent = initial;
+  document.getElementById('dashName').textContent = 'Hey, ' + (user.name.split(' ')[0] || 'Member') + '! 👋';
+  document.getElementById('dashSince').textContent = 'Member since ' + new Date(user.joined || Date.now()).toLocaleDateString('en-NG',{month:'long',year:'numeric'});
+
+  // Tier
+  const pts = user.points || 0;
+  const tier = pts >= 1000 ? '💎 Platinum' : pts >= 500 ? '🥇 Gold' : pts >= 200 ? '🥈 Silver' : '🐾 Standard';
+  document.getElementById('dashTier').textContent = tier + ' Member';
+
+  // Load orders from Supabase
+  const { data: orders } = await sb.from('orders')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+  user.orders = (orders || []).map(o => ({
+    ref:     o.reference,
+    date:    o.created_at,
+    status:  o.status,
+    address: o.address,
+    items:   o.items || [],
+    total:   o.total,
+  }));
+
+  // Stats
+  document.getElementById('statOrders').textContent  = user.orders.length;
+  document.getElementById('statPoints').textContent  = pts;
+  document.getElementById('statCoupons').textContent = (user.coupons||[]).filter(c=>!c.used).length;
+  document.getElementById('statWishlist').textContent= (user.wishlist||[]).length;
+
+  // Pre-fill profile
+  document.getElementById('pfName').value  = user.name  || '';
+  document.getElementById('pfEmail').value = user.email || '';
+  document.getElementById('pfPhone').value = user.phone || '';
+  document.getElementById('pfDob').value   = user.dob   || '';
+
+  renderOrders(user);
+  renderDiscounts(user);
+  renderAddresses(user);
+  renderWishlist(user);
+}
+
+/* ── ORDERS ── */
+function renderOrders(user){
+  const body  = document.getElementById('ordersBody');
+  const orders = user.orders || [];
+
+  // Seed demo orders for new accounts with no orders
+  if(orders.length === 0){
+    body.innerHTML = `<div class="empty-state"><div class="empty-ico">📦</div><div class="empty-msg">No orders yet</div><div class="empty-sub">Your order history will appear here after you make a purchase</div><br/><a href="index.html" style="background:var(--orange);color:#fff;border-radius:50px;padding:12px 28px;font-weight:800;font-size:14px;display:inline-block;margin-top:10px">Shop Now →</a></div>`;
+    return;
+  }
+
+  const statusClass = {delivered:'status-delivered',processing:'status-processing',shipped:'status-shipped',cancelled:'status-cancelled'};
+  body.innerHTML = orders.slice().reverse().map((o,i) => `
+    <div class="order-card">
+      <div class="order-head" onclick="toggleOrder(this)">
+        <div>
+          <div class="order-ref">${o.ref}</div>
+          <div class="order-date">${new Date(o.date).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'})}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="order-status ${statusClass[o.status]||'status-processing'}">● ${o.status}</span>
+          <span style="font-size:16px;color:var(--gray)">▾</span>
+        </div>
+      </div>
+      <div class="order-body">
+        <div class="order-items">
+          ${o.items.map(item=>`
+            <div class="oi">
+              <span class="oi-emoji">${item.e||'📦'}</span>
+              <span class="oi-name">${item.n}</span>
+              <span class="oi-qty">×${item.qty}</span>
+              <span class="oi-price">${fmt(item.p * item.qty)}</span>
+            </div>`).join('')}
+        </div>
+        <div style="font-size:13px;color:var(--gray);margin-bottom:12px">📍 Delivered to: ${o.address||'—'}</div>
+        <div class="order-footer">
+          <div class="order-total">Total: ${fmt(o.total)}</div>
+          <button class="reorder-btn" onclick="event.stopPropagation()">🔄 Reorder</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleOrder(hd){
+  const body = hd.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+/* ── DISCOUNTS ── */
+function renderDiscounts(user){
+  const pts = user.points || 0;
+  document.getElementById('pointsNum').textContent = pts;
+  document.getElementById('pointsVal').textContent = fmt(pts * 5); // 1pt = ₦5
+
+  const nextTier = pts < 200 ? 200 : pts < 500 ? 500 : pts < 1000 ? 1000 : 1000;
+  const progress = Math.min(100, Math.round((pts / nextTier)*100));
+  document.getElementById('pointsBar').style.width = progress + '%';
+  document.getElementById('pointsNext').textContent = pts >= 1000 ? 'You\'ve reached Platinum! 🎉' : `${nextTier - pts} points to next tier`;
+  document.getElementById('pointsTierLabel').textContent = pts >= 1000 ? '💎 Platinum Member' : pts >= 500 ? '🥇 Gold → 💎 Platinum at 1000pts' : pts >= 200 ? '🥈 Silver → 🥇 Gold at 500pts' : '🐾 Standard → 🥈 Silver at 200pts';
+
+  const coupons = user.coupons || [];
+  const emojiMap = {Welcome:'🎁',Promo:'🏷️',Free:'🚚',Birthday:'🎂',Loyalty:'⭐'};
+  document.getElementById('discountGrid').innerHTML = coupons.length === 0
+    ? `<div class="empty-state"><div class="empty-ico">🏷️</div><div class="empty-msg">No coupons yet</div><div class="empty-sub">Coupons &amp; deals will appear here</div></div>`
+    : coupons.map((c,i) => {
+        const ico = Object.entries(emojiMap).find(([k])=>c.type.includes(k))?.[1]||'🏷️';
+        return `<div class="coupon${c.used?' used':''}" data-emoji="${ico}">
+          ${c.used?'<div class="used-stamp">Used</div>':''}
+          <div class="coupon-type">${c.type}</div>
+          <div class="coupon-code">${c.code}</div>
+          <div class="coupon-desc">${c.desc}</div>
+          <div class="coupon-footer">
+            <div class="coupon-expiry">Expires ${c.expiry}</div>
+            <button class="coupon-copy" onclick="copyCoupon('${c.code}',${i})" ${c.used?'disabled':''}>Copy Code</button>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+function copyCoupon(code, idx){
+  navigator.clipboard.writeText(code).catch(()=>{});
+  showToast(`✅ ${code} copied to clipboard!`,'ok');
+}
+
+/* ── ADDRESSES ── */
+function renderAddresses(user){
+  const grid = document.getElementById('addrGrid');
+  const addrs = user.addresses || [];
+  let html = addrs.map((a,i)=>`
+    <div class="addr-card${a.isDefault?' default':''}">
+      ${a.isDefault?'<div class="addr-default-badge">Default</div>':''}
+      <div class="addr-name">${a.label||'Address '+(i+1)}</div>
+      <div class="addr-text">${a.text}<br/>${a.state}<br/>📞 ${a.phone}</div>
+      <div class="addr-actions">
+        <button class="addr-btn" onclick="openAddrModal('${a.id}')">✏️ Edit</button>
+        ${!a.isDefault?`<button class="addr-btn" onclick="setDefaultAddr('${a.id}')">⭐ Default</button>`:''}
+        <button class="addr-btn del" onclick="deleteAddr('${a.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+  html += `<button class="add-addr-btn" onclick="openAddrModal()"><span style="font-size:32px">＋</span><span>Add New Address</span></button>`;
+  grid.innerHTML = html;
+}
+
+function openAddrModal(id){
+  const user = getCurrentUser();
+  const addr = id ? (user.addresses||[]).find(a=>a.id===id) : null;
+  document.getElementById('addrModalTitle').textContent = addr ? 'Edit Address' : 'Add Address';
+  document.getElementById('addrId').value    = addr ? addr.id : '';
+  document.getElementById('addrLabel').value = addr ? addr.label : '';
+  document.getElementById('addrText').value  = addr ? addr.text : '';
+  document.getElementById('addrState').value = addr ? addr.state : '';
+  document.getElementById('addrPhone').value = addr ? addr.phone : '';
+  document.getElementById('addrDefault').checked = addr ? addr.isDefault : false;
+  document.getElementById('addrModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeAddrModal(){
+  document.getElementById('addrModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function saveAddress(){
+  const label = document.getElementById('addrLabel').value.trim();
+  const text  = document.getElementById('addrText').value.trim();
+  const state = document.getElementById('addrState').value;
+  const phone = document.getElementById('addrPhone').value.trim();
+  const isDef = document.getElementById('addrDefault').checked;
+  const editId= document.getElementById('addrId').value;
+
+  if(!text || !state){ showToast('Please fill in address and state','err'); return; }
+
+  const user = getCurrentUser();
+  const addrs = user.addresses || [];
+
+  if(isDef) addrs.forEach(a => a.isDefault = false);
+
+  if(editId){
+    const idx = addrs.findIndex(a=>a.id===editId);
+    addrs[idx] = {id:editId, label, text, state, phone, isDefault:isDef};
+  } else {
+    addrs.push({id:genId(), label:label||'Address '+(addrs.length+1), text, state, phone, isDefault:isDef||addrs.length===0});
+  }
+  user.addresses = addrs;
+  refreshUser(user);
+  closeAddrModal();
+  renderAddresses(user);
+  showToast('✅ Address saved','ok');
+}
+
+function setDefaultAddr(id){
+  const user = getCurrentUser();
+  (user.addresses||[]).forEach(a => a.isDefault = a.id===id);
+  refreshUser(user);
+  renderAddresses(user);
+  showToast('⭐ Default address updated','ok');
+}
+
+function deleteAddr(id){
+  const user = getCurrentUser();
+  user.addresses = (user.addresses||[]).filter(a=>a.id!==id);
+  refreshUser(user);
+  renderAddresses(user);
+  showToast('🗑️ Address removed','ok');
+}
+
+/* ── WISHLIST ── */
+function renderWishlist(user){
+  const grid  = document.getElementById('wishGrid');
+  const items = user.wishlist || [];
+  if(items.length === 0){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-ico">❤️</div><div class="empty-msg">Your wishlist is empty</div><div class="empty-sub">Save items from the shop to see them here</div><br/><a href="index.html" style="background:var(--orange);color:#fff;border-radius:50px;padding:12px 28px;font-weight:800;font-size:14px;display:inline-block;margin-top:10px">Browse Shop →</a></div>`;
+    return;
+  }
+  grid.innerHTML = items.map(p=>`
+    <div class="wish-card">
+      <div class="wc-img">
+        <button class="wc-remove" onclick="removeWish('${p.id}')">✕</button>
+        <span>${p.e}</span>
+      </div>
+      <div class="wc-body">
+        <div class="wc-cat">${p.cat}</div>
+        <div class="wc-name">${p.n}</div>
+        <div class="wc-price">${fmt(p.p)}</div>
+        <button class="wc-cart" onclick="addToCartFromWish('${p.id}')">🛒 Add to Cart</button>
+      </div>
+    </div>`).join('');
+}
+
+function removeWish(id){
+  const user = getCurrentUser();
+  user.wishlist = (user.wishlist||[]).filter(p=>p.id!==id);
+  refreshUser(user);
+  document.getElementById('statWishlist').textContent = user.wishlist.length;
+  renderWishlist(user);
+  showToast('Removed from wishlist','ok');
+}
+
+function addToCartFromWish(id){
+  showToast('🛒 Added to cart! Go to shop to checkout.','ok');
+}
+
+/* ── PROFILE ── */
+async function saveProfile(){
+  const newName  = document.getElementById('pfName').value.trim();
+  const newPhone = document.getElementById('pfPhone').value.trim();
+  const newPass  = document.getElementById('pfPass').value;
+
+  if(newPass && newPass.length < 6){ showToast('Password must be at least 6 characters','err'); return; }
+
+  // Update metadata (name, phone)
+  const { error: metaErr } = await sb.auth.updateUser({
+    data: { name: newName, phone: newPhone }
+  });
+  if(metaErr){ showToast('Failed to update profile: ' + metaErr.message, 'err'); return; }
+
+  // Update password if provided
+  if(newPass){
+    const { error: passErr } = await sb.auth.updateUser({ password: newPass });
+    if(passErr){ showToast('Password update failed: ' + passErr.message, 'err'); return; }
+  }
+
+  document.getElementById('dashName').textContent = 'Hey, ' + (newName.split(' ')[0] || 'Member') + '! 👋';
+  document.getElementById('dashAvatar').textContent = (newName[0] || 'M').toUpperCase();
+  document.getElementById('pfPass').value = '';
+  showToast('✅ Profile updated','ok');
+}
+
+/* ── LOGOUT ── */
+async function doLogout(){
+  await sb.auth.signOut();
+  clearSession();
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('authScreen').style.display = '';
+  document.getElementById('liEmail').value = '';
+  document.getElementById('liPass').value  = '';
+  showToast('Signed out successfully','ok');
+}
+
+/* ── DASH TABS ── */
+function showDash(name, el){
+  document.querySelectorAll('.dash-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('on'));
+  if(el) el.classList.add('on');
+}
+
+/* ── AUTO-LOGIN via Supabase session ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if(session && session.user){
+    const u = session.user;
+    const user = {
+      id:        u.id,
+      name:      u.user_metadata?.name || u.email.split('@')[0],
+      email:     u.email,
+      phone:     u.user_metadata?.phone || '',
+      joined:    u.created_at || new Date().toISOString(),
+      points:    0,
+      orders:    [],
+      addresses: [],
+      coupons:   defaultCoupons(),
+    };
+    setSession({ id: user.id });
+    loadDashboard(user);
+  }
+});
+
+/* ── ACCEPT ORDERS FROM SHOP (called by shop after payment) ── */
+window.addEventListener('storage', e => {
+  if(e.key === 'pp_new_order'){
+    const order = JSON.parse(e.newValue||'null');
+    if(!order) return;
+    const user = getCurrentUser();
+    if(!user) return;
+    user.orders = user.orders || [];
+    user.orders.push(order);
+    user.points = (user.points||0) + Math.floor(order.total / 1000); // 1pt per ₦1000
+    refreshUser(user);
+    localStorage.removeItem('pp_new_order');
+  }
+});
+</script>
+</body>
+</html>
