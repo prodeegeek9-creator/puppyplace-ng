@@ -19,7 +19,7 @@ export default {
       return handleHeroUpload(request, env);
     }
 
-    const postMatch = url.pathname.match(/^\/posts\/([^/]+)\.html$/);
+    const postMatch = url.pathname.match(/^\/posts\/([^/]+?)(?:\.html)?$/);
     if (postMatch) {
       return servePost(decodeURIComponent(postMatch[1]), env);
     }
