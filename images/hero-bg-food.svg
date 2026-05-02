@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 200" fill="none">
+  <!-- Bowl body -->
+  <path d="M202 94 Q188 158 144 173 L264 173 Q220 158 212 94 Z" fill="rgba(44,130,201,0.14)"/>
+  <!-- Bowl rim outer -->
+  <ellipse cx="203" cy="99" rx="65" ry="21" fill="rgba(44,130,201,0.16)"/>
+  <!-- Bowl rim inner -->
+  <ellipse cx="203" cy="99" rx="52" ry="14" fill="rgba(44,130,201,0.1)"/>
+  <!-- Kibble in bowl -->
+  <circle cx="188" cy="96" r="7" fill="rgba(44,130,201,0.22)"/>
+  <circle cx="204" cy="92" r="7" fill="rgba(44,130,201,0.22)"/>
+  <circle cx="220" cy="97" r="7" fill="rgba(44,130,201,0.22)"/>
+  <circle cx="196" cy="107" r="6" fill="rgba(44,130,201,0.18)"/>
+  <circle cx="213" cy="106" r="6" fill="rgba(44,130,201,0.18)"/>
+
+  <!-- Bone 1 -->
+  <g fill="rgba(44,130,201,0.11)" transform="translate(65,56) rotate(-25)">
+    <rect x="-22" y="-7" width="44" height="14" rx="5"/>
+    <circle cx="-24" cy="-9" r="11"/>
+    <circle cx="-24" cy="9" r="11"/>
+    <circle cx="24" cy="-9" r="11"/>
+    <circle cx="24" cy="9" r="11"/>
+  </g>
+  <!-- Bone 2 -->
+  <g fill="rgba(44,130,201,0.09)" transform="translate(287,150) rotate(35)">
+    <rect x="-15" y="-5" width="30" height="10" rx="3"/>
+    <circle cx="-16" cy="-6" r="8"/>
+    <circle cx="-16" cy="6" r="8"/>
+    <circle cx="16" cy="-6" r="8"/>
+    <circle cx="16" cy="6" r="8"/>
+  </g>
+
+  <!-- Scattered kibble -->
+  <circle cx="132" cy="154" r="6" fill="rgba(44,130,201,0.12)"/>
+  <circle cx="121" cy="140" r="5" fill="rgba(44,130,201,0.1)"/>
+  <circle cx="272" cy="60" r="5" fill="rgba(44,130,201,0.1)"/>
+
+  <!-- Paw prints -->
+  <g fill="rgba(44,130,201,0.09)" transform="translate(292,36) rotate(10)">
+    <ellipse cx="0" cy="10" rx="14" ry="12"/>
+    <circle cx="-13" cy="-2" r="7"/>
+    <circle cx="-4" cy="-11" r="7"/>
+    <circle cx="4" cy="-11" r="7"/>
+    <circle cx="13" cy="-2" r="7"/>
+  </g>
+  <g fill="rgba(44,130,201,0.07)" transform="translate(38,148) rotate(-18)">
+    <ellipse cx="0" cy="8" rx="11" ry="9"/>
+    <circle cx="-10" cy="-2" r="5"/>
+    <circle cx="-3" cy="-9" r="5"/>
+    <circle cx="3" cy="-9" r="5"/>
+    <circle cx="10" cy="-2" r="5"/>
+  </g>
+
+  <!-- Star sparkle -->
+  <path fill="rgba(44,130,201,0.12)" d="M321 67 L324 77 L334 77 L326 83 L329 93 L321 87 L313 93 L316 83 L308 77 L318 77 Z"/>
+
+  <!-- Decorative circles -->
+  <circle cx="100" cy="30" r="7" fill="rgba(44,130,201,0.09)"/>
+  <circle cx="146" cy="18" r="5" fill="rgba(44,130,201,0.07)"/>
+  <circle cx="252" cy="174" r="8" fill="rgba(44,130,201,0.07)"/>
+</svg>

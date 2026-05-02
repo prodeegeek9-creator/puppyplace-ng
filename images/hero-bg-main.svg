@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 380" fill="none">
+  <!-- Body -->
+  <ellipse cx="418" cy="298" rx="84" ry="98" fill="rgba(237,100,54,0.11)"/>
+  <!-- Neck -->
+  <ellipse cx="408" cy="198" rx="42" ry="34" fill="rgba(237,100,54,0.11)"/>
+  <!-- Head -->
+  <circle cx="404" cy="150" r="78" fill="rgba(237,100,54,0.11)"/>
+  <!-- Left ear (floppy) -->
+  <ellipse cx="334" cy="120" rx="34" ry="62" fill="rgba(237,100,54,0.14)" transform="rotate(-18 334 120)"/>
+  <!-- Right ear -->
+  <ellipse cx="474" cy="112" rx="32" ry="57" fill="rgba(237,100,54,0.14)" transform="rotate(18 474 112)"/>
+  <!-- Snout area -->
+  <ellipse cx="406" cy="185" rx="47" ry="33" fill="rgba(237,100,54,0.09)"/>
+  <!-- Eyes -->
+  <circle cx="378" cy="140" r="15" fill="rgba(237,100,54,0.2)"/>
+  <circle cx="430" cy="137" r="15" fill="rgba(237,100,54,0.2)"/>
+  <circle cx="381" cy="138" r="7" fill="rgba(237,100,54,0.32)"/>
+  <circle cx="433" cy="135" r="7" fill="rgba(237,100,54,0.32)"/>
+  <circle cx="384" cy="134" r="3" fill="rgba(255,255,255,0.55)"/>
+  <circle cx="436" cy="131" r="3" fill="rgba(255,255,255,0.55)"/>
+  <!-- Nose -->
+  <ellipse cx="406" cy="180" rx="20" ry="14" fill="rgba(237,100,54,0.22)"/>
+  <!-- Mouth -->
+  <path d="M392 192 Q406 208 420 192" stroke="rgba(237,100,54,0.22)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Tongue -->
+  <ellipse cx="406" cy="207" rx="14" ry="12" fill="rgba(237,100,54,0.18)"/>
+  <!-- Tail -->
+  <path d="M496 254 C538 212 555 164 536 140 C522 120 504 133 508 153" stroke="rgba(237,100,54,0.14)" stroke-width="22" fill="none" stroke-linecap="round"/>
+  <!-- Front legs -->
+  <ellipse cx="383" cy="368" rx="28" ry="42" fill="rgba(237,100,54,0.1)"/>
+  <ellipse cx="453" cy="370" rx="28" ry="42" fill="rgba(237,100,54,0.1)"/>
+  <!-- Collar -->
+  <path d="M338 196 Q406 218 472 196" stroke="rgba(237,100,54,0.24)" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <circle cx="406" cy="215" r="10" fill="rgba(237,100,54,0.24)"/>
+
+  <!-- Paw prints -->
+  <g fill="rgba(237,100,54,0.08)" transform="translate(50,38) rotate(-12)">
+    <ellipse cx="0" cy="14" rx="19" ry="16"/>
+    <circle cx="-18" cy="-2" r="9"/>
+    <circle cx="-6" cy="-15" r="9"/>
+    <circle cx="6" cy="-15" r="9"/>
+    <circle cx="18" cy="-2" r="9"/>
+  </g>
+  <g fill="rgba(237,100,54,0.065)" transform="translate(148,125) rotate(12)">
+    <ellipse cx="0" cy="11" rx="15" ry="13"/>
+    <circle cx="-14" cy="-2" r="7"/>
+    <circle cx="-5" cy="-12" r="7"/>
+    <circle cx="5" cy="-12" r="7"/>
+    <circle cx="14" cy="-2" r="7"/>
+  </g>
+  <g fill="rgba(237,100,54,0.07)" transform="translate(62,228) rotate(-18)">
+    <ellipse cx="0" cy="12" rx="17" ry="14"/>
+    <circle cx="-16" cy="-3" r="8"/>
+    <circle cx="-5" cy="-14" r="8"/>
+    <circle cx="5" cy="-14" r="8"/>
+    <circle cx="16" cy="-3" r="8"/>
+  </g>
+  <g fill="rgba(237,100,54,0.055)" transform="translate(255,316) rotate(22)">
+    <ellipse cx="0" cy="8" rx="11" ry="9"/>
+    <circle cx="-10" cy="-2" r="5"/>
+    <circle cx="-3" cy="-9" r="5"/>
+    <circle cx="3" cy="-9" r="5"/>
+    <circle cx="10" cy="-2" r="5"/>
+  </g>
+  <g fill="rgba(237,100,54,0.055)" transform="translate(200,54) rotate(-5)">
+    <ellipse cx="0" cy="9" rx="12" ry="10"/>
+    <circle cx="-11" cy="-2" r="5.5"/>
+    <circle cx="-4" cy="-10" r="5.5"/>
+    <circle cx="4" cy="-10" r="5.5"/>
+    <circle cx="11" cy="-2" r="5.5"/>
+  </g>
+
+  <!-- Decorative dots -->
+  <circle cx="172" cy="286" r="9" fill="rgba(237,100,54,0.05)"/>
+  <circle cx="292" cy="174" r="6" fill="rgba(237,100,54,0.06)"/>
+  <circle cx="112" cy="332" r="13" fill="rgba(237,100,54,0.04)"/>
+  <circle cx="296" cy="50" r="8" fill="rgba(237,100,54,0.05)"/>
+</svg>
