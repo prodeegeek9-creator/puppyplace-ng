@@ -1838,7 +1838,7 @@ async function loadBlogPosts() {
     const { data, error } = await supabase
       .from('blog_posts')
       .select('id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time')
-      .eq('published', true)
+      .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(6);
     if (error) throw error;
