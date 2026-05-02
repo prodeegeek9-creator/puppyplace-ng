@@ -14,6 +14,11 @@ export default {
       });
     }
 
+    // Hero image upload proxy — uses service key server-side so RLS is bypassed
+    if (url.pathname === '/api/hero-upload' && request.method === 'POST') {
+      return handleHeroUpload(request, env);
+    }
+
     const postMatch = url.pathname.match(/^\/posts\/([^/]+)\.html$/);
     if (postMatch) {
       return servePost(decodeURIComponent(postMatch[1]), env);
@@ -23,16 +28,88 @@ export default {
   },
 };
 
+// Returns headers using the service key when available, anon key as fallback
+function sbHeaders(env) {
+  const key = env.SUPABASE_SERVICE_KEY || env.SUPABASE_ANON;
+  return {
+    'apikey':        key,
+    'Authorization': `Bearer ${key}`,
+    'Content-Type':  'application/json',
+  };
+}
+
+async function handleHeroUpload(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
+    return jsonResp({ error: 'Server not configured' }, 503);
+  }
+
+  let formData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return jsonResp({ error: 'Invalid form data' }, 400);
+  }
+
+  const file   = formData.get('file');
+  const bucket = formData.get('bucket') || 'hero-images';
+
+  if (!file || typeof file === 'string') {
+    return jsonResp({ error: 'No file provided' }, 400);
+  }
+
+  const ALLOWED = ['image/jpeg','image/png','image/webp','image/gif','image/avif'];
+  if (!ALLOWED.includes(file.type)) {
+    return jsonResp({ error: 'Only image files are allowed' }, 400);
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return jsonResp({ error: 'File too large — max 5 MB' }, 400);
+  }
+
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const path = `upload-${Date.now()}.${ext}`;
+  const key  = env.SUPABASE_SERVICE_KEY;
+
+  const uploadRes = await fetch(
+    `${env.SUPABASE_URL}/storage/v1/object/${bucket}/${path}`,
+    {
+      method:  'POST',
+      headers: {
+        'apikey':        key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type':  file.type,
+        'x-upsert':      'true',
+      },
+      body: file.stream(),
+      // Cloudflare Workers requires duplex for streaming uploads
+      duplex: 'half',
+    }
+  );
+
+  if (!uploadRes.ok) {
+    const err = await uploadRes.text();
+    return jsonResp({ error: 'Storage upload failed: ' + err }, 500);
+  }
+
+  const publicUrl = `${env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+  return jsonResp({ url: publicUrl }, 200);
+}
+
+function jsonResp(data, status) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type':                'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+
 async function servePost(slug, env) {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON) {
+  if (!env.SUPABASE_URL) {
     return html(errorPage('Server not configured.'), 503);
   }
 
-  const headers = {
-    'apikey': env.SUPABASE_ANON,
-    'Authorization': `Bearer ${env.SUPABASE_ANON}`,
-  };
-
+  const headers = sbHeaders(env);
   let post, related;
   try {
     const [postRes, relRes] = await Promise.all([

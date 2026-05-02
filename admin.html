@@ -1364,12 +1364,22 @@ async function uploadHeroImage(input, settingKey, imgId, prevId, urlInputId) {
   if (file.size > 5*1024*1024) { showToast('Image too large — max 5MB','error'); return; }
 
   showToast('Uploading…','warning');
-  const ext  = file.name.split('.').pop();
-  const path = `${settingKey}-${Date.now()}.${ext}`;
-  const { error: upErr } = await sbAdmin.storage.from('hero-images').upload(path, file, { upsert: true });
-  if (upErr) { showToast('❌ Upload failed: ' + upErr.message, 'error'); return; }
 
-  const { data: { publicUrl } } = sbAdmin.storage.from('hero-images').getPublicUrl(path);
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('bucket', 'hero-images');
+
+  let publicUrl;
+  try {
+    const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    publicUrl = data.url;
+  } catch (err) {
+    showToast('❌ Upload failed: ' + err.message, 'error');
+    return;
+  }
+
   document.getElementById(urlInputId).value = publicUrl;
   const img  = document.getElementById(imgId);
   const prev = document.getElementById(prevId);
