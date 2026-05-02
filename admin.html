@@ -1244,7 +1244,8 @@ function renderBlogTable() {
   }
   tbody.innerHTML = _blogPosts.map(p => {
     const date = p.published_at ? new Date(p.published_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '—';
-    const pubBadge = p.published
+    const isPublished = p.status === 'published';
+    const pubBadge = isPublished
       ? '<span class="pub-badge pub-yes">Published</span>'
       : '<span class="pub-badge pub-no">Draft</span>';
     return `<tr>
@@ -1255,7 +1256,7 @@ function renderBlogTable() {
       <td>${pubBadge}</td>
       <td><div class="action-btns">
         <button class="act-btn" title="Edit" onclick="editBlogPost('${escAdm(p.id)}')">✏️</button>
-        <button class="act-btn" title="${p.published?'Unpublish':'Publish'}" onclick="togglePublish('${escAdm(p.id)}',${!p.published})">${p.published?'🔒':'🚀'}</button>
+        <button class="act-btn" title="${isPublished?'Unpublish':'Publish'}" onclick="togglePublish('${escAdm(p.id)}',${!isPublished})">${isPublished?'🔒':'🚀'}</button>
         <button class="act-btn del" title="Delete" onclick="deleteBlogPost('${escAdm(p.id)}')">🗑️</button>
       </div></td>
     </tr>`;
@@ -1332,7 +1333,7 @@ async function saveBlogPost(publish) {
     excerpt:        document.getElementById('bfExcerpt').value.trim(),
     featured_image: document.getElementById('bfFeaturedImg').value.trim() || null,
     content,
-    published:   publish,
+    status:      publish ? 'published' : 'draft',
     published_at: publish ? new Date().toISOString() : null,
   };
 
@@ -1352,7 +1353,7 @@ async function saveBlogPost(publish) {
 
 async function togglePublish(id, publish) {
   const { error } = await sbAdmin.from('blog_posts').update({
-    published: publish,
+    status: publish ? 'published' : 'draft',
     published_at: publish ? new Date().toISOString() : null,
   }).eq('id', id);
   if (error) { showToast('❌ ' + error.message, 'error'); return; }

@@ -114,11 +114,11 @@ async function servePost(slug, env) {
   try {
     const [postRes, relRes] = await Promise.all([
       fetch(
-        `${env.SUPABASE_URL}/rest/v1/blog_posts?slug=eq.${encodeURIComponent(slug)}&published=eq.true&select=*`,
+        `${env.SUPABASE_URL}/rest/v1/blog_posts?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=*`,
         { headers }
       ),
       fetch(
-        `${env.SUPABASE_URL}/rest/v1/blog_posts?published=eq.true&slug=neq.${encodeURIComponent(slug)}&select=id,slug,title,category,cat_color&order=published_at.desc&limit=3`,
+        `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.published&slug=neq.${encodeURIComponent(slug)}&select=id,slug,title,category,cat_color&order=published_at.desc&limit=3`,
         { headers }
       ),
     ]);

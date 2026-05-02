@@ -107,7 +107,7 @@ async function loadPosts() {
     const { data, error } = await sb
       .from('blog_posts')
       .select('id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time')
-      .eq('published', true)
+      .eq('status', 'published')
       .order('published_at', { ascending: false });
 
     if (error) throw error;
