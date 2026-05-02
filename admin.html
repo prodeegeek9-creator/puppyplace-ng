@@ -323,7 +323,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
     </div>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
     <div class="login-err" id="loginErr">Incorrect password. Try again.</div>
-    <div style="margin-top:20px;text-align:center;font-size:12px;color:#bbb">Change your password in Settings after signing in</div>
+    <div style="margin-top:20px;text-align:center;font-size:12px;color:#bbb">Password is managed via Cloudflare Worker secrets</div>
   </div>
 </div>
 
@@ -446,21 +446,12 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="panel" id="panelSettings">
           <div class="settings-grid">
             <div class="settings-card">
-              <h3>🔑 Change Password</h3>
-              <p>Update your admin panel login password</p>
-              <div class="settings-field">
-                <label class="settings-label">Current Password</label>
-                <input class="settings-input" id="currPass" type="password" placeholder="Current password"/>
+              <h3>🔑 Admin Password</h3>
+              <p>Password is stored as a Cloudflare Worker secret and verified server-side.</p>
+              <div style="background:#f1f3f5;border-radius:10px;padding:16px;font-size:13px;color:#555;line-height:1.7">
+                To change it, update the <strong>ADMIN_PASSWORD</strong> secret in your
+                Cloudflare dashboard under <em>Workers &amp; Pages → puppyplace-ng → Settings → Variables &amp; Secrets</em>.
               </div>
-              <div class="settings-field">
-                <label class="settings-label">New Password</label>
-                <input class="settings-input" id="newPass" type="password" placeholder="New password (min 6 chars)"/>
-              </div>
-              <div class="settings-field">
-                <label class="settings-label">Confirm New Password</label>
-                <input class="settings-input" id="confPass" type="password" placeholder="Repeat new password"/>
-              </div>
-              <button class="settings-save" onclick="changePassword()">Update Password</button>
             </div>
             <div class="settings-card">
               <h3>📦 Data Management</h3>
@@ -736,16 +727,8 @@ input,select,textarea{font-family:'Nunito',sans-serif}
    ══════════════════════════════════════ */
 const sbAdmin = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
 
-const PASS_KEY = 'puppyplace_admin_pass';
-// SHA-256 of 'admin123' — change via Settings after first login
-const DEFAULT_PASS_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
 let _cachedProducts = [];
 
-async function hashPassword(pw){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-function getPassHash(){ return localStorage.getItem(PASS_KEY) || DEFAULT_PASS_HASH; }
 
 /* ── FIELD MAPPING ── */
 function rowToApp(row){
@@ -791,32 +774,64 @@ function appToRow(prod){
 }
 
 /* ── AUTH ── */
-async function doLogin(){
+function showAdminShell() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminShell').style.display  = 'block';
+  _extendedInit();
+}
+
+async function doLogin() {
   const val = document.getElementById('loginPass').value;
-  const hash = await hashPassword(val);
-  if(hash === getPassHash()){
-    sessionStorage.setItem('pp_authed','1');
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('adminShell').style.display='block';
-    init();
-  } else {
-    document.getElementById('loginErr').classList.add('show');
-    document.getElementById('loginPass').value='';
-    document.getElementById('loginPass').focus();
+  const btn = document.querySelector('.login-btn');
+  const err = document.getElementById('loginErr');
+  err.classList.remove('show');
+  btn.textContent = 'Signing in…';
+  btn.disabled = true;
+  try {
+    const res  = await fetch('/api/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: val }),
+    });
+    const data = await res.json();
+    if (res.ok && data.token) {
+      sessionStorage.setItem('pp_token', data.token);
+      showAdminShell();
+    } else {
+      err.classList.add('show');
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
+  } catch {
+    err.textContent = 'Network error — please try again.';
+    err.classList.add('show');
+  } finally {
+    btn.textContent = 'Sign In →';
+    btn.disabled = false;
   }
 }
-document.getElementById('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
-function doLogout(){
-  sessionStorage.removeItem('pp_authed');
+function doLogout() {
+  sessionStorage.removeItem('pp_token');
   location.reload();
 }
 
-/* Auto-login if session still active */
-if(sessionStorage.getItem('pp_authed')==='1'){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('adminShell').style.display='block';
-}
+/* Verify existing session on load */
+(async () => {
+  const token = sessionStorage.getItem('pp_token');
+  if (!token) return;
+  try {
+    const res  = await fetch('/api/admin-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    if (data.ok) showAdminShell();
+    else sessionStorage.removeItem('pp_token');
+  } catch { /* network error — stay on login */ }
+})();
 
 /* ── SUPABASE LOAD ── */
 async function loadAllProducts(){
@@ -1170,19 +1185,6 @@ function showToast(msg, type='success'){
 }
 
 /* ── SETTINGS ── */
-async function changePassword(){
-  const curr = document.getElementById('currPass').value;
-  const nw   = document.getElementById('newPass').value;
-  const conf = document.getElementById('confPass').value;
-  const currHash = await hashPassword(curr);
-  if(currHash!==getPassHash()){showToast('Current password is incorrect','error');return;}
-  if(nw.length<6){showToast('New password must be at least 6 characters','error');return;}
-  if(nw!==conf){showToast('Passwords do not match','error');return;}
-  const newHash = await hashPassword(nw);
-  localStorage.setItem(PASS_KEY, newHash);
-  ['currPass','newPass','confPass'].forEach(id=>document.getElementById(id).value='');
-  showToast('✅ Password updated','success');
-}
 
 function exportProducts(){
   const data = JSON.stringify(getProducts().map(p=>({...p})),null,2);
@@ -1486,8 +1488,6 @@ async function _extendedInit() {
   loadBlogPosts();
   loadHeroSettings();
 }
-
-if(sessionStorage.getItem('pp_authed')==='1') _extendedInit();
 </script>
 </body>
 </html>

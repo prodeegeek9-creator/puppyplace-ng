@@ -19,6 +19,14 @@ export default {
       return handleHeroUpload(request, env);
     }
 
+    if (url.pathname === '/api/admin-login' && request.method === 'POST') {
+      return handleAdminLogin(request, env);
+    }
+
+    if (url.pathname === '/api/admin-verify' && request.method === 'POST') {
+      return handleAdminVerify(request, env);
+    }
+
     const postMatch = url.pathname.match(/^\/posts\/([^/]+?)(?:\.html)?$/);
     if (postMatch) {
       return servePost(decodeURIComponent(postMatch[1]), env);
@@ -262,4 +270,62 @@ function errorPage(msg) {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Error — PuppyPlace</title>
 <style>body{font-family:sans-serif;text-align:center;padding:100px 24px;background:#f8f9fa}h1{margin-bottom:12px}p{color:#868686;margin-bottom:32px}a{color:#ed6436;font-weight:700}</style>
 </head><body><h1>⚠️ ${esc(msg)}</h1><p>Please try again later.</p><a href="/blog.html">← All Posts</a></body></html>`;
+}
+
+/* ── ADMIN AUTH ── */
+
+function safeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+async function hmacSign(message, secret) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function makeToken(env) {
+  const expiry = String(Date.now() + 8 * 60 * 60 * 1000); // 8-hour session
+  const sig = await hmacSign(expiry, env.ADMIN_TOKEN_SECRET);
+  return `${expiry}:${sig}`;
+}
+
+async function verifyToken(token, env) {
+  if (!token || !env.ADMIN_TOKEN_SECRET) return false;
+  const colon = token.indexOf(':');
+  if (colon === -1) return false;
+  const expiry = token.slice(0, colon);
+  const sig    = token.slice(colon + 1);
+  if (Date.now() > parseInt(expiry, 10)) return false;
+  const expected = await hmacSign(expiry, env.ADMIN_TOKEN_SECRET);
+  return safeEqual(expected, sig);
+}
+
+async function handleAdminLogin(request, env) {
+  if (!env.ADMIN_PASSWORD || !env.ADMIN_TOKEN_SECRET) {
+    return jsonResp({ error: 'Server not configured' }, 503);
+  }
+  let body;
+  try { body = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!safeEqual(String(body.password ?? ''), env.ADMIN_PASSWORD)) {
+    return jsonResp({ error: 'Incorrect password' }, 401);
+  }
+  const token = await makeToken(env);
+  return jsonResp({ ok: true, token }, 200);
+}
+
+async function handleAdminVerify(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return jsonResp({ ok: false }, 400); }
+  const valid = await verifyToken(body.token, env);
+  return jsonResp({ ok: valid }, valid ? 200 : 401);
 }
