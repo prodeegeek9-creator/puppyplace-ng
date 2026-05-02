@@ -154,6 +154,33 @@ function renderPost(post, related) {
       <div class="rel-title">${esc(r.title)}</div>
     </a>`).join('');
 
+  const heroHtml = post.featured_image
+    ? `<div class="art-hero art-hero-img" style="background-image:url('${esc(post.featured_image)}')">
+        <div class="art-hero-overlay"></div>
+        <div class="art-hero-content">
+          <div class="art-cat" style="background:${esc(post.cat_color || '#ED6436')}">${esc(post.category || 'General')}</div>
+          <h1 class="art-title">${esc(post.title)}</h1>
+          <div class="art-meta">
+            <span>${esc(post.author || 'PuppyPlace')}</span>
+            <span>·</span>
+            <span>${esc(date)}</span>
+            <span>·</span>
+            <span>${esc(String(post.read_time || 5))} min read</span>
+          </div>
+        </div>
+      </div>`
+    : `<div class="art-hero">
+        <div class="art-cat" style="background:${esc(post.cat_color || '#ED6436')}">${esc(post.category || 'General')}</div>
+        <h1 class="art-title">${esc(post.title)}</h1>
+        <div class="art-meta">
+          <span>${esc(post.author || 'PuppyPlace')}</span>
+          <span>·</span>
+          <span>${esc(date)}</span>
+          <span>·</span>
+          <span>${esc(String(post.read_time || 5))} min read</span>
+        </div>
+      </div>`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -166,19 +193,27 @@ function renderPost(post, related) {
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333}
+html{height:100%}
+body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333;min-height:100%;display:flex;flex-direction:column}
 a{text-decoration:none;color:inherit}
 :root{--orange:#ed6436;--black:#0e0e0c;--gray:#868686;--light:#f1f3f5;--border:#e9ecef;--white:#fff;--r:12px;--shadow:0 4px 20px rgba(0,0,0,.06);--trans:.3s ease}
-.nav{background:#1a1a18;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav{background:#1a1a18;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:100}
 .nav-logo{color:#fff;font-size:22px;font-weight:900}.nav-logo span{color:var(--orange)}
 .nav-back{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-radius:50px;padding:9px 20px;font-size:13px;font-weight:800;transition:all var(--trans)}
 .nav-back:hover{background:var(--orange);border-color:var(--orange);color:#fff}
-.art-hero{background:#1a1a18;padding:72px 40px 60px;text-align:center;position:relative;overflow:hidden}
+/* Hero — text only */
+.art-hero{background:#1a1a18;padding:72px 40px 60px;text-align:center;position:relative;overflow:hidden;flex-shrink:0}
 .art-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 60% 40%,rgba(237,100,54,.15),transparent 70%);pointer-events:none}
+/* Hero — with featured image */
+.art-hero-img{background:#1a1a18 center/cover no-repeat;padding:0;min-height:420px;display:flex;align-items:flex-end}
+.art-hero-img::before{display:none}
+.art-hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.25) 0%,rgba(0,0,0,.72) 100%);pointer-events:none}
+.art-hero-content{position:relative;z-index:1;width:100%;padding:72px 40px 60px;text-align:center}
 .art-cat{display:inline-block;color:#fff;font-size:11px;font-weight:800;padding:6px 18px;border-radius:50px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px}
 .art-title{font-size:clamp(24px,5vw,44px);font-weight:900;color:#fff;line-height:1.25;max-width:760px;margin:0 auto 20px}
-.art-meta{font-size:14px;color:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
-.art-wrap{max-width:780px;margin:0 auto}
+.art-meta{font-size:14px;color:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+/* Content */
+.art-wrap{max-width:780px;margin:0 auto;width:100%;flex:1}
 .art-body{padding:56px 24px 0}
 .art-body h4{font-size:21px;font-weight:900;margin:36px 0 12px;color:var(--black)}
 .art-body p{margin:0 0 20px;font-size:17px;color:#444;line-height:1.85}
@@ -194,9 +229,9 @@ a{text-decoration:none;color:inherit}
 .rel-card:hover{border-color:var(--orange);transform:translateY(-3px);box-shadow:var(--shadow)}
 .rel-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
 .rel-title{font-size:15px;font-weight:800;line-height:1.4;color:var(--black)}
-.footer{background:#1a1a18;color:rgba(255,255,255,.4);text-align:center;padding:32px 24px;font-size:13px}
+.footer{background:#1a1a18;color:rgba(255,255,255,.4);text-align:center;padding:32px 24px;font-size:13px;flex-shrink:0;margin-top:auto}
 .footer a{color:rgba(255,255,255,.6);font-weight:700}.footer a:hover{color:var(--orange)}
-@media(max-width:600px){.nav{padding:0 20px}.art-hero{padding:48px 20px 40px}.art-body{padding:32px 20px 0}.related{padding:36px 20px 60px}}
+@media(max-width:600px){.nav{padding:0 20px}.art-hero{padding:48px 20px 40px}.art-hero-img{min-height:300px}.art-hero-content{padding:48px 20px 40px}.art-body{padding:32px 20px 0}.related{padding:36px 20px 60px}}
 </style>
 </head>
 <body>
@@ -204,20 +239,10 @@ a{text-decoration:none;color:inherit}
   <a class="nav-logo" href="/index.html">Puppy<span>Place</span></a>
   <a class="nav-back" href="/blog.html">← All Posts</a>
 </nav>
-<div class="art-hero">
-  <div class="art-cat" style="background:${esc(post.cat_color || '#ED6436')}">${esc(post.category || 'General')}</div>
-  <h1 class="art-title">${esc(post.title)}</h1>
-  <div class="art-meta">
-    <span>${esc(post.author || 'PuppyPlace')}</span>
-    <span>·</span>
-    <span>${esc(date)}</span>
-    <span>·</span>
-    <span>${esc(String(post.read_time || 5))} min read</span>
-  </div>
-</div>
+${heroHtml}
 <div class="art-wrap">
   <div class="art-body">${post.content || ''}</div>
-  ${related.length ? `<div class="art-divider"></div><div class="related"><div class="rel-label">More from the Blog</div><div class="rel-grid">${relCards}</div></div>` : ''}
+  ${related.length ? `<div class="art-divider"></div><div class="related"><div class="rel-label">More from the Blog</div><div class="rel-grid">${relCards}</div></div>` : '<div style="padding-bottom:80px"></div>'}
 </div>
 <footer class="footer">
   &copy; 2025 <a href="/index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria

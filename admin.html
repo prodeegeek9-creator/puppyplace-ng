@@ -583,6 +583,21 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <textarea class="bf-input" id="bfExcerpt" rows="2" placeholder="A short summary shown on the blog listing…" style="resize:vertical"></textarea>
       </div>
       <div class="bf-field">
+        <label class="bf-label">Featured Image <span style="font-weight:600;color:#868686;font-size:11px">(optional — replaces header with photo)</span></label>
+        <div id="bfFeaturedPreviewWrap" style="display:none;margin-bottom:10px;position:relative;border-radius:8px;overflow:hidden;height:160px;background:#1a1a18">
+          <img id="bfFeaturedPreview" src="" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.85"/>
+          <button type="button" onclick="clearBlogFeaturedImg()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="flex-shrink:0;background:#ed6436;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap">
+            📷 Upload Image
+            <input type="file" id="bfFeaturedFile" accept="image/*" style="display:none" onchange="uploadBlogFeaturedImg(this)"/>
+          </label>
+          <input class="bf-input" id="bfFeaturedImg" type="url" placeholder="Or paste image URL…" oninput="previewBlogFeaturedUrl(this.value)" style="flex:1"/>
+        </div>
+        <span class="bf-hint">Max 5 MB. JPEG, PNG, WebP, GIF, AVIF.</span>
+      </div>
+      <div class="bf-field">
         <label class="bf-label">Content (HTML) <span>*</span></label>
         <textarea class="bf-input bf-textarea" id="bfContent" placeholder="&lt;p&gt;Your article content here. Use &lt;h4&gt; for headings, &lt;p&gt; for paragraphs, &lt;ul&gt;&lt;li&gt; for lists.&lt;/p&gt;"></textarea>
         <span class="bf-hint">Accepts HTML — use &lt;h4&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;em&gt;</span>
@@ -1257,11 +1272,13 @@ function autoSlug(title) {
 function openBlogForm() {
   document.getElementById('bfTitle').textContent = 'New Post';
   document.getElementById('bfId').value = '';
-  ['bfPostTitle','bfSlug','bfCat','bfAuthor','bfExcerpt','bfContent'].forEach(id => document.getElementById(id).value = '');
+  ['bfPostTitle','bfSlug','bfCat','bfAuthor','bfExcerpt','bfContent','bfFeaturedImg'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('bfEmoji').value = '📝';
   document.getElementById('bfCatColor').value = '#ED6436';
   document.getElementById('bfBg').value = '#fff5f0';
   document.getElementById('bfReadTime').value = '5';
+  document.getElementById('bfFeaturedFile').value = '';
+  document.getElementById('bfFeaturedPreviewWrap').style.display = 'none';
   document.getElementById('blogFormBg').classList.add('open');
 }
 
@@ -1280,6 +1297,16 @@ function editBlogPost(id) {
   document.getElementById('bfReadTime').value = p.read_time || 5;
   document.getElementById('bfExcerpt').value = p.excerpt || '';
   document.getElementById('bfContent').value = p.content || '';
+  document.getElementById('bfFeaturedFile').value = '';
+  const featUrl = p.featured_image || '';
+  document.getElementById('bfFeaturedImg').value = featUrl;
+  const prevWrap = document.getElementById('bfFeaturedPreviewWrap');
+  if (featUrl) {
+    document.getElementById('bfFeaturedPreview').src = featUrl;
+    prevWrap.style.display = 'block';
+  } else {
+    prevWrap.style.display = 'none';
+  }
   document.getElementById('blogFormBg').classList.add('open');
 }
 
@@ -1302,7 +1329,8 @@ async function saveBlogPost(publish) {
     bg_color:    document.getElementById('bfBg').value,
     author:      document.getElementById('bfAuthor').value.trim() || 'PuppyPlace Team',
     read_time:   parseInt(document.getElementById('bfReadTime').value) || 5,
-    excerpt:     document.getElementById('bfExcerpt').value.trim(),
+    excerpt:        document.getElementById('bfExcerpt').value.trim(),
+    featured_image: document.getElementById('bfFeaturedImg').value.trim() || null,
     content,
     published:   publish,
     published_at: publish ? new Date().toISOString() : null,
@@ -1339,6 +1367,43 @@ async function deleteBlogPost(id) {
   if (error) { showToast('❌ ' + error.message, 'error'); return; }
   showToast('🗑️ Post deleted', 'warning');
   await loadBlogPosts();
+}
+
+function previewBlogFeaturedUrl(url) {
+  const wrap = document.getElementById('bfFeaturedPreviewWrap');
+  const img  = document.getElementById('bfFeaturedPreview');
+  if (url) { img.src = url; wrap.style.display = 'block'; }
+  else { wrap.style.display = 'none'; }
+}
+
+function clearBlogFeaturedImg() {
+  document.getElementById('bfFeaturedImg').value = '';
+  document.getElementById('bfFeaturedFile').value = '';
+  document.getElementById('bfFeaturedPreviewWrap').style.display = 'none';
+}
+
+async function uploadBlogFeaturedImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const lbl = input.closest('label');
+  const orig = lbl.childNodes[0].textContent;
+  lbl.childNodes[0].textContent = '⏳ Uploading…';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('bucket', 'hero-images');
+    const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    document.getElementById('bfFeaturedImg').value = data.url;
+    previewBlogFeaturedUrl(data.url);
+    showToast('✅ Image uploaded', 'success');
+  } catch(e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    lbl.childNodes[0].textContent = orig;
+    input.value = '';
+  }
 }
 
 /* ══════════════════════════════════════
