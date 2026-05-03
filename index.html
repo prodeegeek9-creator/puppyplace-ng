@@ -237,8 +237,9 @@ img { max-width: 100%; height: auto; display: block; }
 .hm-price { font-size: 16px; font-weight: 800; color: var(--orange); position: relative; z-index: 2; }
 
 /* === TRUST STRIP === */
-.trust-strip { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 24px 32px; display: grid; grid-template-columns: repeat(5,1fr); gap: 24px; margin-bottom: 36px; box-shadow: var(--shadow); }
-.trust-item { display: flex; align-items: center; gap: 16px; }
+.trust-strip { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 24px 32px; display: grid; grid-template-columns: repeat(5,1fr); gap: 24px; margin-bottom: 36px; box-shadow: var(--shadow); position: relative; overflow: hidden; background-size: cover; background-position: center; }
+.trust-strip::before { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0.88); z-index: 0; pointer-events: none; border-radius: inherit; }
+.trust-item { display: flex; align-items: center; gap: 16px; position: relative; z-index: 1; }
 .trust-ico { width: 52px; height: 52px; border-radius: 50%; background: rgba(237,100,54,.1); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; color: var(--orange); }
 .trust-label { font-size: 14px; font-weight: 800; color: var(--black); display: block; }
 .trust-sub { font-size: 12px; color: var(--gray); }
@@ -487,28 +488,8 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   .site-header { display: none !important; }
   .main-nav { display: none !important; }
   .mob-bar { display: flex !important; }
-  /* Hero right: show as horizontal scroll row on mobile */
-  .hero-right {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 10px !important;
-    overflow-x: auto !important;
-    padding-bottom: 4px !important;
-    margin-top: 12px !important;
-    scroll-snap-type: x mandatory !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-  .hero-right::-webkit-scrollbar { display: none !important; }
-  .hero-mini {
-    min-width: 210px !important;
-    flex-shrink: 0 !important;
-    padding: 18px 16px !important;
-    scroll-snap-align: start !important;
-  }
-  .hero-mini-emoji { font-size: 56px !important; right: 12px !important; }
-  .hm-title { font-size: 15px !important; }
-  .hm-sub { font-size: 12px !important; margin-bottom: 8px !important; }
-  .hm-price { font-size: 13px !important; }
+  /* Hero right: hide mini cards on mobile — main card only */
+  .hero-right { display: none !important; }
   .sidebar { display: none !important; }
 
   /* Page wrap */
@@ -547,7 +528,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
     box-sizing: border-box !important;
     width: 100% !important;
   }
-  .hero-left::before { display: none !important; }
+  .hero-left::before { background: rgba(255,249,246,0.82) !important; backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; }
   .hero-left h1 { font-size: 24px !important; }
   .hero-desc { font-size: 13px !important; max-width: 100% !important; }
   .hero-stats { gap: 16px !important; padding-top: 18px !important; margin-top: 18px !important; }
@@ -916,12 +897,12 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         </div>
       </div>
 
-      <div class="trust-strip sec">
-        <div class="trust-item" data-ts-key="ts0"><div class="trust-ico" id="tsIco0">🚚</div><div><span class="trust-label">Fast Delivery</span><span class="trust-sub">Lagos &amp; Abuja</span></div></div>
-        <div class="trust-item" data-ts-key="ts1"><div class="trust-ico" id="tsIco1">↩️</div><div><span class="trust-label">7-Day Returns</span><span class="trust-sub">Hassle-free</span></div></div>
-        <div class="trust-item" data-ts-key="ts2"><div class="trust-ico" id="tsIco2">✅</div><div><span class="trust-label">100% Authentic</span><span class="trust-sub">Verified sellers</span></div></div>
-        <div class="trust-item" data-ts-key="ts3"><div class="trust-ico" id="tsIco3">🔒</div><div><span class="trust-label">Secure Pay</span><span class="trust-sub">Paystack &amp; Bank</span></div></div>
-        <div class="trust-item" data-ts-key="ts4"><div class="trust-ico" id="tsIco4">🏥</div><div><span class="trust-label">Vet-Backed</span><span class="trust-sub">Expert picks</span></div></div>
+      <div class="trust-strip sec" id="trustStrip">
+        <div class="trust-item"><div class="trust-ico">🚚</div><div><span class="trust-label">Fast Delivery</span><span class="trust-sub">Lagos &amp; Abuja</span></div></div>
+        <div class="trust-item"><div class="trust-ico">↩️</div><div><span class="trust-label">7-Day Returns</span><span class="trust-sub">Hassle-free</span></div></div>
+        <div class="trust-item"><div class="trust-ico">✅</div><div><span class="trust-label">100% Authentic</span><span class="trust-sub">Verified sellers</span></div></div>
+        <div class="trust-item"><div class="trust-ico">🔒</div><div><span class="trust-label">Secure Pay</span><span class="trust-sub">Paystack &amp; Bank</span></div></div>
+        <div class="trust-item"><div class="trust-ico">🏥</div><div><span class="trust-label">Vet-Backed</span><span class="trust-sub">Expert picks</span></div></div>
       </div>
 
       <div class="banner-grid sec">
@@ -1041,6 +1022,65 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
     </div>
   </div>
 </div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="fc">
+      <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px;">Puppy<span style="color:var(--orange)">Place</span></div>
+      <p class="fb-desc">Nigeria's #1 online pet store. From Lagos to Abuja, we deliver quality pet food, accessories, healthcare &amp; more — right to your door.</p>
+      <div class="fb-social">
+        <a class="fsoc" href="#" aria-label="Instagram">📸</a>
+        <a class="fsoc" href="#" aria-label="WhatsApp">💬</a>
+        <a class="fsoc" href="#" aria-label="Facebook">📘</a>
+        <a class="fsoc" href="#" aria-label="Twitter">🐦</a>
+      </div>
+    </div>
+    <div class="fc">
+      <h4>Shop</h4>
+      <a href="#">Dog Food</a>
+      <a href="#">Cat Food</a>
+      <a href="#">Toys &amp; Play</a>
+      <a href="#">Grooming</a>
+      <a href="#">Health &amp; Meds</a>
+      <a href="#">Accessories</a>
+    </div>
+    <div class="fc">
+      <h4>Pets</h4>
+      <a href="#">Dogs</a>
+      <a href="#">Cats</a>
+      <a href="#">Birds</a>
+      <a href="#">Fish</a>
+      <a href="#">Reptiles</a>
+      <a href="#">Find a Vet</a>
+    </div>
+    <div class="fc">
+      <h4>Help</h4>
+      <a href="#">Track Order</a>
+      <a href="#">Returns Policy</a>
+      <a href="#">Shipping Info</a>
+      <a href="#">FAQs</a>
+      <a href="#">Contact Us</a>
+    </div>
+    <div class="fc">
+      <h4>Company</h4>
+      <a href="#">About Us</a>
+      <a href="/blog.html">Blog</a>
+      <a href="#">Sell on PuppyPlace</a>
+      <a href="#">Careers</a>
+      <a href="#">Terms</a>
+      <a href="#">Privacy</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2025 PuppyPlace.ng &mdash; All rights reserved.</span>
+    <div class="pay-row">
+      <span class="pay-badge">Paystack</span>
+      <span class="pay-badge">Mastercard</span>
+      <span class="pay-badge">Visa</span>
+      <span class="pay-badge">Bank Transfer</span>
+    </div>
+  </div>
+</footer>
 
 <div class="drawer-overlay" id="cartOverlay" onclick="closeCart()"></div>
 <div class="drawer" id="cartDrawer">
@@ -1914,7 +1954,6 @@ loadProductsFromSupabase();
 updateBadges();
 renderCartDrawer();
 renderWishDrawer();
-applyHomepageSettings();
 
 /* ══════════════════════════════════════════
    BLOG
@@ -1970,11 +2009,6 @@ function renderBlog(){
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-weight:800">No blog posts yet</div></div>';
     return;
   }
-  // Overlay admin-managed blog images from homepage settings
-  const hps = JSON.parse(localStorage.getItem('pp_homepage_settings') || '{}');
-  if (hps.blogImages) {
-    blogPosts.forEach(p => { if (hps.blogImages[p.id] && !p.img) p.img = hps.blogImages[p.id]; });
-  }
   const featured = blogPosts[0];
   const others   = blogPosts.slice(1,3);
   grid.innerHTML = `
@@ -2029,7 +2063,7 @@ async function loadHeroImages() {
   } catch(e) { /* silently ignore */ }
 }
 
-loadBlogPosts();
+loadBlogPosts().then(() => applyHomepageSettings());
 loadHeroImages();
 
 /* ══════════════════════════════════════════
@@ -2060,18 +2094,23 @@ function renderDeals() {
 }
 
 /* ══════════════════════════════════════════
-   HOMEPAGE SETTINGS — load & apply from localStorage
+   HOMEPAGE SETTINGS — load from Supabase & apply
    ══════════════════════════════════════════ */
-function applyHomepageSettings() {
-  const hps = JSON.parse(localStorage.getItem('pp_homepage_settings') || '{}');
+async function applyHomepageSettings() {
+  let hps = {};
+  try {
+    const { data } = await supabase
+      .from('store_settings')
+      .select('value')
+      .eq('key', 'homepage_settings')
+      .single();
+    if (data?.value) hps = data.value;
+  } catch (_) {}
 
-  // Trust strip images
-  if (hps.trustItems) {
-    hps.trustItems.forEach((url, i) => {
-      const el = document.getElementById('tsIco' + i);
-      if (!el || !url) return;
-      el.innerHTML = `<img src="${url}" alt="" class="trust-ico-img"/>`;
-    });
+  // Trust strip — single background image on the whole card
+  if (hps.trustBg) {
+    const strip = document.getElementById('trustStrip');
+    if (strip) strip.style.backgroundImage = `url('${hps.trustBg}')`;
   }
 
   // Banner card images
@@ -2079,7 +2118,6 @@ function applyHomepageSettings() {
     hps.bannerCards.forEach((url, i) => {
       const card = document.getElementById('bcCard' + i);
       if (!card || !url) return;
-      // Remove any existing cover
       const existing = card.querySelector('.bc-img-cover');
       if (existing) existing.remove();
       const img = document.createElement('img');
@@ -2088,6 +2126,12 @@ function applyHomepageSettings() {
       img.alt = '';
       card.insertBefore(img, card.firstChild);
     });
+  }
+
+  // Blog images (overlay on posts that have no featured_image in DB)
+  if (hps.blogImages && blogPosts.length) {
+    blogPosts.forEach(p => { if (hps.blogImages[p.id] && !p.img) p.img = hps.blogImages[p.id]; });
+    renderBlog();
   }
 }
 
