@@ -157,6 +157,21 @@ function escUrl(s) {
   return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Strip HTML tags and decode common entities, then truncate for meta descriptions
+function plainText(s, maxLen = 160) {
+  const t = String(s || '')
+    .replace(/<[^>]+>/g, ' ')        // strip tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+  return t.length > maxLen ? t.slice(0, maxLen - 1) + '…' : t;
+}
+
 function renderPost(post, related) {
   const date = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -199,27 +214,30 @@ function renderPost(post, related) {
         </div>
       </div>`;
 
+  const metaDesc = plainText(post.excerpt) || plainText(post.content, 160);
+  const imgUrl   = post.featured_image ? escUrl(post.featured_image) : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>${esc(post.title)} — PuppyPlace Blog</title>
-<meta name="description" content="${esc(post.excerpt || '')}"/>
+<meta name="description" content="${esc(metaDesc)}"/>
 <meta property="og:type" content="article"/>
 <meta property="og:site_name" content="PuppyPlace"/>
 <meta property="og:title" content="${esc(post.title)}"/>
-<meta property="og:description" content="${esc(post.excerpt || '')}"/>
+<meta property="og:description" content="${esc(metaDesc)}"/>
 <meta property="og:url" content="https://puppyplace.ng/posts/${escUrl(post.slug)}.html"/>
-${post.featured_image ? `<meta property="og:image" content="${escUrl(post.featured_image)}"/>
-<meta property="og:image:secure_url" content="${escUrl(post.featured_image)}"/>
+${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>
+<meta property="og:image:secure_url" content="${imgUrl}"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
 <meta property="og:image:alt" content="${esc(post.title)}"/>` : ''}
-<meta name="twitter:card" content="${post.featured_image ? 'summary_large_image' : 'summary'}"/>
+<meta name="twitter:card" content="${imgUrl ? 'summary_large_image' : 'summary'}"/>
 <meta name="twitter:title" content="${esc(post.title)}"/>
-<meta name="twitter:description" content="${esc(post.excerpt || '')}"/>
-${post.featured_image ? `<meta name="twitter:image" content="${escUrl(post.featured_image)}"/>` : ''}
+<meta name="twitter:description" content="${esc(metaDesc)}"/>
+${imgUrl ? `<meta name="twitter:image" content="${imgUrl}"/>` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
