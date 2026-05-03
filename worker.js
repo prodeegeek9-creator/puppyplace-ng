@@ -152,6 +152,11 @@ function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// For URLs inside meta content attributes — only escape < > and " (not &)
+function escUrl(s) {
+  return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function renderPost(post, related) {
   const date = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -205,12 +210,16 @@ function renderPost(post, related) {
 <meta property="og:site_name" content="PuppyPlace"/>
 <meta property="og:title" content="${esc(post.title)}"/>
 <meta property="og:description" content="${esc(post.excerpt || '')}"/>
-${post.featured_image ? `<meta property="og:image" content="${esc(post.featured_image)}"/>` : ''}
-<meta property="og:url" content="https://puppyplace.ng/posts/${esc(post.slug)}.html"/>
+<meta property="og:url" content="https://puppyplace.ng/posts/${escUrl(post.slug)}.html"/>
+${post.featured_image ? `<meta property="og:image" content="${escUrl(post.featured_image)}"/>
+<meta property="og:image:secure_url" content="${escUrl(post.featured_image)}"/>
+<meta property="og:image:type" content="image/jpeg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>` : ''}
 <meta name="twitter:card" content="${post.featured_image ? 'summary_large_image' : 'summary'}"/>
 <meta name="twitter:title" content="${esc(post.title)}"/>
 <meta name="twitter:description" content="${esc(post.excerpt || '')}"/>
-${post.featured_image ? `<meta name="twitter:image" content="${esc(post.featured_image)}"/>` : ''}
+${post.featured_image ? `<meta name="twitter:image" content="${escUrl(post.featured_image)}"/>` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
