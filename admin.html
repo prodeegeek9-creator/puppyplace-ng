@@ -290,6 +290,18 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 .hero-clear-btn{width:100%;background:transparent;border:1.5px solid var(--border);border-radius:50px;padding:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--gray);transition:all var(--trans);margin-top:8px}
 .hero-clear-btn:hover{border-color:var(--red);color:var(--red)}
 
+/* ── HOMEPAGE IMG UPLOAD ── */
+.hp-img-field { display:flex; flex-direction:column; gap:6px; }
+.hp-img-label { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--black); }
+.hp-img-preview { width:100%; height:100px; border-radius:var(--rxs); object-fit:cover; display:none; border:1px solid var(--border); }
+.hp-img-preview.show { display:block; }
+.hp-upload-zone { border:2px dashed var(--border); border-radius:var(--r); padding:14px; text-align:center; cursor:pointer; transition:all var(--trans); background:var(--light); font-size:13px; color:var(--gray); font-weight:700; }
+.hp-upload-zone:hover { border-color:var(--orange); color:var(--orange); }
+.hp-url-input { width:100%; border:1.5px solid var(--border); border-radius:var(--r); padding:9px 12px; font-family:'Nunito',sans-serif; font-size:13px; color:var(--black); outline:none; transition:all var(--trans); background:var(--light); margin-top:6px; }
+.hp-url-input:focus { border-color:var(--orange); background:var(--white); }
+.hp-clear-btn { background:none; border:none; color:var(--gray); font-size:12px; cursor:pointer; font-weight:700; text-decoration:underline; margin-top:4px; }
+.hp-clear-btn:hover { color:var(--red); }
+
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .admin-layout{grid-template-columns:1fr}
@@ -304,6 +316,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
   .prod-toolbar{flex-direction:column;align-items:stretch}
   .search-box input{width:100%}
   .admin-topbar{padding:0 20px;}
+  #trustItemsGrid,#bannerCardsGrid,#blogImagesGrid{grid-template-columns:1fr!important}
 }
 </style>
 </head>
@@ -345,6 +358,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link" onclick="showPanel('blog',this)"><span class="sb-link-ico">📝</span> Blog Posts <span class="sb-badge" id="sbBlogCount">0</span></div>
         <div class="sb-section">Store</div>
         <div class="sb-link" onclick="showPanel('hero',this)"><span class="sb-link-ico">🖼️</span> Hero Images</div>
+        <div class="sb-link" onclick="showPanel('homepage',this)"><span class="sb-link-ico">🏠</span> Homepage</div>
         <div class="sb-link" onclick="showPanel('settings',this)"><span class="sb-link-ico">⚙️</span> Settings</div>
         <div class="sb-link" onclick="window.open('index.html','_blank','noopener,noreferrer')"><span class="sb-link-ico">🔗</span> View Shop</div>
       </nav>
@@ -440,6 +454,44 @@ input,select,textarea{font-family:'Nunito',sans-serif}
               </thead>
               <tbody id="prodTableBody"></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- ══ HOMEPAGE PANEL ══ -->
+        <div class="panel" id="panelHomepage">
+          <div style="margin-bottom:28px;">
+            <div style="font-size:22px;font-weight:900;color:var(--black);margin-bottom:6px;">🏠 Homepage Settings</div>
+            <div style="font-size:14px;color:var(--gray);">Upload or paste image URLs to customise cards on the homepage. Changes take effect immediately on save.</div>
+          </div>
+
+          <!-- Trust Strip Items -->
+          <div class="settings-card" style="margin-bottom:24px;">
+            <h3>🚚 Trust Strip Cards</h3>
+            <p>Set images for the 5 trust items (Fast Delivery, Returns, Authentic, Secure Pay, Vet-Backed). Leave blank to show default emoji.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="trustItemsGrid">
+              <!-- rendered by JS -->
+            </div>
+            <button class="settings-save" style="margin-top:20px;" onclick="saveHomepageSettings()">💾 Save Trust Strip</button>
+          </div>
+
+          <!-- Banner Cards -->
+          <div class="settings-card" style="margin-bottom:24px;">
+            <h3>🛒 Category Banner Cards</h3>
+            <p>Upload background images for the Food &amp; Treats, Toys &amp; Play, and Grooming Kits cards.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;" id="bannerCardsGrid">
+              <!-- rendered by JS -->
+            </div>
+            <button class="settings-save" style="margin-top:20px;" onclick="saveHomepageSettings()">💾 Save Banner Cards</button>
+          </div>
+
+          <!-- Blog Post Images -->
+          <div class="settings-card" style="margin-bottom:24px;">
+            <h3>📖 Blog Post Thumbnails</h3>
+            <p>Set thumbnail images for blog posts shown on the homepage. Leave blank to use default illustration.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="blogImagesGrid">
+              <!-- rendered by JS -->
+            </div>
+            <button class="settings-save" style="margin-top:20px;" onclick="saveHomepageSettings()">💾 Save Blog Images</button>
           </div>
         </div>
 
@@ -873,12 +925,13 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',hero:'Hero Images',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
   document.getElementById('pageTitle').textContent = titles[name]||name;
   if(name==='products') renderTable();
   if(name==='dashboard'){ updateStats(); renderDashRecent(); }
   if(name==='blog') loadBlogPosts();
   if(name==='hero') loadHeroSettings();
+  if(name==='homepage') renderHomepagePanel();
 }
 
 /* ── STATS ── */
@@ -1479,6 +1532,118 @@ async function clearHeroImage(settingKey, urlInputId, imgId, prevId) {
   img.src = ''; img.style.display = 'none';
   prev.querySelector('.hero-preview-placeholder').style.display = '';
   showToast('Image removed', 'warning');
+}
+
+/* ══════════════════════════════════════
+   HOMEPAGE SETTINGS
+   ══════════════════════════════════════ */
+const HP_KEY = 'pp_homepage_settings';
+
+const TRUST_LABELS = ['Fast Delivery','7-Day Returns','100% Authentic','Secure Pay','Vet-Backed'];
+const TRUST_EMOJIS = ['🚚','↩️','✅','🔒','🏥'];
+const BANNER_LABELS = ['Food & Treats','Toys & Play','Grooming Kits'];
+const BLOG_IDS = ['b0','b1','b2','b3','b4','b5'];
+const BLOG_TITLES = [
+  'What to Really Feed Your Dog',
+  'Vaccination Schedule',
+  '5 Commands Every Lagos Dog Should Know',
+  'Setting Up the Perfect Bird Cage',
+  'Keeping Fish Alive Through NEPA Outages',
+  'At-Home Dog Grooming on a Budget',
+];
+
+function getHpSettings() {
+  return JSON.parse(localStorage.getItem(HP_KEY) || '{}');
+}
+function saveHpSettings(hps) {
+  localStorage.setItem(HP_KEY, JSON.stringify(hps));
+}
+
+function renderHpImageField(containerId, key, label, emoji, currentUrl) {
+  return `<div class="hp-img-field" id="hpField_${key}">
+    <div class="hp-img-label">${emoji} ${label}</div>
+    <img class="hp-img-preview${currentUrl?' show':''}" id="hpPreview_${key}" src="${currentUrl||''}" alt="${label}"/>
+    <div class="hp-upload-zone" onclick="document.getElementById('hpFile_${key}').click()">
+      📷 Click to upload image
+    </div>
+    <input type="file" id="hpFile_${key}" accept="image/*" style="display:none" onchange="hpHandleUpload(this,'${key}')"/>
+    <input type="text" class="hp-url-input" id="hpUrl_${key}" value="${currentUrl||''}" placeholder="…or paste image URL here" oninput="hpUrlChange(this,'${key}')"/>
+    ${currentUrl ? `<button class="hp-clear-btn" onclick="hpClear('${key}')">✕ Remove image</button>` : ''}
+  </div>`;
+}
+
+function renderHomepagePanel() {
+  const hps = getHpSettings();
+  const trustItems = hps.trustItems || Array(5).fill('');
+  const bannerCards = hps.bannerCards || Array(3).fill('');
+  const blogImages = hps.blogImages || {};
+
+  // Trust strip
+  document.getElementById('trustItemsGrid').innerHTML =
+    TRUST_LABELS.map((lbl, i) => renderHpImageField('trustItemsGrid', 'ts'+i, lbl, TRUST_EMOJIS[i], trustItems[i]||'')).join('');
+
+  // Banner cards
+  document.getElementById('bannerCardsGrid').innerHTML =
+    BANNER_LABELS.map((lbl, i) => renderHpImageField('bannerCardsGrid', 'bc'+i, lbl, ['🥩','🧸','✂️'][i], bannerCards[i]||'')).join('');
+
+  // Blog images
+  document.getElementById('blogImagesGrid').innerHTML =
+    BLOG_IDS.map((id, i) => renderHpImageField('blogImagesGrid', 'blog'+id, BLOG_TITLES[i], '📖', blogImages[id]||'')).join('');
+}
+
+function hpHandleUpload(input, key) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2*1024*1024) { showToast('Image too large — max 2MB','error'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const url = e.target.result;
+    document.getElementById('hpPreview_'+key).src = url;
+    document.getElementById('hpPreview_'+key).classList.add('show');
+    document.getElementById('hpUrl_'+key).value = url;
+  };
+  reader.readAsDataURL(file);
+}
+
+function hpUrlChange(input, key) {
+  const url = input.value.trim();
+  const prev = document.getElementById('hpPreview_'+key);
+  if (url) { prev.src = url; prev.classList.add('show'); }
+  else { prev.src=''; prev.classList.remove('show'); }
+}
+
+function hpClear(key) {
+  document.getElementById('hpPreview_'+key).src='';
+  document.getElementById('hpPreview_'+key).classList.remove('show');
+  document.getElementById('hpUrl_'+key).value='';
+}
+
+function saveHomepageSettings() {
+  const hps = getHpSettings();
+
+  // Trust items
+  hps.trustItems = TRUST_LABELS.map((_, i) => {
+    const el = document.getElementById('hpUrl_ts'+i);
+    return el ? el.value.trim() : '';
+  });
+
+  // Banner cards
+  hps.bannerCards = BANNER_LABELS.map((_, i) => {
+    const el = document.getElementById('hpUrl_bc'+i);
+    return el ? el.value.trim() : '';
+  });
+
+  // Blog images
+  hps.blogImages = {};
+  BLOG_IDS.forEach(id => {
+    const el = document.getElementById('hpUrl_blog'+id);
+    if (el && el.value.trim()) hps.blogImages[id] = el.value.trim();
+  });
+
+  saveHpSettings(hps);
+  showToast('✅ Homepage settings saved','success');
+  // Re-render to reflect cleared images
+  renderHomepagePanel();
 }
 
 /* ── BOOT ── */
