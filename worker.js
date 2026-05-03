@@ -231,8 +231,6 @@ function renderPost(post, related) {
 <meta property="og:url" content="https://puppyplace.ng/posts/${escUrl(post.slug)}.html"/>
 ${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>
 <meta property="og:image:secure_url" content="${imgUrl}"/>
-<meta property="og:image:width" content="1200"/>
-<meta property="og:image:height" content="630"/>
 <meta property="og:image:alt" content="${esc(post.title)}"/>` : ''}
 <meta name="twitter:card" content="${imgUrl ? 'summary_large_image' : 'summary'}"/>
 <meta name="twitter:title" content="${esc(post.title)}"/>
