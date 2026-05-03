@@ -487,7 +487,28 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   .site-header { display: none !important; }
   .main-nav { display: none !important; }
   .mob-bar { display: flex !important; }
-  .hero-right { display: none !important; }
+  /* Hero right: show as horizontal scroll row on mobile */
+  .hero-right {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+    margin-top: 12px !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .hero-right::-webkit-scrollbar { display: none !important; }
+  .hero-mini {
+    min-width: 210px !important;
+    flex-shrink: 0 !important;
+    padding: 18px 16px !important;
+    scroll-snap-align: start !important;
+  }
+  .hero-mini-emoji { font-size: 56px !important; right: 12px !important; }
+  .hm-title { font-size: 15px !important; }
+  .hm-sub { font-size: 12px !important; margin-bottom: 8px !important; }
+  .hm-price { font-size: 13px !important; }
   .sidebar { display: none !important; }
 
   /* Page wrap */
@@ -636,6 +657,49 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   .trust-strip { grid-template-columns: 1fr !important; }
   .breeder-grid { grid-template-columns: 1fr !important; }
   .footer-inner { grid-template-columns: 1fr !important; }
+}
+
+/* === BANNER CARD IMAGE SUPPORT === */
+.banner-card { position: relative; }
+.bc-img-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: var(--r); opacity: 0.38; z-index: 0; pointer-events: none; }
+.bc-emoji, .bc-tag, .bc-title, .bc-price { position: relative; z-index: 1; }
+
+/* === TRUST ITEM IMAGE SUPPORT === */
+.trust-ico img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+
+/* === DEAL ITEM IMAGE SUPPORT === */
+.di-img { position: relative; overflow: hidden; }
+.di-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* === BLOG CARD IMAGE SUPPORT === */
+.blog-img { position: relative; overflow: hidden; }
+.blog-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* === NEWSLETTER POPUP === */
+.nl-popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(6px); }
+.nl-popup-overlay.open { display: flex; }
+.nl-popup-box { background: #1a1a18; border-radius: var(--r); max-width: 480px; width: 100%; padding: 40px 32px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: popUp .35s ease; text-align: center; overflow: hidden; }
+.nl-popup-box::before { content: '🐾'; position: absolute; right: -20px; bottom: -20px; font-size: 160px; opacity: .04; pointer-events: none; }
+.nl-popup-close-btn { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,.1); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 15px; color: #fff; display: flex; align-items: center; justify-content: center; transition: all var(--trans); z-index: 2; }
+.nl-popup-close-btn:hover { background: var(--orange); }
+.nl-popup-paw { font-size: 48px; margin-bottom: 14px; display: block; }
+@media (max-width: 480px) { .nl-popup-box { padding: 28px 20px; } }
+
+/* === FIND PRODUCT CARD === */
+.find-card { background: var(--white); border-radius: var(--r); padding: 40px; box-shadow: var(--shadow); margin: 8px 0 40px; border: 1px solid var(--border); }
+.find-card-inner { max-width: 700px; margin: 0 auto; text-align: center; }
+.find-card h3 { font-size: 22px; font-weight: 900; color: var(--black); margin-bottom: 8px; }
+.find-card p { font-size: 14px; color: var(--gray); margin-bottom: 28px; max-width: 500px; margin-left: auto; margin-right: auto; }
+.find-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: left; }
+.find-inp { border: 1.5px solid var(--border); border-radius: var(--r); padding: 12px 16px; font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; background: var(--light); transition: all var(--trans); width: 100%; }
+.find-inp:focus { border-color: var(--orange); background: var(--white); box-shadow: 0 0 0 3px rgba(237,100,54,.08); }
+.find-inp::placeholder { color: #bbb; }
+.find-submit-btn { grid-column: 1/-1; background: var(--orange); color: #fff; border: none; border-radius: 50px; padding: 14px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 15px; cursor: pointer; transition: background var(--trans); width: 100%; }
+.find-submit-btn:hover { background: var(--orange-d); }
+.find-success-msg { display: none; text-align: center; padding: 20px 24px; background: rgba(46,204,113,0.08); border-radius: var(--r); color: var(--green); font-weight: 800; font-size: 15px; border: 1px solid rgba(46,204,113,.2); margin-top: 16px; }
+@media (max-width: 768px) {
+  .find-form-grid { grid-template-columns: 1fr !important; }
+  .find-card { padding: 24px 16px !important; }
 }
 </style>
 </head>
@@ -853,17 +917,17 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       </div>
 
       <div class="trust-strip sec">
-        <div class="trust-item"><div class="trust-ico">🚚</div><div><span class="trust-label">Fast Delivery</span><span class="trust-sub">Lagos &amp; Abuja</span></div></div>
-        <div class="trust-item"><div class="trust-ico">↩️</div><div><span class="trust-label">7-Day Returns</span><span class="trust-sub">Hassle-free</span></div></div>
-        <div class="trust-item"><div class="trust-ico">✅</div><div><span class="trust-label">100% Authentic</span><span class="trust-sub">Verified sellers</span></div></div>
-        <div class="trust-item"><div class="trust-ico">🔒</div><div><span class="trust-label">Secure Pay</span><span class="trust-sub">Paystack &amp; Bank</span></div></div>
-        <div class="trust-item"><div class="trust-ico">🏥</div><div><span class="trust-label">Vet-Backed</span><span class="trust-sub">Expert picks</span></div></div>
+        <div class="trust-item" data-ts-key="ts0"><div class="trust-ico" id="tsIco0">🚚</div><div><span class="trust-label">Fast Delivery</span><span class="trust-sub">Lagos &amp; Abuja</span></div></div>
+        <div class="trust-item" data-ts-key="ts1"><div class="trust-ico" id="tsIco1">↩️</div><div><span class="trust-label">7-Day Returns</span><span class="trust-sub">Hassle-free</span></div></div>
+        <div class="trust-item" data-ts-key="ts2"><div class="trust-ico" id="tsIco2">✅</div><div><span class="trust-label">100% Authentic</span><span class="trust-sub">Verified sellers</span></div></div>
+        <div class="trust-item" data-ts-key="ts3"><div class="trust-ico" id="tsIco3">🔒</div><div><span class="trust-label">Secure Pay</span><span class="trust-sub">Paystack &amp; Bank</span></div></div>
+        <div class="trust-item" data-ts-key="ts4"><div class="trust-ico" id="tsIco4">🏥</div><div><span class="trust-label">Vet-Backed</span><span class="trust-sub">Expert picks</span></div></div>
       </div>
 
       <div class="banner-grid sec">
-        <div class="banner-card" style="background:linear-gradient(135deg,#fdeee7,#fbd4c3)" onclick="filterCat(null,'Food')"><span class="bc-emoji">🥩</span><div class="bc-tag">Sale</div><div class="bc-title">Food &amp; Treats</div><div class="bc-price">From ₦3,500</div></div>
-        <div class="banner-card" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9)" onclick="filterCat(null,'Toy')"><span class="bc-emoji">🧸</span><div class="bc-tag" style="background:var(--green)">New</div><div class="bc-title">Toys &amp; Play</div><div class="bc-price" style="color:#2ecc71">From ₦1,200</div></div>
-        <div class="banner-card" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb)" onclick="filterCat(null,'Grooming')"><span class="bc-emoji">✂️</span><div class="bc-tag" style="background:var(--blue)">Popular</div><div class="bc-title">Grooming Kits</div><div class="bc-price" style="color:#2196f3">From ₦2,800</div></div>
+        <div class="banner-card" id="bcCard0" style="background:linear-gradient(135deg,#fdeee7,#fbd4c3)" onclick="filterCat(null,'Food')"><span class="bc-emoji">🥩</span><div class="bc-tag">Sale</div><div class="bc-title">Food &amp; Treats</div><div class="bc-price">From ₦3,500</div></div>
+        <div class="banner-card" id="bcCard1" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9)" onclick="filterCat(null,'Toy')"><span class="bc-emoji">🧸</span><div class="bc-tag" style="background:var(--green)">New</div><div class="bc-title">Toys &amp; Play</div><div class="bc-price" style="color:#2ecc71">From ₦1,200</div></div>
+        <div class="banner-card" id="bcCard2" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb)" onclick="filterCat(null,'Grooming')"><span class="bc-emoji">✂️</span><div class="bc-tag" style="background:var(--blue)">Popular</div><div class="bc-title">Grooming Kits</div><div class="bc-price" style="color:#2196f3">From ₦2,800</div></div>
       </div>
 
       <div class="deals-wrap sec" id="deals">
@@ -878,12 +942,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
             <div class="deal-cbox"><span class="deal-cnum" id="ds">17</span><span class="deal-clbl">sec</span></div>
           </div>
         </div>
-        <div class="deals-body">
-          <div class="deal-item" onclick="openModal('d0')"><div class="di-img">🐶</div><div class="di-body"><div class="di-name">Booster Puppy Dry Food 10kg</div><div class="di-prices"><span class="di-now">₦34,000</span><span class="di-was">₦44,000</span><span class="di-save">-23%</span></div></div></div>
-          <div class="deal-item" onclick="openModal('d1')"><div class="di-img">🍗</div><div class="di-body"><div class="di-name">Diamond Naturals Adult 18kg</div><div class="di-prices"><span class="di-now">₦65,000</span><span class="di-was">₦72,000</span><span class="di-save">-10%</span></div></div></div>
-          <div class="deal-item" onclick="openModal('d2')"><div class="di-img">🍗</div><div class="di-body"><div class="di-name">Karl Chicken Jerky Treats</div><div class="di-prices"><span class="di-now">₦7,000</span><span class="di-was">₦8,500</span><span class="di-save">-18%</span></div></div></div>
-          <div class="deal-item" onclick="openModal('d3')"><div class="di-img">💊</div><div class="di-body"><div class="di-name">Bravecto Flea & Tick Chew</div><div class="di-prices"><span class="di-now">₦42,000</span><span class="di-was">₦49,000</span><span class="di-save">-14%</span></div></div></div>
-        </div>
+        <div class="deals-body" id="dealsGrid"></div>
       </div>
 
       <div class="sec" id="products">
@@ -963,13 +1022,19 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         </div>
       </div>
 
-      <div class="newsletter sec">
-        <div class="nl-label">Stay Connected</div>
-        <div class="nl-title">Join the PuppyPlace Family 🐾</div>
-        <div class="nl-desc">Weekly deals, new arrivals &amp; expert pet care tips straight to your inbox.</div>
-        <div class="nl-form">
-          <input class="nl-input" type="email" placeholder="Enter your email address"/>
-          <button class="nl-btn" onclick="alert('Subscribed! 🐾')">Subscribe Free</button>
+      <!-- ══ FIND PRODUCT CARD ══ -->
+      <div class="find-card sec">
+        <div class="find-card-inner">
+          <h3>🔍 Didn't find what you're looking for?</h3>
+          <p>Tell us what you need and we'll source it for you. We'll get in touch shortly.</p>
+          <div class="find-form-grid" id="findFormGrid">
+            <input class="find-inp" id="findName" type="text" placeholder="Your Name"/>
+            <input class="find-inp" id="findEmail" type="email" placeholder="Email Address"/>
+            <input class="find-inp" id="findWhatsapp" type="tel" placeholder="WhatsApp Number"/>
+            <input class="find-inp" id="findProduct" type="text" placeholder="Product you're looking for"/>
+            <button class="find-submit-btn" onclick="submitFindRequest()">Send Request →</button>
+          </div>
+          <div class="find-success-msg" id="findSuccess">🎉 We will get in touch with you shortly!</div>
         </div>
       </div>
 
@@ -1119,6 +1184,22 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   </div>
 </div>
 
+<!-- ══ NEWSLETTER POPUP ══ -->
+<div class="nl-popup-overlay" id="nlPopupOverlay" onclick="if(event.target===this)closeNlPopup()">
+  <div class="nl-popup-box">
+    <button class="nl-popup-close-btn" onclick="closeNlPopup()">✕</button>
+    <span class="nl-popup-paw">🐾</span>
+    <div class="nl-label" style="color:var(--orange);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">Stay Connected</div>
+    <div class="nl-title" style="font-size:clamp(22px,4vw,32px);font-weight:900;color:#fff;margin-bottom:10px;">Join the PuppyPlace Family</div>
+    <div class="nl-desc" style="font-size:14px;color:rgba(255,255,255,.6);margin-bottom:28px;">Weekly deals, new arrivals &amp; expert pet care tips straight to your inbox.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:360px;margin:0 auto;">
+      <input class="nl-input" id="nlPopupEmail" type="email" placeholder="Enter your email address" style="border-radius:var(--r);"/>
+      <button class="nl-btn" style="border-radius:50px;" onclick="subscribeNlPopup()">Subscribe Free 🐾</button>
+    </div>
+    <div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,.3);">No spam. Unsubscribe anytime.</div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal" style="background:#fff; border-radius:var(--r); max-width:580px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow2); animation:popUp .25s ease;">
     <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px 0; margin-bottom:0;">
@@ -1197,6 +1278,7 @@ async function loadProductsFromSupabase() {
 
   renderProds(prods);
   renderPets();
+  renderDeals();
 }
 
 const dealData=[
@@ -1832,6 +1914,7 @@ loadProductsFromSupabase();
 updateBadges();
 renderCartDrawer();
 renderWishDrawer();
+applyHomepageSettings();
 
 /* ══════════════════════════════════════════
    BLOG
@@ -1842,7 +1925,7 @@ async function loadBlogPosts() {
   try {
     const { data, error } = await supabase
       .from('blog_posts')
-      .select('id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time')
+      .select('id,slug,title,category,cat_color,emoji,bg_color,featured_image,excerpt,author,published_at,read_time')
       .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(6);
@@ -1854,6 +1937,7 @@ async function loadBlogPosts() {
       catColor: p.cat_color || '#ED6436',
       emoji:    p.emoji     || '📝',
       bg:       p.bg_color  || '#fff5f0',
+      img:      p.featured_image || '',
       title:    p.title,
       date:     p.published_at ? new Date(p.published_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '',
       author:   p.author    || 'PuppyPlace',
@@ -1866,6 +1950,19 @@ async function loadBlogPosts() {
   renderBlog();
 }
 
+function blogImgHtml(p, cls='') {
+  if (p.img) {
+    return `<div class="blog-img${cls?(' '+cls):''}" style="background:${p.bg};">
+      <img src="${p.img}" alt="${p.title}" loading="lazy"/>
+      <span class="blog-cat-pill" style="background:${p.catColor}">${p.cat}</span>
+    </div>`;
+  }
+  return `<div class="blog-img${cls?(' '+cls):''}" style="background:${p.bg};">
+    <span style="font-size:${cls==='sm'?'56':'80'}px;">${p.emoji}</span>
+    <span class="blog-cat-pill" style="background:${p.catColor}">${p.cat}</span>
+  </div>`;
+}
+
 function renderBlog(){
   const grid = document.getElementById('blogGrid');
   if(!grid) return;
@@ -1873,14 +1970,16 @@ function renderBlog(){
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-weight:800">No blog posts yet</div></div>';
     return;
   }
+  // Overlay admin-managed blog images from homepage settings
+  const hps = JSON.parse(localStorage.getItem('pp_homepage_settings') || '{}');
+  if (hps.blogImages) {
+    blogPosts.forEach(p => { if (hps.blogImages[p.id] && !p.img) p.img = hps.blogImages[p.id]; });
+  }
   const featured = blogPosts[0];
   const others   = blogPosts.slice(1,3);
   grid.innerHTML = `
-    <div class="blog-card" onclick="window.location.href='/posts/${escHtml(featured.slug)}.html'">
-      <div class="blog-img" style="background:${escHtml(featured.bg)};">
-        <span style="font-size:80px;">${escHtml(featured.emoji)}</span>
-        <span class="blog-cat-pill" style="background:${escHtml(featured.catColor)}">${escHtml(featured.cat)}</span>
-      </div>
+    <div class="blog-card" onclick="window.location.href='/posts/${escHtml(featured.slug||featured.id)}.html'">
+      ${blogImgHtml(featured)}
       <div class="blog-body">
         <div class="blog-title">${escHtml(featured.title)}</div>
         <div class="blog-meta">${escHtml(featured.author)} · ${escHtml(featured.date)} · ${escHtml(featured.readTime)}</div>
@@ -1889,11 +1988,8 @@ function renderBlog(){
       </div>
     </div>
     ${others.map(p=>`
-    <div class="blog-card" onclick="window.location.href='/posts/${escHtml(p.slug)}.html'">
-      <div class="blog-img sm" style="background:${escHtml(p.bg)};">
-        <span style="font-size:56px;">${escHtml(p.emoji)}</span>
-        <span class="blog-cat-pill" style="background:${escHtml(p.catColor)}">${escHtml(p.cat)}</span>
-      </div>
+    <div class="blog-card" onclick="window.location.href='/posts/${escHtml(p.slug||p.id)}.html'">
+      ${blogImgHtml(p, 'sm')}
       <div class="blog-body">
         <div class="blog-title" style="font-size:16px;">${escHtml(p.title)}</div>
         <div class="blog-meta">${escHtml(p.author)} · ${escHtml(p.date)} · ${escHtml(p.readTime)}</div>
@@ -1935,6 +2031,132 @@ async function loadHeroImages() {
 
 loadBlogPosts();
 loadHeroImages();
+
+/* ══════════════════════════════════════════
+   FLASH DEALS — JS RENDER (supports product images)
+   ══════════════════════════════════════════ */
+function renderDeals() {
+  const grid = document.getElementById('dealsGrid');
+  if (!grid) return;
+  grid.innerHTML = dealData.map((d, i) => {
+    const disc = Math.round((1 - d.p / d.o) * 100);
+    // Try to match a product from prods array for its image
+    const match = prods.find(p => p.n.toLowerCase().includes(d.n.toLowerCase().split(' ').slice(0,2).join(' ').toLowerCase()) || d.n.toLowerCase().includes(p.n.toLowerCase().split(' ').slice(0,2).join(' ').toLowerCase()));
+    const imgHtml = (match && match.img)
+      ? `<img src="${match.img}" alt="${d.n}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"/>`
+      : '';
+    return `<div class="deal-item" onclick="openModal('d${i}')">
+      <div class="di-img" style="position:relative;">${imgHtml}<span style="${imgHtml?'opacity:0;':''}font-size:70px;position:relative;z-index:1;">${d.e}</span></div>
+      <div class="di-body">
+        <div class="di-name">${d.n}</div>
+        <div class="di-prices">
+          <span class="di-now">${fmt(d.p)}</span>
+          <span class="di-was">${fmt(d.o)}</span>
+          <span class="di-save">-${disc}%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   HOMEPAGE SETTINGS — load & apply from localStorage
+   ══════════════════════════════════════════ */
+function applyHomepageSettings() {
+  const hps = JSON.parse(localStorage.getItem('pp_homepage_settings') || '{}');
+
+  // Trust strip images
+  if (hps.trustItems) {
+    hps.trustItems.forEach((url, i) => {
+      const el = document.getElementById('tsIco' + i);
+      if (!el || !url) return;
+      el.innerHTML = `<img src="${url}" alt="" class="trust-ico-img"/>`;
+    });
+  }
+
+  // Banner card images
+  if (hps.bannerCards) {
+    hps.bannerCards.forEach((url, i) => {
+      const card = document.getElementById('bcCard' + i);
+      if (!card || !url) return;
+      // Remove any existing cover
+      const existing = card.querySelector('.bc-img-cover');
+      if (existing) existing.remove();
+      const img = document.createElement('img');
+      img.src = url;
+      img.className = 'bc-img-cover';
+      img.alt = '';
+      card.insertBefore(img, card.firstChild);
+    });
+  }
+}
+
+/* ══════════════════════════════════════════
+   NEWSLETTER POPUP
+   ══════════════════════════════════════════ */
+function openNlPopup() {
+  document.getElementById('nlPopupOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeNlPopup() {
+  document.getElementById('nlPopupOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  sessionStorage.setItem('pp_nl_shown', '1');
+}
+function subscribeNlPopup() {
+  const email = document.getElementById('nlPopupEmail').value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('nlPopupEmail').style.borderColor = 'var(--red)';
+    return;
+  }
+  closeNlPopup();
+  // Toast confirmation
+  setTimeout(() => {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:#1a1a18;color:#fff;border-radius:12px;padding:16px 24px;font-size:14px;font-weight:700;border-left:5px solid #2ecc71;box-shadow:0 10px 30px rgba(0,0,0,.2);animation:popUp .3s ease;';
+    t.textContent = '🐾 Subscribed! Welcome to the PuppyPlace family.';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }, 300);
+}
+// Show popup on first visit (not shown in same session)
+if (!sessionStorage.getItem('pp_nl_shown')) {
+  setTimeout(openNlPopup, 2000);
+}
+
+/* ══════════════════════════════════════════
+   FIND PRODUCT FORM
+   ══════════════════════════════════════════ */
+function submitFindRequest() {
+  const name = document.getElementById('findName').value.trim();
+  const email = document.getElementById('findEmail').value.trim();
+  const whatsapp = document.getElementById('findWhatsapp').value.trim();
+  const product = document.getElementById('findProduct').value.trim();
+
+  // Simple validation
+  let valid = true;
+  ['findName','findEmail','findWhatsapp','findProduct'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) { el.style.borderColor = 'var(--red)'; valid = false; }
+    else el.style.borderColor = '';
+  });
+  if (!valid) return;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('findEmail').style.borderColor = 'var(--red)';
+    return;
+  }
+
+  // Send to n8n webhook (non-blocking, fire-and-forget)
+  fetch(N8N_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'product_request', name, email, whatsapp, product, timestamp: new Date().toISOString() }),
+  }).catch(() => {}); // silent fail — form UX is handled locally
+
+  // Show success state
+  document.getElementById('findFormGrid').style.display = 'none';
+  document.getElementById('findSuccess').style.display = 'block';
+}
 
 /* ══════════════════════════════════════════
    REVIEWS & COMMENTS SYSTEM
