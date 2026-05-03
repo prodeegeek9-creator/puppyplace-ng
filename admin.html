@@ -316,7 +316,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
   .prod-toolbar{flex-direction:column;align-items:stretch}
   .search-box input{width:100%}
   .admin-topbar{padding:0 20px;}
-  #trustItemsGrid,#bannerCardsGrid,#blogImagesGrid{grid-template-columns:1fr!important}
+  #bannerCardsGrid,#blogImagesGrid{grid-template-columns:1fr!important}
 }
 </style>
 </head>
@@ -464,11 +464,11 @@ input,select,textarea{font-family:'Nunito',sans-serif}
             <div style="font-size:14px;color:var(--gray);">Upload or paste image URLs to customise cards on the homepage. Changes take effect immediately on save.</div>
           </div>
 
-          <!-- Trust Strip Items -->
+          <!-- Trust Strip Background -->
           <div class="settings-card" style="margin-bottom:24px;">
-            <h3>🚚 Trust Strip Cards</h3>
-            <p>Set images for the 5 trust items (Fast Delivery, Returns, Authentic, Secure Pay, Vet-Backed). Leave blank to show default emoji.</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="trustItemsGrid">
+            <h3>🚚 Trust Strip Background</h3>
+            <p>Upload one background image for the entire trust strip card. The 5 trust items sit on top of it.</p>
+            <div id="trustBgGrid">
               <!-- rendered by JS -->
             </div>
             <button class="settings-save" style="margin-top:20px;" onclick="saveHomepageSettings()">💾 Save Trust Strip</button>
@@ -487,7 +487,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           <!-- Blog Post Images -->
           <div class="settings-card" style="margin-bottom:24px;">
             <h3>📖 Blog Post Thumbnails</h3>
-            <p>Set thumbnail images for blog posts shown on the homepage. Leave blank to use default illustration.</p>
+            <p>Override thumbnail images for your published blog posts. If a post already has a Featured Image set in Blog CMS, that takes priority.</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="blogImagesGrid">
               <!-- rendered by JS -->
             </div>
@@ -1535,35 +1535,24 @@ async function clearHeroImage(settingKey, urlInputId, imgId, prevId) {
 }
 
 /* ══════════════════════════════════════
-   HOMEPAGE SETTINGS
+   HOMEPAGE SETTINGS  (Supabase-backed)
    ══════════════════════════════════════ */
-const HP_KEY = 'pp_homepage_settings';
-
-const TRUST_LABELS = ['Fast Delivery','7-Day Returns','100% Authentic','Secure Pay','Vet-Backed'];
-const TRUST_EMOJIS = ['🚚','↩️','✅','🔒','🏥'];
+const HP_SUPABASE_KEY = 'homepage_settings';
 const BANNER_LABELS = ['Food & Treats','Toys & Play','Grooming Kits'];
-const BLOG_IDS = ['b0','b1','b2','b3','b4','b5'];
-const BLOG_TITLES = [
-  'What to Really Feed Your Dog',
-  'Vaccination Schedule',
-  '5 Commands Every Lagos Dog Should Know',
-  'Setting Up the Perfect Bird Cage',
-  'Keeping Fish Alive Through NEPA Outages',
-  'At-Home Dog Grooming on a Budget',
-];
 
-function getHpSettings() {
-  return JSON.parse(localStorage.getItem(HP_KEY) || '{}');
-}
-function saveHpSettings(hps) {
-  localStorage.setItem(HP_KEY, JSON.stringify(hps));
+// Load current settings object from store_settings
+async function getHpSettings() {
+  try {
+    const { data } = await sbAdmin.from('store_settings').select('value').eq('key', HP_SUPABASE_KEY).single();
+    return data?.value || {};
+  } catch (_) { return {}; }
 }
 
-function renderHpImageField(containerId, key, label, emoji, currentUrl) {
+function renderHpImageField(key, label, emoji, currentUrl) {
   return `<div class="hp-img-field" id="hpField_${key}">
     <div class="hp-img-label">${emoji} ${label}</div>
     <img class="hp-img-preview${currentUrl?' show':''}" id="hpPreview_${key}" src="${currentUrl||''}" alt="${label}"/>
-    <div class="hp-upload-zone" onclick="document.getElementById('hpFile_${key}').click()">
+    <div class="hp-upload-zone" id="hpZone_${key}" onclick="document.getElementById('hpFile_${key}').click()">
       📷 Click to upload image
     </div>
     <input type="file" id="hpFile_${key}" accept="image/*" style="display:none" onchange="hpHandleUpload(this,'${key}')"/>
@@ -1572,37 +1561,67 @@ function renderHpImageField(containerId, key, label, emoji, currentUrl) {
   </div>`;
 }
 
-function renderHomepagePanel() {
-  const hps = getHpSettings();
-  const trustItems = hps.trustItems || Array(5).fill('');
-  const bannerCards = hps.bannerCards || Array(3).fill('');
-  const blogImages = hps.blogImages || {};
+async function renderHomepagePanel() {
+  document.getElementById('trustBgGrid').innerHTML = '<div style="color:var(--gray);font-size:13px;padding:8px 0">Loading…</div>';
+  document.getElementById('bannerCardsGrid').innerHTML = '<div style="color:var(--gray);font-size:13px;padding:8px 0">Loading…</div>';
+  document.getElementById('blogImagesGrid').innerHTML = '<div style="color:var(--gray);font-size:13px;padding:8px 0">Loading…</div>';
 
-  // Trust strip
-  document.getElementById('trustItemsGrid').innerHTML =
-    TRUST_LABELS.map((lbl, i) => renderHpImageField('trustItemsGrid', 'ts'+i, lbl, TRUST_EMOJIS[i], trustItems[i]||'')).join('');
+  const [hps, blogRes] = await Promise.all([
+    getHpSettings(),
+    sbAdmin.from('blog_posts').select('id,title').eq('status','published').order('published_at',{ascending:false}).limit(6),
+  ]);
+
+  const bannerCards = hps.bannerCards || ['','',''];
+  const blogImages  = hps.blogImages  || {};
+
+  // Trust strip — single background image
+  document.getElementById('trustBgGrid').innerHTML =
+    renderHpImageField('trustBg', 'Trust Strip Background', '🖼️', hps.trustBg || '');
 
   // Banner cards
   document.getElementById('bannerCardsGrid').innerHTML =
-    BANNER_LABELS.map((lbl, i) => renderHpImageField('bannerCardsGrid', 'bc'+i, lbl, ['🥩','🧸','✂️'][i], bannerCards[i]||'')).join('');
+    BANNER_LABELS.map((lbl, i) => renderHpImageField('bc'+i, lbl, ['🥩','🧸','✂️'][i], bannerCards[i]||'')).join('');
 
-  // Blog images
-  document.getElementById('blogImagesGrid').innerHTML =
-    BLOG_IDS.map((id, i) => renderHpImageField('blogImagesGrid', 'blog'+id, BLOG_TITLES[i], '📖', blogImages[id]||'')).join('');
+  // Blog images — real posts from Supabase
+  const posts = blogRes.data || [];
+  if (!posts.length) {
+    document.getElementById('blogImagesGrid').innerHTML = '<p style="font-size:13px;color:var(--gray)">No published blog posts yet.</p>';
+  } else {
+    document.getElementById('blogImagesGrid').innerHTML =
+      posts.map(p => renderHpImageField('blog_'+p.id, p.title, '📖', blogImages[p.id]||'')).join('');
+  }
 }
 
-function hpHandleUpload(input, key) {
+async function hpHandleUpload(input, key) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 2*1024*1024) { showToast('Image too large — max 2MB','error'); input.value=''; return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    const url = e.target.result;
-    document.getElementById('hpPreview_'+key).src = url;
-    document.getElementById('hpPreview_'+key).classList.add('show');
-    document.getElementById('hpUrl_'+key).value = url;
-  };
-  reader.readAsDataURL(file);
+  if (file.size > 5*1024*1024) { showToast('Image too large — max 5MB','error'); input.value=''; return; }
+
+  const zone = document.getElementById('hpZone_'+key);
+  if (zone) zone.textContent = '⏳ Uploading…';
+  showToast('Uploading…','warning');
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('bucket', 'hero-images');
+
+  let url;
+  try {
+    const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    url = data.url;
+  } catch (err) {
+    showToast('❌ Upload failed: ' + err.message, 'error');
+    if (zone) zone.textContent = '📷 Click to upload image';
+    return;
+  }
+
+  document.getElementById('hpPreview_'+key).src = url;
+  document.getElementById('hpPreview_'+key).classList.add('show');
+  document.getElementById('hpUrl_'+key).value = url;
+  if (zone) zone.textContent = '✅ Uploaded — click Save to apply';
+  showToast('✅ Uploaded — click Save to apply','success');
 }
 
 function hpUrlChange(input, key) {
@@ -1618,14 +1637,12 @@ function hpClear(key) {
   document.getElementById('hpUrl_'+key).value='';
 }
 
-function saveHomepageSettings() {
-  const hps = getHpSettings();
+async function saveHomepageSettings() {
+  const hps = {};
 
-  // Trust items
-  hps.trustItems = TRUST_LABELS.map((_, i) => {
-    const el = document.getElementById('hpUrl_ts'+i);
-    return el ? el.value.trim() : '';
-  });
+  // Trust strip background
+  const trustEl = document.getElementById('hpUrl_trustBg');
+  if (trustEl) hps.trustBg = trustEl.value.trim();
 
   // Banner cards
   hps.bannerCards = BANNER_LABELS.map((_, i) => {
@@ -1633,16 +1650,21 @@ function saveHomepageSettings() {
     return el ? el.value.trim() : '';
   });
 
-  // Blog images
+  // Blog images — keyed by real post ID
   hps.blogImages = {};
-  BLOG_IDS.forEach(id => {
-    const el = document.getElementById('hpUrl_blog'+id);
-    if (el && el.value.trim()) hps.blogImages[id] = el.value.trim();
+  document.querySelectorAll('[id^="hpUrl_blog_"]').forEach(el => {
+    const postId = el.id.replace('hpUrl_blog_', '');
+    if (el.value.trim()) hps.blogImages[postId] = el.value.trim();
   });
 
-  saveHpSettings(hps);
-  showToast('✅ Homepage settings saved','success');
-  // Re-render to reflect cleared images
+  const { error } = await sbAdmin.from('store_settings').upsert({
+    key: HP_SUPABASE_KEY,
+    value: hps,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) { showToast('❌ ' + error.message, 'error'); return; }
+  showToast('✅ Homepage settings saved', 'success');
   renderHomepagePanel();
 }
 
