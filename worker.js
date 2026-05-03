@@ -126,7 +126,7 @@ async function servePost(slug, env) {
         { headers }
       ),
       fetch(
-        `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.published&slug=neq.${encodeURIComponent(slug)}&select=id,slug,title,category,cat_color&order=published_at.desc&limit=3`,
+        `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.published&slug=neq.${encodeURIComponent(slug)}&select=id,slug,title,category,cat_color,featured_image&order=published_at.desc&limit=3`,
         { headers }
       ),
     ]);
@@ -158,8 +158,13 @@ function renderPost(post, related) {
     : '';
   const relCards = related.map(r => `
     <a class="rel-card" href="/posts/${esc(r.slug)}.html">
-      <div class="rel-cat" style="color:${esc(r.cat_color || '#ED6436')}">${esc(r.category || 'General')}</div>
-      <div class="rel-title">${esc(r.title)}</div>
+      ${r.featured_image
+        ? `<img class="rel-thumb" src="${esc(r.featured_image)}" alt="${esc(r.title)}" loading="lazy"/>`
+        : `<div class="rel-thumb-placeholder">🐾</div>`}
+      <div class="rel-body">
+        <div class="rel-cat" style="color:${esc(r.cat_color || '#ED6436')}">${esc(r.category || 'General')}</div>
+        <div class="rel-title">${esc(r.title)}</div>
+      </div>
     </a>`).join('');
 
   const heroHtml = post.featured_image
@@ -196,6 +201,16 @@ function renderPost(post, related) {
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>${esc(post.title)} — PuppyPlace Blog</title>
 <meta name="description" content="${esc(post.excerpt || '')}"/>
+<meta property="og:type" content="article"/>
+<meta property="og:site_name" content="PuppyPlace"/>
+<meta property="og:title" content="${esc(post.title)}"/>
+<meta property="og:description" content="${esc(post.excerpt || '')}"/>
+${post.featured_image ? `<meta property="og:image" content="${esc(post.featured_image)}"/>` : ''}
+<meta property="og:url" content="https://puppyplace.ng/posts/${esc(post.slug)}.html"/>
+<meta name="twitter:card" content="${post.featured_image ? 'summary_large_image' : 'summary'}"/>
+<meta name="twitter:title" content="${esc(post.title)}"/>
+<meta name="twitter:description" content="${esc(post.excerpt || '')}"/>
+${post.featured_image ? `<meta name="twitter:image" content="${esc(post.featured_image)}"/>` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -233,8 +248,11 @@ a{text-decoration:none;color:inherit}
 .related{border-top:1px solid var(--border);padding:48px 24px 80px}
 .rel-label{font-size:22px;font-weight:900;margin-bottom:24px;color:var(--black)}
 .rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
-.rel-card{background:var(--light);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;display:block;transition:all var(--trans)}
+.rel-card{background:var(--light);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;display:block;transition:all var(--trans)}
 .rel-card:hover{border-color:var(--orange);transform:translateY(-3px);box-shadow:var(--shadow)}
+.rel-thumb{width:100%;height:140px;object-fit:cover;display:block}
+.rel-thumb-placeholder{width:100%;height:140px;background:linear-gradient(135deg,#fdeee7,#fbd4c3);display:flex;align-items:center;justify-content:center;font-size:48px}
+.rel-body{padding:16px}
 .rel-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
 .rel-title{font-size:15px;font-weight:800;line-height:1.4;color:var(--black)}
 .footer{background:#1a1a18;color:rgba(255,255,255,.4);text-align:center;padding:32px 24px;font-size:13px;flex-shrink:0;margin-top:auto}

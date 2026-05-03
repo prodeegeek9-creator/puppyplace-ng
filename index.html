@@ -4,6 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>PuppyPlace.ng — Nigeria's #1 Pet Shop</title>
+<meta name="description" content="Nigeria's #1 online pet store. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="PuppyPlace"/>
+<meta property="og:title" content="PuppyPlace.ng — Nigeria's #1 Pet Shop"/>
+<meta property="og:description" content="Nigeria's #1 online pet store. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
+<meta property="og:url" content="https://puppyplace.ng/"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="PuppyPlace.ng — Nigeria's #1 Pet Shop"/>
+<meta name="twitter:description" content="Nigeria's #1 online pet store. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -1283,7 +1292,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       <button onclick="closeModal()" style="background:var(--light); border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:var(--trans); flex-shrink:0;">✕</button>
     </div>
     <div id="mImgWrap" style="margin:16px 24px; border-radius:var(--r); overflow:hidden; background:var(--light); display:flex; align-items:center; justify-content:center; min-height:180px;">
-      <img id="mImg" src="" alt="" style="width:100%; max-height:260px; object-fit:cover; display:none;"/>
+      <img id="mImg" src="" alt="" loading="lazy" style="width:100%; max-height:260px; object-fit:cover; display:none;"/>
       <span id="mE" style="font-size:72px; padding:24px;">📦</span>
     </div>
     <div style="padding:0 24px 24px;">
@@ -1298,10 +1307,11 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       <!-- Variation selectors -->
       <div id="mVarGroups" style="margin-bottom:16px;"></div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;" id="mG"></div>
-      <div style="display:flex; gap:12px;">
+      <div style="display:flex; gap:12px; margin-bottom:10px;">
         <button id="modalCartBtn" class="btn-primary" style="flex:1; justify-content:center;">🛒 Add to Cart</button>
         <button id="modalWishBtn" class="btn-dark" style="flex:1; justify-content:center;">❤️ Wishlist</button>
       </div>
+      <button id="modalShareBtn" onclick="shareProduct()" style="width:100%;background:var(--light);border:1.5px solid var(--border);border-radius:50px;padding:11px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;color:var(--gray);transition:all var(--trans);" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--gray)'">↗ Share this product</button>
       <!-- Reviews Section -->
       <div class="rv-section" id="mReviews"></div>
     </div>
@@ -1551,7 +1561,7 @@ function renderProds(list) {
       <div class="pc-thumb">
         ${p.tag ? `<span class="pc-badge ${lblMap[p.tag]||'lbl-sale'}">${escHtml(lblText[p.tag]||p.tag)}</span>` : ''}
         <button class="pc-wish" onclick="event.stopPropagation();addWishFromCard(this,'${escHtml(p.id)}')">♡</button>
-        ${p.img ? `<img src="${escHtml(p.img)}" alt="${escHtml(p.n)}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${escHtml(p.e)}</span>`}
+        ${p.img ? `<img src="${escHtml(p.img)}" alt="${escHtml(p.n)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${escHtml(p.e)}</span>`}
         <div class="pc-actions">
           <button class="pa-btn" data-pid="${escHtml(p.id)}" onclick="event.stopPropagation();addCartFromCard(this)">🛒 Add to Cart</button>
           <span class="pa-icon" onclick="event.stopPropagation();openModal('${escHtml(p.id)}')">👁</span>
@@ -1698,6 +1708,29 @@ function selectVarOpt(btn, groupIdx) {
 function closeModal() {
   document.getElementById('modal').style.display = 'none';
   document.body.style.overflow = '';
+}
+
+async function shareProduct() {
+  const pid = openModal._pid;
+  const p = prods.find(x => x.id === pid) || dealData[parseInt((pid||'').slice(1))];
+  if (!p) return;
+  const text = (p.desc || '').replace(/<[^>]+>/g,'').slice(0,120) || p.n;
+  const shareData = {
+    title: p.n,
+    text: `${p.n} — ₦${(p.p).toLocaleString('en-NG')}\n${text}`,
+    url: window.location.origin,
+  };
+  try {
+    if (navigator.share) { await navigator.share(shareData); }
+    else { await navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`); showCopiedToast(); }
+  } catch (_) {}
+}
+function showCopiedToast() {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a1a18;color:#fff;border-radius:50px;padding:12px 24px;font-size:13px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:popUp .3s ease;white-space:nowrap;';
+  t.textContent = '✅ Copied to clipboard';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
 }
 
 function filterCat(el, cat) {
@@ -2113,7 +2146,7 @@ function renderDeals() {
     // Try to match a product from prods array for its image
     const match = prods.find(p => p.n.toLowerCase().includes(d.n.toLowerCase().split(' ').slice(0,2).join(' ').toLowerCase()) || d.n.toLowerCase().includes(p.n.toLowerCase().split(' ').slice(0,2).join(' ').toLowerCase()));
     const imgHtml = (match && match.img)
-      ? `<img src="${match.img}" alt="${d.n}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"/>`
+      ? `<img src="${match.img}" alt="${d.n}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"/>`
       : '';
     return `<div class="deal-item" onclick="openModal('d${i}')">
       <div class="di-img" style="position:relative;">${imgHtml}<span style="${imgHtml?'opacity:0;':''}font-size:70px;position:relative;z-index:1;">${d.e}</span></div>
@@ -2158,6 +2191,7 @@ async function applyHomepageSettings() {
       if (existing) existing.remove();
       const img = document.createElement('img');
       img.src = url;
+      img.loading = 'lazy';
       img.className = 'bc-img-cover';
       img.alt = '';
       card.insertBefore(img, card.firstChild);
