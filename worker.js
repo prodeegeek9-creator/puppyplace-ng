@@ -129,17 +129,13 @@ async function handleOgImageProxy(request, url, env) {
     return new Response('Forbidden', { status: 403 });
   }
 
-  // Attempt Supabase image transform: resize to max 1200px wide at 80% quality.
-  // This keeps images under ~300KB which WhatsApp reliably loads.
-  // Falls back to the original URL if the project is on free tier (no transforms).
-  const transformUrl = imgUrl.replace(
-    '/storage/v1/object/public/',
-    '/storage/v1/render/image/public/'
-  ) + '?width=1200&quality=80&resize=contain';
+  // Route through wsrv.nl to resize/compress on the fly — works on any Supabase plan.
+  // Resizes to max 1200px wide, converts to JPEG at q=82, falls back to original.
+  const wsrvUrl = `https://wsrv.nl/?url=${encodeURIComponent(imgUrl)}&w=1200&output=jpg&q=82&we`;
 
   let upstream;
   try {
-    const res = await fetch(transformUrl);
+    const res = await fetch(wsrvUrl);
     upstream = res.ok ? res : await fetch(imgUrl);
   } catch (_) {
     try { upstream = await fetch(imgUrl); } catch (_) { return new Response('Proxy error', { status: 502 }); }
