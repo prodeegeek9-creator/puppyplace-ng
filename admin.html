@@ -1438,6 +1438,28 @@ function clearBlogFeaturedImg() {
   document.getElementById('bfFeaturedPreviewWrap').style.display = 'none';
 }
 
+// Compress any image to JPEG ≤ 900KB, max 1200px wide, before uploading.
+// Uses the browser Canvas API — no extra libraries needed.
+function compressImage(file, maxWidth = 1200, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxWidth) { height = Math.round(height * maxWidth / width); width = maxWidth; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => {
+        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); }; // fallback
+    img.src = objectUrl;
+  });
+}
+
 async function uploadBlogFeaturedImg(input) {
   const file = input.files[0];
   if (!file) return;
@@ -1445,8 +1467,9 @@ async function uploadBlogFeaturedImg(input) {
   const orig = lbl.childNodes[0].textContent;
   lbl.childNodes[0].textContent = '⏳ Uploading…';
   try {
+    const compressed = await compressImage(file);
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append('file', compressed);
     fd.append('bucket', 'hero-images');
     const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
     const data = await res.json();
@@ -1486,8 +1509,9 @@ async function uploadHeroImage(input, settingKey, imgId, prevId, urlInputId) {
 
   showToast('Uploading…','warning');
 
+  const compressed = await compressImage(file);
   const fd = new FormData();
-  fd.append('file', file);
+  fd.append('file', compressed);
   fd.append('bucket', 'hero-images');
 
   let publicUrl;
@@ -1601,8 +1625,9 @@ async function hpHandleUpload(input, key) {
   if (zone) zone.textContent = '⏳ Uploading…';
   showToast('Uploading…','warning');
 
+  const compressed = await compressImage(file);
   const fd = new FormData();
-  fd.append('file', file);
+  fd.append('file', compressed);
   fd.append('bucket', 'hero-images');
 
   let url;
