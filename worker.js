@@ -124,7 +124,6 @@ function jsonResp(data, status) {
 
 async function handleOgImageProxy(request, url, env) {
   const imgUrl = url.searchParams.get('url');
-  // Only proxy images from our Supabase project — prevents open-redirect abuse
   const supabaseHost = env.SUPABASE_URL ? new URL(env.SUPABASE_URL).host : null;
   if (!imgUrl || !supabaseHost || !imgUrl.startsWith(`https://${supabaseHost}/storage/`)) {
     return new Response('Forbidden', { status: 403 });
@@ -132,13 +131,17 @@ async function handleOgImageProxy(request, url, env) {
   try {
     const upstream = await fetch(imgUrl);
     if (!upstream.ok) return new Response('Not found', { status: 404 });
+    // Buffer the full image so we can set Content-Length — streaming with no
+    // Content-Length causes WhatsApp's preview renderer to drop the image
+    const imageData = await upstream.arrayBuffer();
     const ct = upstream.headers.get('Content-Type') || 'image/jpeg';
-    return new Response(upstream.body, {
+    return new Response(imageData, {
       headers: {
-        'Content-Type': ct,
-        'Cache-Control': 'public, max-age=604800, immutable',
+        'Content-Type':             ct,
+        'Content-Length':           String(imageData.byteLength),
+        'Cache-Control':            'public, max-age=604800, immutable',
         'Access-Control-Allow-Origin': '*',
-        'X-Content-Type-Options': 'nosniff',
+        'X-Content-Type-Options':   'nosniff',
       },
     });
   } catch (_) {
