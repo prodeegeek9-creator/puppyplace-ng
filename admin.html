@@ -887,12 +887,23 @@ function doLogout() {
 
 /* ── SUPABASE LOAD ── */
 async function loadAllProducts(){
-  const { data, error } = await sbAdmin
-    .from('shop_products')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if(error){ console.error('Load error', error); showToast('❌ Could not load products from Supabase','error'); return; }
-  _cachedProducts = (data || []).map(rowToApp);
+  const token = sessionStorage.getItem('pp_token') || '';
+  try {
+    const res  = await fetch('/api/admin/products', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('Load error', err);
+      showToast('❌ Could not load products','error');
+      return;
+    }
+    const data = await res.json();
+    _cachedProducts = (Array.isArray(data) ? data : []).map(rowToApp);
+  } catch (e) {
+    console.error('Load error', e);
+    showToast('❌ Could not load products','error');
+  }
 }
 
 function getProducts(){ return _cachedProducts; }
