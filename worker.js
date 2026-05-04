@@ -128,25 +128,39 @@ async function handleOgImageProxy(request, url, env) {
   if (!imgUrl || !supabaseHost || !imgUrl.startsWith(`https://${supabaseHost}/storage/`)) {
     return new Response('Forbidden', { status: 403 });
   }
+
+  // Attempt Supabase image transform: resize to max 1200px wide at 80% quality.
+  // This keeps images under ~300KB which WhatsApp reliably loads.
+  // Falls back to the original URL if the project is on free tier (no transforms).
+  const transformUrl = imgUrl.replace(
+    '/storage/v1/object/public/',
+    '/storage/v1/render/image/public/'
+  ) + '?width=1200&quality=80&resize=contain';
+
+  let upstream;
   try {
-    const upstream = await fetch(imgUrl);
-    if (!upstream.ok) return new Response('Not found', { status: 404 });
-    // Buffer the full image so we can set Content-Length — streaming with no
-    // Content-Length causes WhatsApp's preview renderer to drop the image
-    const imageData = await upstream.arrayBuffer();
-    const ct = upstream.headers.get('Content-Type') || 'image/jpeg';
-    return new Response(imageData, {
-      headers: {
-        'Content-Type':             ct,
-        'Content-Length':           String(imageData.byteLength),
-        'Cache-Control':            'public, max-age=604800, immutable',
-        'Access-Control-Allow-Origin': '*',
-        'X-Content-Type-Options':   'nosniff',
-      },
-    });
+    const res = await fetch(transformUrl);
+    upstream = res.ok ? res : await fetch(imgUrl);
   } catch (_) {
-    return new Response('Proxy error', { status: 502 });
+    try { upstream = await fetch(imgUrl); } catch (_) { return new Response('Proxy error', { status: 502 }); }
   }
+
+  if (!upstream.ok) return new Response('Not found', { status: 404 });
+
+  // Buffer fully so we can set Content-Length — WhatsApp drops images served
+  // without Content-Length (streaming response with unknown size)
+  const imageData = await upstream.arrayBuffer();
+  const ct = upstream.headers.get('Content-Type') || 'image/jpeg';
+
+  return new Response(imageData, {
+    headers: {
+      'Content-Type':                ct,
+      'Content-Length':              String(imageData.byteLength),
+      'Cache-Control':               'public, max-age=604800, immutable',
+      'Access-Control-Allow-Origin': '*',
+      'X-Content-Type-Options':      'nosniff',
+    },
+  });
 }
 
 async function servePost(slug, env) {
