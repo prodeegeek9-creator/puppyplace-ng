@@ -408,7 +408,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)">
             <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
               <div style="font-size:16px;font-weight:900">Recent Products</div>
-              <div class="view-shop-btn" onclick="showPanel('products',document.querySelector('.sb-link:nth-child(2)'))">View All</div>
+              <div class="view-shop-btn" onclick="showPanel('products',document.querySelectorAll('.sb-link')[1])">View All</div>
             </div>
             <table class="prod-table" id="dashRecentTable">
               <thead><tr><th></th><th>Product</th><th>Category</th><th>Price</th><th>Tag</th><th>Stock</th></tr></thead>
@@ -786,7 +786,7 @@ let _cachedProducts = [];
 function rowToApp(row){
   return {
     id:       row.id,
-    n:        row.name,
+    n:        row.name        || '',
     e:        row.emoji         || '📦',
     cat:      row.category,
     pet:      row.pet_type      || 'All',
@@ -965,7 +965,7 @@ function renderTable(){
   tbody.innerHTML = filtered.map(p=>`
     <tr>
       <td class="prod-emoji-cell">${p.e}</td>
-      <td class="prod-name-cell">${escHtml(p.n)}<small>${escHtml(p.brand||'—')} · ${(p.varGroups||[]).map(g=>`${g.type==='Other'?g.customLabel||'Other':g.type}(${g.values.join('/')})`).join(', ') || (p.vars||[]).join(', ') || '—'}</small></td>
+      <td class="prod-name-cell">${escHtml(p.n)}<small>${escHtml(p.brand||'—')} · ${(p.varGroups||[]).map(g=>`${g.type==='Other'?g.customLabel||'Other':g.type}(${(g.values||[]).join('/')})`).join(', ') || (p.vars||[]).join(', ') || '—'}</small></td>
       <td>${escHtml(p.cat)}</td>
       <td>${escHtml(p.pet)}</td>
       <td class="prod-price-cell">${fmt(p.p)}${p.o?`<del>${fmt(p.o)}</del>`:''}</td>
@@ -974,7 +974,7 @@ function renderTable(){
       <td><div class="action-btns">
         <button class="act-btn" title="Edit"      onclick="openForm('${p.id}')">✏️</button>
         <button class="act-btn" title="Duplicate" onclick="duplicateProduct('${p.id}')">📋</button>
-        <button class="act-btn del" title="Delete" onclick="confirmDelete('${p.id}','${p.n.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">🗑️</button>
+        <button class="act-btn del" title="Delete" onclick="confirmDelete('${p.id}','${(p.n||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">🗑️</button>
       </div></td>
     </tr>`).join('');
 }
