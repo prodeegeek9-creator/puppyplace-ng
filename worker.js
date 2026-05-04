@@ -31,6 +31,12 @@ export default {
       return serveSitemap(env);
     }
 
+    // Image proxy for OG tags — re-serves Supabase images through Cloudflare
+    // so social crawlers (WhatsApp etc.) hit a fast, trusted origin with clean headers
+    if (url.pathname === '/api/og-img') {
+      return handleOgImageProxy(request, url, env);
+    }
+
     const postMatch = url.pathname.match(/^\/posts\/([^/]+?)(?:\.html)?$/);
     if (postMatch) {
       return servePost(decodeURIComponent(postMatch[1]), env);
@@ -114,6 +120,30 @@ function jsonResp(data, status) {
       'Access-Control-Allow-Origin': '*',
     },
   });
+}
+
+async function handleOgImageProxy(request, url, env) {
+  const imgUrl = url.searchParams.get('url');
+  // Only proxy images from our Supabase project — prevents open-redirect abuse
+  const supabaseHost = env.SUPABASE_URL ? new URL(env.SUPABASE_URL).host : null;
+  if (!imgUrl || !supabaseHost || !imgUrl.startsWith(`https://${supabaseHost}/storage/`)) {
+    return new Response('Forbidden', { status: 403 });
+  }
+  try {
+    const upstream = await fetch(imgUrl);
+    if (!upstream.ok) return new Response('Not found', { status: 404 });
+    const ct = upstream.headers.get('Content-Type') || 'image/jpeg';
+    return new Response(upstream.body, {
+      headers: {
+        'Content-Type': ct,
+        'Cache-Control': 'public, max-age=604800, immutable',
+        'Access-Control-Allow-Origin': '*',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  } catch (_) {
+    return new Response('Proxy error', { status: 502 });
+  }
 }
 
 async function servePost(slug, env) {
@@ -219,15 +249,18 @@ function renderPost(post, related) {
       </div>`;
 
   const pageTitle = post.meta_title || (post.title + ' — PuppyPlace Blog');
-  const metaDesc  = post.meta_description || plainText(post.excerpt) || plainText(post.content, 160);
-  const imgUrl    = post.featured_image ? escUrl(post.featured_image) : '';
+  const metaDesc  = plainText(post.meta_description || post.excerpt) || plainText(post.content, 160);
+  // Proxy image through Cloudflare so social crawlers (WhatsApp etc.) hit a trusted origin
+  const imgUrl    = post.featured_image
+    ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(post.featured_image)}`)
+    : '';
   const postUrl   = `https://puppyplace.ng/posts/${escUrl(post.slug)}.html`;
   const jsonLd    = JSON.stringify({
     '@context':    'https://schema.org',
     '@type':       'BlogPosting',
     headline:      post.title      || '',
     description:   plainText(post.excerpt) || plainText(post.content, 200),
-    image:         post.featured_image || '',
+    image:         imgUrl || post.featured_image || '',
     author:    { '@type': 'Organization', name: 'PuppyPlace.ng' },
     publisher: { '@type': 'Organization', name: 'PuppyPlace.ng', url: 'https://puppyplace.ng' },
     datePublished: post.published_at || '',
