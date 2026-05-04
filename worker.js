@@ -27,6 +27,10 @@ export default {
       return handleAdminVerify(request, env);
     }
 
+    if (url.pathname === '/sitemap.xml') {
+      return serveSitemap(env);
+    }
+
     const postMatch = url.pathname.match(/^\/posts\/([^/]+?)(?:\.html)?$/);
     if (postMatch) {
       return servePost(decodeURIComponent(postMatch[1]), env);
@@ -214,28 +218,43 @@ function renderPost(post, related) {
         </div>
       </div>`;
 
-  const metaDesc = plainText(post.excerpt) || plainText(post.content, 160);
-  const imgUrl   = post.featured_image ? escUrl(post.featured_image) : '';
+  const pageTitle = post.meta_title || (post.title + ' — PuppyPlace Blog');
+  const metaDesc  = post.meta_description || plainText(post.excerpt) || plainText(post.content, 160);
+  const imgUrl    = post.featured_image ? escUrl(post.featured_image) : '';
+  const postUrl   = `https://puppyplace.ng/posts/${escUrl(post.slug)}.html`;
+  const jsonLd    = JSON.stringify({
+    '@context':    'https://schema.org',
+    '@type':       'BlogPosting',
+    headline:      post.title      || '',
+    description:   plainText(post.excerpt) || plainText(post.content, 200),
+    image:         post.featured_image || '',
+    author:    { '@type': 'Organization', name: 'PuppyPlace.ng' },
+    publisher: { '@type': 'Organization', name: 'PuppyPlace.ng', url: 'https://puppyplace.ng' },
+    datePublished: post.published_at || '',
+    url:           `https://puppyplace.ng/posts/${post.slug}.html`,
+  }).replace(/<\//g, '<\\/');
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>${esc(post.title)} — PuppyPlace Blog</title>
+<title>${esc(pageTitle)}</title>
 <meta name="description" content="${esc(metaDesc)}"/>
+${post.focus_keyword ? `<meta name="keywords" content="${esc(post.focus_keyword)}"/>` : ''}
 <meta property="og:type" content="article"/>
 <meta property="og:site_name" content="PuppyPlace"/>
-<meta property="og:title" content="${esc(post.title)}"/>
+<meta property="og:title" content="${esc(post.meta_title || post.title)}"/>
 <meta property="og:description" content="${esc(metaDesc)}"/>
-<meta property="og:url" content="https://puppyplace.ng/posts/${escUrl(post.slug)}.html"/>
+<meta property="og:url" content="${postUrl}"/>
 ${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>
 <meta property="og:image:secure_url" content="${imgUrl}"/>
 <meta property="og:image:alt" content="${esc(post.title)}"/>` : ''}
-<meta name="twitter:card" content="${imgUrl ? 'summary_large_image' : 'summary'}"/>
-<meta name="twitter:title" content="${esc(post.title)}"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="${esc(post.meta_title || post.title)}"/>
 <meta name="twitter:description" content="${esc(metaDesc)}"/>
 ${imgUrl ? `<meta name="twitter:image" content="${imgUrl}"/>` : ''}
+<script type="application/ld+json">${jsonLd}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -313,6 +332,35 @@ function errorPage(msg) {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Error — PuppyPlace</title>
 <style>body{font-family:sans-serif;text-align:center;padding:100px 24px;background:#f8f9fa}h1{margin-bottom:12px}p{color:#868686;margin-bottom:32px}a{color:#ed6436;font-weight:700}</style>
 </head><body><h1>⚠️ ${esc(msg)}</h1><p>Please try again later.</p><a href="/blog.html">← All Posts</a></body></html>`;
+}
+
+async function serveSitemap(env) {
+  if (!env.SUPABASE_URL) {
+    return new Response('Server not configured', { status: 503 });
+  }
+  let posts;
+  try {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.published&select=slug,published_at&order=published_at.desc`,
+      { headers: sbHeaders(env) }
+    );
+    posts = await res.json();
+    if (!Array.isArray(posts)) posts = [];
+  } catch {
+    return new Response('Failed to generate sitemap', { status: 500 });
+  }
+
+  const urls = posts.map(p => {
+    const lastmod = p.published_at ? p.published_at.slice(0, 10) : '';
+    return `  <url>\n    <loc>https://puppyplace.ng/posts/${encodeURIComponent(p.slug)}.html</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
+  }).join('\n');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
+
+  return new Response(xml, {
+    status: 200,
+    headers: { 'Content-Type': 'application/xml; charset=utf-8' },
+  });
 }
 
 /* ── ADMIN AUTH ── */
