@@ -27,6 +27,11 @@ export default {
       return handleAdminVerify(request, env);
     }
 
+    // Admin product reads — uses service key server-side so RLS is bypassed
+    if (url.pathname === '/api/admin/products' && request.method === 'GET') {
+      return handleAdminProducts(request, env);
+    }
+
     if (url.pathname === '/sitemap.xml') {
       return serveSitemap(env);
     }
@@ -407,6 +412,28 @@ async function serveSitemap(env) {
     status: 200,
     headers: { 'Content-Type': 'application/xml; charset=utf-8' },
   });
+}
+
+/* ── ADMIN PRODUCTS PROXY ── */
+async function handleAdminProducts(request, env) {
+  const auth  = request.headers.get('Authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!(await verifyToken(token, env))) {
+    return jsonResp({ error: 'Unauthorized' }, 401);
+  }
+  if (!env.SUPABASE_URL) {
+    return jsonResp({ error: 'Server not configured' }, 503);
+  }
+  try {
+    const res  = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/shop_products?select=*&order=created_at.desc`,
+      { headers: sbHeaders(env) }
+    );
+    const data = await res.json();
+    return jsonResp(Array.isArray(data) ? data : [], res.status);
+  } catch (e) {
+    return jsonResp({ error: 'Failed to fetch products' }, 500);
+  }
 }
 
 /* ── ADMIN AUTH ── */
