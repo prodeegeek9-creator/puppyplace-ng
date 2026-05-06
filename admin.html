@@ -302,21 +302,102 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 .hp-clear-btn { background:none; border:none; color:var(--gray); font-size:12px; cursor:pointer; font-weight:700; text-decoration:underline; margin-top:4px; }
 .hp-clear-btn:hover { color:var(--red); }
 
+/* ── MOBILE BOTTOM NAV ── */
+.mob-bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:64px;
+  background:var(--dark);
+  border-top:1px solid rgba(255,255,255,.1);
+  z-index:300;
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-around;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  box-shadow:0 -4px 20px rgba(0,0,0,.3);
+}
+.mbn-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  flex:1;padding:8px 0;cursor:pointer;
+  color:rgba(255,255,255,.45);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+  transition:color .2s;
+}
+.mbn-btn.on{color:var(--orange);}
+.mbn-ico{font-size:21px;line-height:1;}
+.mbn-add{
+  width:52px;height:52px;background:var(--orange);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;
+  box-shadow:0 4px 18px rgba(237,100,54,.55);cursor:pointer;
+  transition:all .2s;flex-shrink:0;margin-top:-18px;
+}
+.mbn-add:hover,.mbn-add:active{background:var(--orange-d);transform:scale(1.08);}
+
+/* ── MOBILE TOPBAR ── */
+.mob-admin-topbar{
+  display:none;
+  background:var(--dark);color:#fff;
+  padding:0 16px;height:56px;
+  align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 12px rgba(0,0,0,.25);
+  flex-shrink:0;
+}
+.mob-admin-logo{display:flex;align-items:center;gap:8px;}
+.mob-admin-logo-icon{width:32px;height:32px;background:var(--orange);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.mob-admin-logo-text{font-size:16px;font-weight:900;color:#fff;}
+.mob-admin-logo-text span{color:var(--orange);}
+.mob-admin-title{font-size:14px;font-weight:800;color:rgba(255,255,255,.7);}
+.mob-admin-actions{display:flex;align-items:center;gap:10px;}
+.mob-viewshop{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:50px;padding:6px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;}
+
+/* ── MOBILE PRODUCT CARDS ── */
+@media(max-width:680px){
+  .prod-table-wrap{border-radius:0;border-left:none;border-right:none;}
+  .prod-table thead{display:none;}
+  .prod-table,.prod-table tbody,.prod-table tr,.prod-table td{display:block;width:100%;}
+  .prod-table tr{border-bottom:2px solid var(--light);padding:14px 16px;position:relative;background:var(--white);}
+  .prod-table tr:last-child{border-bottom:none;}
+  .prod-table td{border-bottom:none;padding:2px 0;}
+  .prod-emoji-cell{float:left;margin-right:12px;margin-top:2px;font-size:42px;width:52px;text-align:center;}
+  .prod-name-cell{font-size:14px;font-weight:800;padding-right:80px;}
+  .prod-name-cell small{font-size:12px;}
+  .prod-price-cell{color:var(--orange)!important;font-size:14px;font-weight:900;}
+  .action-btns{position:absolute;top:14px;right:16px;flex-direction:row;gap:6px;}
+  .act-btn{width:34px;height:34px;}
+  /* Hide less important columns in card view */
+  .prod-table td:nth-child(4),.prod-table td:nth-child(5),.prod-table td:nth-child(6){display:inline-block;margin-right:6px;}
+  .prod-table td:nth-child(7){display:none;}/* stock col */
+}
+
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
-  .admin-layout{grid-template-columns:1fr}
-  .admin-sidebar{display:none}
-  .stats-grid{grid-template-columns:1fr 1fr}
-  .settings-grid{grid-template-columns:1fr}
+  .admin-layout{grid-template-columns:1fr;}
+  .admin-sidebar{display:none!important;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .settings-grid{grid-template-columns:1fr;}
+  .admin-topbar{display:none!important;}
+  .mob-admin-topbar{display:flex!important;}
+  .mob-bottom-nav{display:flex!important;}
+  body{padding-bottom:64px;}
+  .admin-content{padding:16px;}
+  .admin-main{min-height:calc(100vh - 64px);}
+  .toast{bottom:80px;}
 }
 @media(max-width:600px){
-  .stats-grid{grid-template-columns:1fr}
-  .form-grid{grid-template-columns:1fr}
-  .admin-content{padding:20px}
-  .prod-toolbar{flex-direction:column;align-items:stretch}
-  .search-box input{width:100%}
-  .admin-topbar{padding:0 20px;}
-  #bannerCardsGrid,#blogImagesGrid{grid-template-columns:1fr!important}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .admin-content{padding:12px;}
+  .prod-toolbar{flex-direction:column;align-items:stretch;}
+  .search-box{width:100%;}
+  .search-box input{width:100%;}
+  .blog-toolbar{flex-direction:column;gap:10px;}
+  .settings-grid{grid-template-columns:1fr;}
+  #bannerCardsGrid,#blogImagesGrid{grid-template-columns:1fr!important;}
+  .hero-img-grid{grid-template-columns:1fr!important;}
+  .form-modal{max-height:100vh;border-radius:var(--r) var(--r) 0 0;align-self:flex-end;}
+  .form-bg{align-items:flex-end;padding:0;}
+  .blog-form-modal{max-height:100vh;border-radius:var(--r) var(--r) 0 0;align-self:flex-end;}
+  .blog-form-bg{align-items:flex-end;padding:0;}
 }
 </style>
 </head>
@@ -372,6 +453,19 @@ input,select,textarea{font-family:'Nunito',sans-serif}
     </aside>
 
     <div class="admin-main">
+
+      <!-- Mobile Topbar (hidden on desktop) -->
+      <div class="mob-admin-topbar" id="mobAdminTopbar">
+        <div class="mob-admin-logo">
+          <div class="mob-admin-logo-icon">🐾</div>
+          <div class="mob-admin-logo-text">Puppy<span>Place</span></div>
+        </div>
+        <div class="mob-admin-title" id="mobPageTitle">Dashboard</div>
+        <div class="mob-admin-actions">
+          <button class="mob-viewshop" onclick="window.open('index.html','_blank','noopener,noreferrer')">🔗 Shop</button>
+        </div>
+      </div>
+
       <div class="admin-topbar">
         <div class="admin-page-title" id="pageTitle">Dashboard</div>
         <div class="admin-topbar-right">
@@ -575,7 +669,28 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           </div>
         </div>
 
-      </div></div></div></div><!-- Blog Form Modal -->
+      </div>
+    </div><!-- /.admin-main -->
+  </div><!-- /.admin-layout -->
+
+  <!-- Mobile Bottom Nav (hidden on desktop) -->
+  <div class="mob-bottom-nav" id="mobBottomNav">
+    <div class="mbn-btn on" id="mbn-dashboard" onclick="showPanel('dashboard',null)">
+      <span class="mbn-ico">📊</span>Dashboard
+    </div>
+    <div class="mbn-btn" id="mbn-products" onclick="showPanel('products',null)">
+      <span class="mbn-ico">📦</span>Products
+    </div>
+    <div class="mbn-add" onclick="openForm()">＋</div>
+    <div class="mbn-btn" id="mbn-blog" onclick="showPanel('blog',null)">
+      <span class="mbn-ico">📝</span>Blog
+    </div>
+    <div class="mbn-btn" id="mbn-settings" onclick="showPanel('settings',null)">
+      <span class="mbn-ico">⚙️</span>Settings
+    </div>
+  </div>
+
+</div><!-- /#adminShell --><!-- Blog Form Modal -->
 <div class="blog-form-bg" id="blogFormBg" onclick="if(event.target===this)closeBlogForm()">
   <div class="blog-form-modal" onclick="event.stopPropagation()">
     <div class="bf-hd">
@@ -926,12 +1041,21 @@ function showPanel(name, el){
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
   const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
-  document.getElementById('pageTitle').textContent = titles[name]||name;
+  const title = titles[name]||name;
+  document.getElementById('pageTitle').textContent = title;
+  const mobTitle = document.getElementById('mobPageTitle');
+  if(mobTitle) mobTitle.textContent = title;
+  /* sync mobile bottom nav */
+  document.querySelectorAll('.mbn-btn').forEach(b=>b.classList.remove('on'));
+  const mbnMap = {dashboard:'mbn-dashboard',products:'mbn-products',blog:'mbn-blog',settings:'mbn-settings'};
+  if(mbnMap[name]){ const btn=document.getElementById(mbnMap[name]); if(btn) btn.classList.add('on'); }
   if(name==='products') renderTable();
   if(name==='dashboard'){ updateStats(); renderDashRecent(); }
   if(name==='blog') loadBlogPosts();
   if(name==='hero') loadHeroSettings();
   if(name==='homepage') renderHomepagePanel();
+  /* scroll to top on panel switch (mobile UX) */
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ── STATS ── */

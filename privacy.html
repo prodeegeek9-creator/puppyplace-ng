@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Privacy Policy — PuppyPlace.ng</title>
+<meta name="description" content="PuppyPlace.ng Privacy Policy — how we collect, use and protect your personal data."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{overflow-x:hidden;font-size:14px;}
+body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333;}
+a{text-decoration:none;color:inherit;}
+:root{--orange:#ed6436;--black:#0e0e0c;--gray:#868686;--light:#f1f3f5;--border:#e9ecef;--white:#fff;--r:12px;--shadow:0 4px 20px rgba(0,0,0,0.06);--trans:.3s cubic-bezier(0.4,0,0.2,1);}
+
+.site-header{background:var(--white);box-shadow:var(--shadow);position:sticky;top:0;z-index:300;border-bottom:1px solid var(--border);}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:70px;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:40px;height:40px;background:var(--orange);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.logo-name{font-size:20px;font-weight:900;color:var(--black);}
+.logo-name span{color:var(--orange);}
+.header-nav{display:flex;align-items:center;gap:24px;}
+.header-nav a{font-size:13px;font-weight:700;color:var(--gray);transition:color var(--trans);}
+.header-nav a:hover{color:var(--orange);}
+.btn-primary{background:var(--orange);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;padding:10px 22px;border-radius:50px;border:none;cursor:pointer;}
+.mob-bar{display:none;background:var(--white);border-bottom:1px solid var(--border);padding:0 16px;height:60px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:400;}
+.mob-logo{display:flex;align-items:center;gap:8px;}
+.mob-logo-icon{width:34px;height:34px;background:var(--orange);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.mob-logo-text{font-size:18px;font-weight:900;color:var(--black);}
+.mob-logo-text span{color:var(--orange);}
+
+.page-hero{background:linear-gradient(135deg,var(--black),#2c2c24);padding:60px 24px;text-align:center;}
+.page-hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(237,100,54,.15);border:1px solid rgba(237,100,54,.3);color:var(--orange);font-size:12px;font-weight:800;text-transform:uppercase;padding:6px 16px;border-radius:50px;margin-bottom:16px;}
+.page-hero h1{font-size:clamp(24px,4vw,42px);font-weight:900;color:#fff;margin-bottom:12px;}
+.page-hero p{font-size:14px;color:rgba(255,255,255,.55);max-width:480px;margin:0 auto;}
+
+.doc-wrap{max-width:780px;margin:0 auto;padding:56px 24px;}
+.doc-meta{font-size:13px;color:var(--gray);margin-bottom:40px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.doc-meta strong{color:var(--black);}
+
+.doc-section{margin-bottom:40px;}
+.doc-section h2{font-size:18px;font-weight:900;color:var(--black);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--orange);display:inline-block;}
+.doc-section p{font-size:14px;line-height:1.9;color:#555;margin-bottom:12px;}
+.doc-section ul{padding-left:20px;margin-bottom:12px;}
+.doc-section li{font-size:14px;line-height:1.9;color:#555;margin-bottom:6px;}
+.doc-section strong{color:var(--black);font-weight:800;}
+.doc-section a{color:var(--orange);font-weight:700;}
+.doc-section a:hover{text-decoration:underline;}
+
+.toc{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px 28px;margin-bottom:40px;box-shadow:var(--shadow);}
+.toc h3{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:14px;}
+.toc ol{padding-left:18px;}
+.toc li{font-size:13px;line-height:1.7;color:var(--black);margin-bottom:4px;}
+.toc a{color:var(--orange);font-weight:700;}
+
+footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;margin-top:0;}
+.footer-inner{max-width:780px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:32px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.08);}
+.footer-brand{font-size:20px;font-weight:900;color:#fff;margin-bottom:10px;}
+.footer-brand span{color:var(--orange);}
+.footer-col h4{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin-bottom:12px;}
+.footer-col a{display:block;font-size:13px;color:rgba(255,255,255,.6);padding:3px 0;margin-bottom:4px;transition:color var(--trans);}
+.footer-col a:hover{color:var(--orange);}
+.footer-bottom{max-width:780px;margin:20px auto 0;font-size:12px;color:rgba(255,255,255,.35);text-align:center;}
+
+@media(max-width:768px){
+  .site-header{display:none;}
+  .mob-bar{display:flex;}
+  .doc-wrap{padding:36px 16px;}
+  .footer-inner{flex-direction:column;gap:20px;}
+}
+</style>
+</head>
+<body>
+
+<div class="mob-bar">
+  <a href="index.html" class="mob-logo">
+    <div class="mob-logo-icon">🐾</div>
+    <div class="mob-logo-text">Puppy<span>Place</span></div>
+  </a>
+  <a href="shop.html" style="font-size:13px;font-weight:800;color:var(--orange);">🛍️ Shop</a>
+</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">🐾</div>
+      <div class="logo-name">Puppy<span>Place</span></div>
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <a href="shop.html"><button class="btn-primary">🛍️ Shop Now</button></a>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="page-hero-tag">🔒 Legal</div>
+  <h1>Privacy Policy</h1>
+  <p>How PuppyPlace.ng collects, uses and protects your personal information.</p>
+</div>
+
+<div class="doc-wrap">
+
+  <div class="doc-meta">
+    Last updated: <strong>1 January 2025</strong> &nbsp;·&nbsp; Effective: <strong>1 January 2025</strong><br/>
+    Questions? Email us at <a href="mailto:privacy@puppyplace.ng" style="color:var(--orange);font-weight:700;">privacy@puppyplace.ng</a>
+  </div>
+
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#s1">Information We Collect</a></li>
+      <li><a href="#s2">How We Use Your Information</a></li>
+      <li><a href="#s3">Information Sharing</a></li>
+      <li><a href="#s4">Cookies &amp; Tracking</a></li>
+      <li><a href="#s5">Data Security</a></li>
+      <li><a href="#s6">Your Rights</a></li>
+      <li><a href="#s7">Children's Privacy</a></li>
+      <li><a href="#s8">Third-Party Links</a></li>
+      <li><a href="#s9">Changes to This Policy</a></li>
+      <li><a href="#s10">Contact Us</a></li>
+    </ol>
+  </div>
+
+  <div class="doc-section" id="s1">
+    <h2>1. Information We Collect</h2>
+    <p>We collect information you provide directly to us and information collected automatically when you use our services.</p>
+    <p><strong>Information you provide:</strong></p>
+    <ul>
+      <li><strong>Account information</strong> — name, email address, phone number and password when you register.</li>
+      <li><strong>Order information</strong> — name, delivery address, phone number, email and payment details when you place an order.</li>
+      <li><strong>Communications</strong> — messages, reviews and feedback you send us.</li>
+      <li><strong>Newsletter subscriptions</strong> — email address if you subscribe to our newsletter.</li>
+    </ul>
+    <p><strong>Information collected automatically:</strong></p>
+    <ul>
+      <li><strong>Log data</strong> — IP address, browser type, pages visited, time spent on pages and referring URL.</li>
+      <li><strong>Device data</strong> — device type, operating system and unique device identifiers.</li>
+      <li><strong>Usage data</strong> — how you interact with our website, products viewed and purchases made.</li>
+      <li><strong>Cookies</strong> — small files stored on your device (see Section 4).</li>
+    </ul>
+  </div>
+
+  <div class="doc-section" id="s2">
+    <h2>2. How We Use Your Information</h2>
+    <p>We use the information we collect to:</p>
+    <ul>
+      <li>Process and fulfil your orders, including sending order confirmations and delivery updates.</li>
+      <li>Create and manage your account.</li>
+      <li>Provide customer support and respond to your enquiries.</li>
+      <li>Send promotional emails and newsletters (you may unsubscribe at any time).</li>
+      <li>Personalise your shopping experience and recommend products.</li>
+      <li>Improve our website, products and services.</li>
+      <li>Detect, investigate and prevent fraudulent transactions and other illegal activity.</li>
+      <li>Comply with legal obligations under Nigerian law, including the Nigeria Data Protection Regulation (NDPR).</li>
+    </ul>
+  </div>
+
+  <div class="doc-section" id="s3">
+    <h2>3. Information Sharing</h2>
+    <p>We do <strong>not</strong> sell, trade or rent your personal information to third parties. We may share your information only in the following circumstances:</p>
+    <ul>
+      <li><strong>Service providers</strong> — companies that help us run our business (payment processors, courier partners, email providers). They are contractually bound to protect your data.</li>
+      <li><strong>Legal requirements</strong> — if required by law, court order or government authority.</li>
+      <li><strong>Business transfers</strong> — if PuppyPlace.ng is acquired by or merged with another company, your data may be transferred as part of that transaction. We will notify you before this occurs.</li>
+      <li><strong>With your consent</strong> — in any other situation with your explicit permission.</li>
+    </ul>
+    <p>Our payment provider is <strong>Paystack</strong> (a Stripe company). Paystack processes your card details directly and we never receive or store your full card number. See <a href="https://paystack.com/privacy" target="_blank" rel="noopener">Paystack's Privacy Policy</a> for details.</p>
+  </div>
+
+  <div class="doc-section" id="s4">
+    <h2>4. Cookies &amp; Tracking</h2>
+    <p>We use cookies and similar technologies to:</p>
+    <ul>
+      <li><strong>Essential cookies</strong> — keep you logged in and remember your cart contents. These cannot be disabled.</li>
+      <li><strong>Analytics cookies</strong> — understand how visitors use our website (e.g., Google Analytics). These are anonymous.</li>
+      <li><strong>Preference cookies</strong> — remember your language and display settings.</li>
+      <li><strong>Marketing cookies</strong> — deliver relevant advertisements (only with your consent).</li>
+    </ul>
+    <p>You can control cookies through your browser settings. Note that disabling certain cookies may affect website functionality.</p>
+  </div>
+
+  <div class="doc-section" id="s5">
+    <h2>5. Data Security</h2>
+    <p>We implement industry-standard security measures to protect your personal information:</p>
+    <ul>
+      <li>All data is transmitted over encrypted HTTPS connections.</li>
+      <li>Passwords are hashed and never stored in plain text.</li>
+      <li>Payment data is handled by PCI-DSS compliant processors.</li>
+      <li>We regularly review our security practices and update them as needed.</li>
+    </ul>
+    <p>While we take every reasonable precaution, no method of electronic transmission is 100% secure. If you believe your account has been compromised, please <a href="contact.html">contact us</a> immediately.</p>
+  </div>
+
+  <div class="doc-section" id="s6">
+    <h2>6. Your Rights</h2>
+    <p>Under the Nigeria Data Protection Regulation (NDPR), you have the right to:</p>
+    <ul>
+      <li><strong>Access</strong> — request a copy of the personal data we hold about you.</li>
+      <li><strong>Correction</strong> — ask us to correct inaccurate or incomplete data.</li>
+      <li><strong>Deletion</strong> — request that we delete your personal data, subject to legal obligations.</li>
+      <li><strong>Objection</strong> — object to us processing your data for direct marketing purposes.</li>
+      <li><strong>Portability</strong> — receive your data in a structured, machine-readable format.</li>
+      <li><strong>Withdraw consent</strong> — where processing is based on your consent, you may withdraw it at any time.</li>
+    </ul>
+    <p>To exercise any of these rights, contact us at <a href="mailto:privacy@puppyplace.ng">privacy@puppyplace.ng</a>. We will respond within 30 days.</p>
+  </div>
+
+  <div class="doc-section" id="s7">
+    <h2>7. Children's Privacy</h2>
+    <p>Our services are not directed at children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have inadvertently collected such information, please contact us and we will delete it promptly.</p>
+  </div>
+
+  <div class="doc-section" id="s8">
+    <h2>8. Third-Party Links</h2>
+    <p>Our website may contain links to third-party websites, including social media platforms, payment providers and partner brands. We are not responsible for the privacy practices of these sites. We encourage you to read their privacy policies before providing any personal information.</p>
+  </div>
+
+  <div class="doc-section" id="s9">
+    <h2>9. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements. When we make significant changes, we will notify you by email (if you have an account) or by placing a prominent notice on our website. The date at the top of this page indicates when the policy was last updated.</p>
+    <p>Continued use of our services after any changes constitutes your acceptance of the updated policy.</p>
+  </div>
+
+  <div class="doc-section" id="s10">
+    <h2>10. Contact Us</h2>
+    <p>If you have questions, concerns or requests regarding this Privacy Policy or our data practices, please contact us:</p>
+    <ul>
+      <li><strong>Email:</strong> <a href="mailto:privacy@puppyplace.ng">privacy@puppyplace.ng</a></li>
+      <li><strong>Phone:</strong> 0800-PUPPY-NG</li>
+      <li><strong>Address:</strong> 14 Admiralty Way, Lekki Phase 1, Lagos Island, Lagos State, Nigeria.</li>
+      <li><strong>Online:</strong> <a href="contact.html">Contact form</a></li>
+    </ul>
+    <p>Our Data Protection Officer is available to address any privacy-related concerns within 30 days of receipt.</p>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">Puppy<span>Place</span>.ng</div>
+      <div style="font-size:13px;line-height:1.8;max-width:220px;">Nigeria's #1 online pet store.</div>
+    </div>
+    <div class="footer-col"><h4>Shop</h4><a href="shop.html">All Products</a><a href="shop.html?cat=Food">Food &amp; Treats</a><a href="shop.html?cat=Toy">Toys</a></div>
+    <div class="footer-col"><h4>Company</h4><a href="about.html">About Us</a><a href="contact.html">Contact</a><a href="blog.html">Blog</a><a href="privacy.html">Privacy</a></div>
+  </div>
+  <div class="footer-bottom">&copy; 2025 PuppyPlace.ng — All rights reserved.</div>
+</footer>
+
+</body>
+</html>
