@@ -711,6 +711,23 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 .nl-popup-paw { font-size: 48px; margin-bottom: 14px; display: block; }
 @media (max-width: 480px) { .nl-popup-box { padding: 28px 20px; } }
 
+/* === FOOTER ACCORDION (MOBILE) === */
+.fc-h { display: flex; align-items: center; justify-content: space-between; }
+.fc-arr { font-size: 20px; line-height: 1; font-weight: 700; color: rgba(255,255,255,.5); display: none; transition: transform .3s; }
+.fc.open .fc-arr { transform: rotate(45deg); }
+.fc-links a { display: block; }
+@media (max-width: 768px) {
+  .fc-arr { display: block; }
+  .fc-links { max-height: 0; overflow: hidden; transition: max-height .35s ease; }
+  .fc.open .fc-links { max-height: 400px; }
+}
+
+/* === SEE MORE BUTTON === */
+.see-more-wrap { text-align: center; margin: 32px 0 8px; }
+.see-more-btn { display: inline-flex; align-items: center; gap: 10px; background: var(--black); color: #fff; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 15px; padding: 14px 36px; border-radius: 50px; text-decoration: none; transition: all var(--trans); border: 2px solid var(--black); }
+.see-more-btn:hover { background: var(--orange); border-color: var(--orange); transform: translateY(-2px); box-shadow: var(--shadow2); }
+@media (max-width: 768px) { .see-more-btn { font-size: 14px; padding: 12px 28px; } }
+
 /* === FIND PRODUCT CARD === */
 .find-card { background: var(--white); border-radius: var(--r); padding: 40px; box-shadow: var(--shadow); margin: 8px 0 40px; border: 1px solid var(--border); }
 .find-card-inner { max-width: 700px; margin: 0 auto; text-align: center; }
@@ -999,7 +1016,10 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         </div>
         
         <div class="prod-grid" id="prodGrid"></div>
-        
+        <div class="see-more-wrap" id="seeMoreWrap" style="display:none;">
+          <a href="shop.html" class="see-more-btn">🛍️ See All Products →</a>
+        </div>
+
       </div>
 
       <div class="sec" id="pets">
@@ -1081,39 +1101,48 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       </div>
     </div>
     <div class="fc">
-      <h4>Shop</h4>
-      <a href="#">Dog Food</a>
-      <a href="#">Cat Food</a>
-      <a href="#">Toys &amp; Play</a>
-      <a href="#">Grooming</a>
-      <a href="#">Health &amp; Meds</a>
-      <a href="#">Accessories</a>
+      <h4 class="fc-h" onclick="toggleFc(this)">Shop <span class="fc-arr">+</span></h4>
+      <div class="fc-links">
+        <a href="shop.html">All Products</a>
+        <a href="shop.html?cat=Food">Dog Food</a>
+        <a href="shop.html?cat=Food">Cat Food</a>
+        <a href="shop.html?cat=Toy">Toys &amp; Play</a>
+        <a href="shop.html?cat=Grooming">Grooming</a>
+        <a href="shop.html?cat=Health">Health &amp; Meds</a>
+        <a href="shop.html?cat=Accessories">Accessories</a>
+      </div>
     </div>
     <div class="fc">
-      <h4>Pets</h4>
-      <a href="#">Dogs</a>
-      <a href="#">Cats</a>
-      <a href="#">Birds</a>
-      <a href="#">Fish</a>
-      <a href="#">Reptiles</a>
-      <a href="#">Find a Vet</a>
+      <h4 class="fc-h" onclick="toggleFc(this)">Pets <span class="fc-arr">+</span></h4>
+      <div class="fc-links">
+        <a href="shop.html?pet=Dog">Dogs</a>
+        <a href="shop.html?pet=Cat">Cats</a>
+        <a href="shop.html?pet=Bird">Birds</a>
+        <a href="#">Fish</a>
+        <a href="#">Reptiles</a>
+        <a href="#vets">Find a Vet</a>
+      </div>
     </div>
     <div class="fc">
-      <h4>Help</h4>
-      <a href="#">Track Order</a>
-      <a href="#">Returns Policy</a>
-      <a href="#">Shipping Info</a>
-      <a href="#">FAQs</a>
-      <a href="#">Contact Us</a>
+      <h4 class="fc-h" onclick="toggleFc(this)">Help <span class="fc-arr">+</span></h4>
+      <div class="fc-links">
+        <a href="#">Track Order</a>
+        <a href="#">Returns Policy</a>
+        <a href="#">Shipping Info</a>
+        <a href="#">FAQs</a>
+        <a href="contact.html">Contact Us</a>
+      </div>
     </div>
     <div class="fc">
-      <h4>Company</h4>
-      <a href="#">About Us</a>
-      <a href="/blog.html">Blog</a>
-      <a href="#">Sell on PuppyPlace</a>
-      <a href="#">Careers</a>
-      <a href="#">Terms</a>
-      <a href="#">Privacy</a>
+      <h4 class="fc-h" onclick="toggleFc(this)">Company <span class="fc-arr">+</span></h4>
+      <div class="fc-links">
+        <a href="about.html">About Us</a>
+        <a href="blog.html">Blog</a>
+        <a href="#">Sell on PuppyPlace</a>
+        <a href="#">Careers</a>
+        <a href="#">Terms</a>
+        <a href="privacy.html">Privacy</a>
+      </div>
     </div>
   </div>
   <div class="footer-bottom">
@@ -1343,9 +1372,9 @@ async function loadProductsFromSupabase() {
 
     prods = (data || []).map(row => ({
       id:    row.id,
-      n:     row.name,
+      n:     row.name       || '',
       e:     row.emoji      || '📦',
-      cat:   row.category,
+      cat:   row.category   || '',
       pet:   row.pet_type   || 'All',
       brand: row.brand      || '',
       p:     row.price,
@@ -1549,13 +1578,18 @@ const lblMap={sale:'lbl-sale',new:'lbl-new',hot:'lbl-hot',best:'lbl-best',popula
 const lblText={sale:'Sale',new:'New',hot:'Hot',best:'Best Seller',popular:'Popular'};
 
 function renderProds(list) {
+  const LIMIT = 8;
   const g = document.getElementById('prodGrid');
+  const seeMore = document.getElementById('seeMoreWrap');
   if (!list.length) {
     g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--gray)"><div style="font-size:48px;margin-bottom:16px">📦</div><div style="font-size:16px;font-weight:800">No products yet</div><div style="font-size:13px;margin-top:8px">Products added from the admin panel will appear here.</div></div>';
+    if (seeMore) seeMore.style.display = 'none';
     return;
   }
+  const shown = list.slice(0, LIMIT);
+  if (seeMore) seeMore.style.display = list.length > LIMIT ? '' : 'none';
   g.innerHTML = '';
-  list.forEach(p => {
+  shown.forEach(p => {
     const disc = p.o ? Math.round((1 - p.p / p.o) * 100) : 0;
     g.innerHTML += `<div class="pcard" onclick="openModal('${escHtml(p.id)}')">
       <div class="pc-thumb">
@@ -1759,7 +1793,7 @@ function sortProds(v) {
 function liveSearch(q) {
   if (!q) { renderProds(prods); return; }
   q = q.toLowerCase();
-  renderProds(prods.filter(p => p.n.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q) || p.pet.toLowerCase().includes(q)));
+  renderProds(prods.filter(p => (p.n||'').toLowerCase().includes(q) || (p.cat||'').toLowerCase().includes(q) || (p.pet||'').toLowerCase().includes(q)));
 }
 function setNav(el) { document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('on')); el.classList.add('on'); }
 
@@ -2424,13 +2458,76 @@ function submitReview(pid) {
     date: new Date().toISOString(),
   };
   saveReview(pid, review);
-  renderReviews(pid); // re-render inline
+  renderReviews(pid);
 
-  // Scroll reviews section into view smoothly
   setTimeout(() => {
     const el = document.getElementById('mReviews');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 80);
+}
+
+/* ══════════════════════════════════════════
+   SEARCH BAR TYPEWRITER ANIMATION
+   Cycles: "Shop for your lovely pet" → backspace to "Shop" → cycle 30 suffixes
+   ══════════════════════════════════════════ */
+(function initTypewriter() {
+  const el = document.getElementById('sInput');
+  if (!el) return;
+
+  const BASE = 'Shop';
+  const PHRASES = [
+    ' for your lovely pet',
+    ' dog food', ' cat toys', ' grooming kits', ' pet beds',
+    ' dog leashes', ' cat litter', ' bird feed', ' rabbit pellets',
+    ' dog treats', ' cat food', ' fish tanks', ' pet carriers',
+    ' dog collars', ' pet shampoo', ' vet supplies', ' reptile food',
+    ' hamster cages', ' dog harnesses', ' cat scratchers', ' pet vitamins',
+    ' flea treatment', ' pet bowls', ' dog dental chews', ' cat litter boxes',
+    ' bird cages', ' dog training pads', ' cat beds', ' pet strollers',
+    ' aquarium supplies', ' pet accessories',
+  ];
+
+  let idx = 0, pos = 0, deleting = false;
+
+  function tick() {
+    if (el === document.activeElement) { setTimeout(tick, 400); return; }
+    const full = BASE + PHRASES[idx];
+    if (!deleting) {
+      pos++;
+      el.placeholder = full.slice(0, pos);
+      if (pos >= full.length) {
+        deleting = true;
+        setTimeout(tick, idx === 0 ? 2200 : 1600);
+      } else {
+        setTimeout(tick, 75);
+      }
+    } else {
+      pos--;
+      el.placeholder = full.slice(0, pos);
+      if (pos <= BASE.length) {
+        deleting = false;
+        idx = (idx + 1) % PHRASES.length;
+        setTimeout(tick, 380);
+      } else {
+        setTimeout(tick, 38);
+      }
+    }
+  }
+
+  el.placeholder = BASE;
+  pos = BASE.length;
+  setTimeout(tick, 1200);
+})();
+
+/* ══════════════════════════════════════════
+   FOOTER ACCORDION (MOBILE)
+   ══════════════════════════════════════════ */
+function toggleFc(h) {
+  if (window.innerWidth > 768) return;
+  const fc = h.closest('.fc');
+  const arr = h.querySelector('.fc-arr');
+  fc.classList.toggle('open');
+  if (arr) arr.textContent = fc.classList.contains('open') ? '−' : '+';
 }
 
 </script>

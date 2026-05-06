@@ -42,6 +42,11 @@ export default {
       return servePost(decodeURIComponent(postMatch[1]), env);
     }
 
+    const productMatch = url.pathname.match(/^\/product\/([^/]+?)(?:\.html)?$/);
+    if (productMatch) {
+      return serveProduct(decodeURIComponent(productMatch[1]), env);
+    }
+
     return env.ASSETS.fetch(request);
   },
 };
@@ -465,4 +470,229 @@ async function handleAdminVerify(request, env) {
   try { body = await request.json(); } catch { return jsonResp({ ok: false }, 400); }
   const valid = await verifyToken(body.token, env);
   return jsonResp({ ok: valid }, valid ? 200 : 401);
+}
+
+/* ── PRODUCT SSR ── */
+
+async function serveProduct(id, env) {
+  if (!env.SUPABASE_URL) return html(productErrorPage('Server not configured.'), 503);
+
+  let product;
+  try {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(id)}&active=eq.true&select=*`,
+      { headers: sbHeaders(env) }
+    );
+    const rows = await res.json();
+    if (!rows || !rows.length) return html(productNotFoundPage(), 404);
+    product = rows[0];
+  } catch (e) {
+    return html(productErrorPage('Failed to load product.'), 500);
+  }
+
+  return html(renderProductPage(product), 200);
+}
+
+function renderProductPage(p) {
+  const name     = p.name      || 'Product';
+  const price    = p.price     ? '₦' + Number(p.price).toLocaleString('en-NG') : '';
+  const origPrice= p.original_price ? '₦' + Number(p.original_price).toLocaleString('en-NG') : '';
+  const disc     = (p.price && p.original_price) ? Math.round((1 - p.price / p.original_price) * 100) : 0;
+  const desc     = p.description || '';
+  const imgUrl   = p.image_url ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(p.image_url)}`) : '';
+  const pageUrl  = `https://puppyplace.ng/product/${encodeURIComponent(p.id)}`;
+  const metaDesc = plainText(desc, 160) || `${name} — available at PuppyPlace.ng`;
+  const slug     = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name,
+    description: plainText(desc, 300),
+    image: p.image_url || '',
+    sku: p.id,
+    brand: { '@type': 'Brand', name: p.brand || 'PuppyPlace' },
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'NGN',
+      price: String(p.price || 0),
+      availability: 'https://schema.org/InStock',
+      url: pageUrl,
+    },
+  }).replace(/<\//g, '<\\/');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>${esc(name)} — PuppyPlace.ng</title>
+<meta name="description" content="${esc(metaDesc)}"/>
+<meta property="og:type" content="product"/>
+<meta property="og:site_name" content="PuppyPlace"/>
+<meta property="og:title" content="${esc(name)} — PuppyPlace.ng"/>
+<meta property="og:description" content="${esc(metaDesc)}"/>
+<meta property="og:url" content="${escUrl(pageUrl)}"/>
+${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>` : ''}
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="${esc(name)}"/>
+<meta name="twitter:description" content="${esc(metaDesc)}"/>
+${imgUrl ? `<meta name="twitter:image" content="${imgUrl}"/>` : ''}
+<script type="application/ld+json">${jsonLd}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333}
+a{text-decoration:none;color:inherit}
+:root{--orange:#ed6436;--black:#0e0e0c;--gray:#868686;--light:#f1f3f5;--border:#e9ecef;--white:#fff;--r:12px;--shadow:0 4px 20px rgba(0,0,0,.06)}
+.nav{background:#1a1a18;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-logo{color:#fff;font-size:20px;font-weight:900}.nav-logo span{color:var(--orange)}
+.nav-back{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-radius:50px;padding:9px 20px;font-size:13px;font-weight:800}
+.nav-back:hover{background:var(--orange);border-color:var(--orange);color:#fff}
+.page{max-width:1100px;margin:0 auto;padding:40px 24px}
+.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.img-box{border-radius:var(--r);overflow:hidden;background:var(--light);aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:120px;position:relative}
+.img-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.product-info{}
+.pi-cat{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--orange);margin-bottom:8px}
+.pi-name{font-size:clamp(22px,3vw,34px);font-weight:900;color:var(--black);line-height:1.2;margin-bottom:14px}
+.pi-price{font-size:32px;font-weight:900;color:var(--black);margin-bottom:6px}
+.pi-orig{font-size:16px;color:var(--gray);text-decoration:line-through;display:inline-block;margin-right:8px}
+.pi-disc{background:rgba(231,76,60,.1);color:#e74c3c;font-size:13px;font-weight:800;padding:4px 10px;border-radius:6px;display:inline-block}
+.pi-rating{display:flex;align-items:center;gap:8px;margin:12px 0 20px;font-size:14px;color:var(--gray);font-weight:700}
+.pi-stars{color:#f39c12;font-size:16px}
+.pi-desc{font-size:15px;line-height:1.9;color:#555;margin-bottom:24px;border-top:1px solid var(--border);padding-top:20px}
+.pi-desc strong,pi-desc b{font-weight:800;color:var(--black)}
+.pi-desc ul{padding-left:20px;margin:8px 0}
+.pi-desc li{margin-bottom:5px}
+.pi-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.pi-meta-item{background:var(--light);border-radius:var(--r);padding:12px 16px}
+.pi-meta-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:4px}
+.pi-meta-val{font-size:14px;font-weight:700;color:var(--black)}
+.pi-actions{display:flex;gap:12px;margin-bottom:10px}
+.btn-cart{flex:1;background:var(--orange);color:#fff;border:none;border-radius:50px;padding:15px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer}
+.btn-cart:hover{background:#c9530a}
+.btn-wish{background:var(--white);border:1.5px solid var(--border);color:var(--black);border-radius:50px;padding:15px 22px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer}
+.btn-wish:hover{border-color:var(--orange);color:var(--orange)}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);margin-bottom:24px}
+.breadcrumb a{color:var(--orange);font-weight:700}
+.breadcrumb a:hover{text-decoration:underline}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;border-radius:50px;padding:12px 28px;font-size:13px;font-weight:800;z-index:9999;animation:popUp .3s ease;white-space:nowrap}
+@keyframes popUp{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;margin-top:60px;text-align:center}
+.footer-logo{font-size:20px;font-weight:900;color:#fff;margin-bottom:8px}.footer-logo span{color:var(--orange)}
+.footer-links{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:20px}
+.footer-links a{font-size:13px;color:rgba(255,255,255,.55)}
+.footer-links a:hover{color:var(--orange)}
+.footer-copy{font-size:12px;color:rgba(255,255,255,.3)}
+@media(max-width:768px){
+  .nav{padding:0 16px}
+  .page{padding:24px 16px}
+  .product-grid{grid-template-columns:1fr;gap:20px}
+  .img-box{max-height:320px}
+  .pi-meta{grid-template-columns:1fr}
+  .pi-actions{flex-direction:column}
+  footer{padding:32px 20px 20px}
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="/index.html" class="nav-logo">Puppy<span>Place</span></a>
+  <a href="/shop.html" class="nav-back">← Back to Shop</a>
+</nav>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/index.html">Home</a> ›
+    <a href="/shop.html">Shop</a> ›
+    ${p.category ? `<a href="/shop.html?cat=${esc(p.category)}">${esc(p.category)}</a> › ` : ''}
+    <span>${esc(name)}</span>
+  </div>
+
+  <div class="product-grid">
+    <div class="img-box">
+      ${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(name)}" loading="eager"/>` : `<span>${esc(p.emoji || '📦')}</span>`}
+    </div>
+
+    <div class="product-info">
+      ${p.category ? `<div class="pi-cat">${esc(p.category)} ${p.pet_type ? `· ${esc(p.pet_type)}` : ''}</div>` : ''}
+      <div class="pi-name">${esc(name)}</div>
+      <div>
+        <span class="pi-price">${esc(price)}</span>
+        ${origPrice ? `<span class="pi-orig">${esc(origPrice)}</span>` : ''}
+        ${disc > 0 ? `<span class="pi-disc">-${disc}%</span>` : ''}
+      </div>
+      <div class="pi-rating">
+        <span class="pi-stars">★★★★${(p.rating || 4.5) >= 5 ? '★' : '☆'}</span>
+        <span>${esc(String(p.rating || '4.5'))} · ${esc(String(p.review_count || 0))} reviews</span>
+      </div>
+      ${desc ? `<div class="pi-desc">${desc}</div>` : ''}
+      <div class="pi-meta">
+        ${p.category ? `<div class="pi-meta-item"><div class="pi-meta-label">Category</div><div class="pi-meta-val">${esc(p.category)}</div></div>` : ''}
+        ${p.pet_type  ? `<div class="pi-meta-item"><div class="pi-meta-label">For</div><div class="pi-meta-val">${esc(p.pet_type)}</div></div>` : ''}
+        ${p.brand     ? `<div class="pi-meta-item"><div class="pi-meta-label">Brand</div><div class="pi-meta-val">${esc(p.brand)}</div></div>` : ''}
+        <div class="pi-meta-item"><div class="pi-meta-label">Stock</div><div class="pi-meta-val" style="color:#2ecc71">✅ In Stock</div></div>
+      </div>
+      <div class="pi-actions">
+        <button class="btn-cart" onclick="addToCart()">🛒 Add to Cart</button>
+        <button class="btn-wish" onclick="addToWish()">❤️ Wishlist</button>
+      </div>
+      <div style="font-size:13px;color:var(--gray);margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;">
+        <span>🚚 Fast delivery across Nigeria</span>
+        <span>↩️ 7-day returns</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">Puppy<span>Place</span>.ng</div>
+  <div class="footer-links">
+    <a href="/index.html">Home</a>
+    <a href="/shop.html">Shop</a>
+    <a href="/about.html">About</a>
+    <a href="/contact.html">Contact</a>
+    <a href="/privacy.html">Privacy</a>
+  </div>
+  <div class="footer-copy">&copy; 2025 PuppyPlace.ng — All rights reserved.</div>
+</footer>
+
+<script src="/config.js"></script>
+<script>
+const _prod = { id:'${esc(p.id)}', n:'${esc(name)}', e:'${esc(p.emoji||'📦')}', cat:'${esc(p.category||'')}', p:${p.price||0} };
+function fmt(n){ return '₦'+n.toLocaleString('en-NG'); }
+function showToast(msg){
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);
+}
+function addToCart(){
+  const cart=JSON.parse(localStorage.getItem('pp_cart')||'[]');
+  const ex=cart.find(i=>i.id===_prod.id);
+  if(ex) ex.qty++; else cart.push({..._prod,qty:1});
+  localStorage.setItem('pp_cart',JSON.stringify(cart));
+  showToast('🛒 Added to cart!');
+}
+function addToWish(){
+  const wish=JSON.parse(localStorage.getItem('pp_wish')||'[]');
+  if(!wish.find(i=>i.id===_prod.id)){wish.push(_prod);localStorage.setItem('pp_wish',JSON.stringify(wish));}
+  showToast('❤️ Added to wishlist!');
+}
+</script>
+</body>
+</html>`;
+}
+
+function productNotFoundPage() {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Product Not Found — PuppyPlace</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&display=swap" rel="stylesheet"/>
+<style>body{font-family:'Nunito',sans-serif;text-align:center;padding:100px 24px;background:#f8f9fa}h1{font-size:32px;font-weight:900;margin-bottom:12px}p{color:#868686;margin-bottom:32px}a{display:inline-block;background:#ed6436;color:#fff;border-radius:50px;padding:14px 32px;font-weight:800}</style>
+</head><body><div style="font-size:72px;margin-bottom:20px">📦</div><h1>Product Not Found</h1><p>This product may have been removed or is no longer available.</p><a href="/shop.html">Browse All Products</a></body></html>`;
+}
+
+function productErrorPage(msg) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Error — PuppyPlace</title>
+<style>body{font-family:sans-serif;text-align:center;padding:100px 24px;background:#f8f9fa}h1{margin-bottom:12px}p{color:#868686;margin-bottom:32px}a{color:#ed6436;font-weight:700}</style>
+</head><body><h1>⚠️ ${esc(msg)}</h1><p>Please try again later.</p><a href="/shop.html">← Back to Shop</a></body></html>`;
 }

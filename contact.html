@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Contact Us — PuppyPlace.ng</title>
+<meta name="description" content="Get in touch with PuppyPlace.ng. We're here to help with orders, products, and anything pet-related."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{overflow-x:hidden;font-size:14px;}
+body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333;}
+a{text-decoration:none;color:inherit;}
+:root{--orange:#ed6436;--orange-d:#c9530a;--black:#0e0e0c;--gray:#868686;--light:#f1f3f5;--border:#e9ecef;--white:#fff;--green:#2ecc71;--r:12px;--shadow:0 4px 20px rgba(0,0,0,0.06);--trans:.3s cubic-bezier(0.4,0,0.2,1);}
+
+.site-header{background:var(--white);box-shadow:var(--shadow);position:sticky;top:0;z-index:300;border-bottom:1px solid var(--border);}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:70px;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:40px;height:40px;background:var(--orange);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.logo-name{font-size:20px;font-weight:900;color:var(--black);}
+.logo-name span{color:var(--orange);}
+.header-nav{display:flex;align-items:center;gap:24px;}
+.header-nav a{font-size:13px;font-weight:700;color:var(--gray);transition:color var(--trans);}
+.header-nav a:hover{color:var(--orange);}
+.btn-primary{background:var(--orange);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;padding:10px 22px;border-radius:50px;border:none;cursor:pointer;}
+.mob-bar{display:none;background:var(--white);border-bottom:1px solid var(--border);padding:0 16px;height:60px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:400;}
+.mob-logo{display:flex;align-items:center;gap:8px;}
+.mob-logo-icon{width:34px;height:34px;background:var(--orange);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.mob-logo-text{font-size:18px;font-weight:900;color:var(--black);}
+.mob-logo-text span{color:var(--orange);}
+
+.page-hero{background:linear-gradient(135deg,var(--black),#2c2c24);padding:70px 24px;text-align:center;position:relative;overflow:hidden;}
+.page-hero::before{content:'✉️';position:absolute;right:-20px;bottom:-20px;font-size:220px;opacity:.04;}
+.page-hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(237,100,54,.15);border:1px solid rgba(237,100,54,.3);color:var(--orange);font-size:12px;font-weight:800;text-transform:uppercase;padding:6px 16px;border-radius:50px;margin-bottom:20px;}
+.page-hero h1{font-size:clamp(26px,5vw,48px);font-weight:900;color:#fff;margin-bottom:14px;}
+.page-hero h1 span{color:var(--orange);}
+.page-hero p{font-size:15px;color:rgba(255,255,255,.65);max-width:500px;margin:0 auto;line-height:1.8;}
+
+.page-wrap{max-width:1100px;margin:0 auto;padding:60px 24px;}
+.contact-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:40px;align-items:start;}
+
+/* INFO SIDE */
+.contact-info{}
+.info-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:20px;box-shadow:var(--shadow);}
+.info-card h3{font-size:16px;font-weight:900;color:var(--black);margin-bottom:18px;}
+.info-item{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;}
+.info-item:last-child{margin-bottom:0;}
+.info-ico{width:42px;height:42px;background:rgba(237,100,54,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.info-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-bottom:4px;}
+.info-val{font-size:14px;font-weight:700;color:var(--black);}
+.info-sub{font-size:12px;color:var(--gray);margin-top:2px;}
+
+.faq-item{border-bottom:1px solid var(--border);padding:14px 0;}
+.faq-item:last-child{border-bottom:none;}
+.faq-q{font-size:14px;font-weight:800;color:var(--black);margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+.faq-a{font-size:13px;color:var(--gray);line-height:1.7;display:none;}
+.faq-item.open .faq-a{display:block;}
+.faq-item.open .faq-arr{transform:rotate(180deg);}
+.faq-arr{transition:transform .3s;font-size:12px;}
+
+/* FORM SIDE */
+.contact-form-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:36px;box-shadow:var(--shadow);}
+.form-title{font-size:20px;font-weight:900;color:var(--black);margin-bottom:6px;}
+.form-sub{font-size:13px;color:var(--gray);margin-bottom:28px;line-height:1.6;}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--black);}
+.form-label span{color:var(--orange);}
+.form-input{border:1.5px solid var(--border);border-radius:var(--r);padding:12px 16px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;background:var(--light);color:var(--black);transition:all var(--trans);width:100%;}
+.form-input:focus{border-color:var(--orange);background:var(--white);box-shadow:0 0 0 3px rgba(237,100,54,.08);}
+.form-select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath fill='%23868686' d='M5 7L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+.form-textarea{min-height:140px;resize:vertical;font-family:'Nunito',sans-serif;}
+.submit-btn{width:100%;background:var(--orange);color:#fff;border:none;border-radius:50px;padding:15px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:background var(--trans);}
+.submit-btn:hover{background:var(--orange-d);}
+.success-msg{display:none;background:rgba(46,204,113,.08);border:1px solid rgba(46,204,113,.2);border-radius:var(--r);padding:20px 24px;text-align:center;color:var(--green);font-weight:800;font-size:15px;margin-top:20px;}
+
+footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;margin-top:0;}
+.footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:32px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.08);}
+.footer-brand{font-size:20px;font-weight:900;color:#fff;margin-bottom:10px;}
+.footer-brand span{color:var(--orange);}
+.footer-col h4{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin-bottom:12px;}
+.footer-col a{display:block;font-size:13px;color:rgba(255,255,255,.6);padding:3px 0;margin-bottom:4px;transition:color var(--trans);}
+.footer-col a:hover{color:var(--orange);}
+.footer-bottom{max-width:1100px;margin:20px auto 0;font-size:12px;color:rgba(255,255,255,.35);text-align:center;}
+
+@media(max-width:768px){
+  .site-header{display:none;}
+  .mob-bar{display:flex;}
+  .page-hero{padding:50px 20px;}
+  .page-wrap{padding:32px 16px;}
+  .contact-grid{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+  .contact-form-card{padding:24px 20px;}
+  .footer-inner{flex-direction:column;gap:20px;}
+}
+</style>
+</head>
+<body>
+
+<div class="mob-bar">
+  <a href="index.html" class="mob-logo">
+    <div class="mob-logo-icon">🐾</div>
+    <div class="mob-logo-text">Puppy<span>Place</span></div>
+  </a>
+  <a href="shop.html" style="font-size:13px;font-weight:800;color:var(--orange);">🛍️ Shop</a>
+</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">🐾</div>
+      <div class="logo-name">Puppy<span>Place</span></div>
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="about.html">About</a>
+      <a href="blog.html">Blog</a>
+    </nav>
+    <a href="shop.html"><button class="btn-primary">🛍️ Shop Now</button></a>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="page-hero-tag">✉️ Get in Touch</div>
+  <h1>We're Here to <span>Help</span></h1>
+  <p>Have a question about an order, a product, or just want to say hello? Our team responds within 24 hours.</p>
+</div>
+
+<div class="page-wrap">
+  <div class="contact-grid">
+
+    <!-- INFO -->
+    <div class="contact-info">
+      <div class="info-card">
+        <h3>Contact Information</h3>
+        <div class="info-item">
+          <div class="info-ico">📞</div>
+          <div><div class="info-label">Phone / WhatsApp</div><div class="info-val">0800-PUPPY-NG</div><div class="info-sub">Mon–Sat, 8am – 8pm</div></div>
+        </div>
+        <div class="info-item">
+          <div class="info-ico">✉️</div>
+          <div><div class="info-label">Email</div><div class="info-val">hello@puppyplace.ng</div><div class="info-sub">We reply within 24 hours</div></div>
+        </div>
+        <div class="info-item">
+          <div class="info-ico">📍</div>
+          <div><div class="info-label">Head Office</div><div class="info-val">14 Admiralty Way, Lekki Phase 1</div><div class="info-sub">Lagos Island, Lagos State</div></div>
+        </div>
+        <div class="info-item">
+          <div class="info-ico">💬</div>
+          <div><div class="info-label">WhatsApp Chat</div><div class="info-val"><a href="https://wa.me/2348000000000" style="color:var(--orange);font-weight:800;">Chat with us →</a></div><div class="info-sub">Fastest response channel</div></div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>Frequently Asked Questions</h3>
+        <div class="faq-item">
+          <div class="faq-q" onclick="this.closest('.faq-item').classList.toggle('open')">How long does delivery take? <span class="faq-arr">▾</span></div>
+          <div class="faq-a">Lagos and Abuja: 1–2 business days. Other states: 3–5 business days. Express delivery options available at checkout.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="this.closest('.faq-item').classList.toggle('open')">What is your return policy? <span class="faq-arr">▾</span></div>
+          <div class="faq-a">We offer a 7-day hassle-free return on all products. Items must be unopened and in original packaging. Contact us to initiate a return.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="this.closest('.faq-item').classList.toggle('open')">Are all products authentic? <span class="faq-arr">▾</span></div>
+          <div class="faq-a">Absolutely. We source directly from authorised distributors and brand partners. Every product carries a genuine seal and batch number.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="this.closest('.faq-item').classList.toggle('open')">How do I track my order? <span class="faq-arr">▾</span></div>
+          <div class="faq-a">Once your order is shipped, you'll receive an SMS and email with a tracking link. You can also contact us on WhatsApp with your order reference number.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="this.closest('.faq-item').classList.toggle('open')">Do you deliver nationwide? <span class="faq-arr">▾</span></div>
+          <div class="faq-a">Yes! We deliver to all 36 states and the FCT. Delivery times and fees vary by location — you'll see exact costs at checkout.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORM -->
+    <div class="contact-form-card">
+      <div class="form-title">Send Us a Message</div>
+      <div class="form-sub">Fill in the form below and a member of our team will get back to you within 24 hours. For urgent enquiries, please WhatsApp us directly.</div>
+
+      <div id="contactForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name <span>*</span></label>
+            <input class="form-input" id="cName" type="text" placeholder="e.g. Emeka Okafor"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address <span>*</span></label>
+            <input class="form-input" id="cEmail" type="email" placeholder="you@email.com"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone / WhatsApp</label>
+            <input class="form-input" id="cPhone" type="tel" placeholder="08012345678"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject <span>*</span></label>
+            <select class="form-input form-select" id="cSubject">
+              <option value="">Select a topic…</option>
+              <option>Order Enquiry</option>
+              <option>Return / Refund</option>
+              <option>Product Question</option>
+              <option>Delivery Issue</option>
+              <option>Partnership / Wholesale</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Order Reference (optional)</label>
+          <input class="form-input" id="cRef" type="text" placeholder="e.g. PP-1234567890-ABCDE"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Message <span>*</span></label>
+          <textarea class="form-input form-textarea" id="cMessage" placeholder="Describe your issue or question in detail…"></textarea>
+        </div>
+        <button class="submit-btn" onclick="submitContact()">Send Message →</button>
+      </div>
+      <div class="success-msg" id="contactSuccess">
+        🎉 Message received! We'll get back to you within 24 hours.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">Puppy<span>Place</span>.ng</div>
+      <div style="font-size:13px;line-height:1.8;max-width:220px;">Nigeria's #1 online pet store.</div>
+    </div>
+    <div class="footer-col"><h4>Shop</h4><a href="shop.html">All Products</a><a href="shop.html?cat=Food">Food &amp; Treats</a><a href="shop.html?cat=Toy">Toys</a></div>
+    <div class="footer-col"><h4>Company</h4><a href="about.html">About Us</a><a href="contact.html">Contact</a><a href="blog.html">Blog</a><a href="privacy.html">Privacy</a></div>
+  </div>
+  <div class="footer-bottom">&copy; 2025 PuppyPlace.ng — All rights reserved.</div>
+</footer>
+
+<script>
+function submitContact() {
+  const name    = document.getElementById('cName').value.trim();
+  const email   = document.getElementById('cEmail').value.trim();
+  const subject = document.getElementById('cSubject').value;
+  const msg     = document.getElementById('cMessage').value.trim();
+
+  let ok = true;
+  ['cName','cEmail','cSubject','cMessage'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) { el.style.borderColor = '#e74c3c'; ok = false; }
+    else el.style.borderColor = '';
+  });
+  if (!ok) return;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('cEmail').style.borderColor = '#e74c3c'; return;
+  }
+
+  // Fire-and-forget to any webhook if configured
+  try {
+    if (window.PPCONFIG?.N8N_WEBHOOK_URL) {
+      fetch(window.PPCONFIG.N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'contact', name, email, phone: document.getElementById('cPhone').value, subject, ref: document.getElementById('cRef').value, message: msg, timestamp: new Date().toISOString() }),
+      }).catch(() => {});
+    }
+  } catch(_) {}
+
+  document.getElementById('contactForm').style.display = 'none';
+  document.getElementById('contactSuccess').style.display = 'block';
+}
+</script>
+<script src="config.js" onerror="void 0"></script>
+</body>
+</html>
