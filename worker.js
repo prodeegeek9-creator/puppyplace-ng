@@ -848,11 +848,12 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 <script src="/config.js"></script>
 <script>
 const _prod={id:'${esc(p.id)}',n:'${esc(name)}',e:'${esc(p.emoji||'📦')}',cat:'${esc(p.category||'')}',p:${p.price||0}};
-const fmt=n=>'\\u20A6'+n.toLocaleString('en-NG');
+const fmt=n=>'₦'+n.toLocaleString('en-NG');
 const escH=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-const PAYSTACK_PUBLIC_KEY=window.PPCONFIG&&window.PPCONFIG.PAYSTACK_PUBLIC_KEY||'';
-const N8N_WEBHOOK_URL=window.PPCONFIG&&window.PPCONFIG.N8N_WEBHOOK_URL||'';
-const supabase=window.supabase.createClient(window.PPCONFIG.SUPABASE_URL,window.PPCONFIG.SUPABASE_ANON);
+const PAYSTACK_PUBLIC_KEY=(window.PPCONFIG&&window.PPCONFIG.PAYSTACK_PUBLIC_KEY)||'';
+const N8N_WEBHOOK_URL=(window.PPCONFIG&&window.PPCONFIG.N8N_WEBHOOK_URL)||'';
+let _supabase=null;
+try{if(window.supabase&&window.PPCONFIG&&window.PPCONFIG.SUPABASE_URL){_supabase=window.supabase.createClient(window.PPCONFIG.SUPABASE_URL,window.PPCONFIG.SUPABASE_ANON);}}catch(e){console.warn('Supabase init failed:',e.message);}
 let cartItems=JSON.parse(localStorage.getItem('pp_cart')||'[]');
 let wishItems=JSON.parse(localStorage.getItem('pp_wish')||'[]');
 function saveCart(){localStorage.setItem('pp_cart',JSON.stringify(cartItems));}
@@ -1018,10 +1019,11 @@ function getLoggedInUser(){
   try{var u=JSON.parse(raw)&&JSON.parse(raw).user;if(!u)return null;return{id:u.id,name:(u.user_metadata&&u.user_metadata.name)||u.email.split('@')[0],email:u.email,phone:(u.user_metadata&&u.user_metadata.phone)||''};}catch(e){return null;}
 }
 async function saveOrderToSupabase(ref){
+  if(!_supabase)return;
   try{
     var order={reference:ref,status:'processing',customer_name:document.getElementById('coName').value,email:document.getElementById('coEmail').value,phone:document.getElementById('coPhone').value,address:document.getElementById('coAddress').value+', '+document.getElementById('coState').value,notes:document.getElementById('coNotes').value||'',items:cartItems.map(function(i){return{id:i.id,n:i.n,e:i.e,p:i.p,qty:i.qty};}),total:cartTotal()};
     var user=getLoggedInUser();if(user)order.user_id=user.id;
-    await supabase.from('orders').insert(order);
+    await _supabase.from('orders').insert(order);
   }catch(e){console.warn('Order save failed:',e.message);}
 }
 function launchPaystack(){

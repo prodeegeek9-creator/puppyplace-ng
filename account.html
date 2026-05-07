@@ -1061,12 +1061,15 @@ async function saveProfile(){
 
   // Sync phone and name to profiles table
   if(authUser) {
-    await sb.from('profiles').upsert({
-      id:         authUser.id,
-      name:       newName,
-      phone:      newPhone,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
+    try {
+      const { error: profErr } = await sb.from('profiles').upsert({
+        id:         authUser.id,
+        name:       newName,
+        phone:      newPhone,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+      if(profErr) console.warn('Profile table sync failed:', profErr.message);
+    } catch(e) { console.warn('Profile upsert error:', e.message); }
   }
 
   // Update password if provided
