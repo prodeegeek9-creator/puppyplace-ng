@@ -19,6 +19,10 @@ export default {
       return handleHeroUpload(request, env);
     }
 
+    if (url.pathname === '/api/update-profile' && request.method === 'POST') {
+      return handleUpdateProfile(request, env);
+    }
+
     if (url.pathname === '/api/admin-login' && request.method === 'POST') {
       return handleAdminLogin(request, env);
     }
@@ -470,6 +474,58 @@ async function handleAdminVerify(request, env) {
   try { body = await request.json(); } catch { return jsonResp({ ok: false }, 400); }
   const valid = await verifyToken(body.token, env);
   return jsonResp({ ok: valid }, valid ? 200 : 401);
+}
+
+/* ── USER PROFILE UPDATE (phone → auth.users via service key) ── */
+
+async function handleUpdateProfile(request, env) {
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+  };
+
+  // Verify caller has a valid session token
+  const authHeader = request.headers.get('Authorization') || '';
+  if (!authHeader.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors });
+  }
+
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400, headers: cors }); }
+
+  const { phone, name } = body;
+
+  // Look up the user from their session token
+  const userRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+    headers: { 'Authorization': authHeader, 'apikey': env.SUPABASE_ANON },
+  });
+  const userData = await userRes.json();
+  if (!userData || !userData.id) {
+    return new Response(JSON.stringify({ error: 'Invalid session' }), { status: 401, headers: cors });
+  }
+
+  // Patch auth.users directly using the service key
+  const patch = {};
+  if (phone !== undefined) patch.phone = phone;
+  if (name  !== undefined) patch.data = { ...(userData.user_metadata || {}), name, phone };
+
+  const serviceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_ANON;
+  const patchRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${userData.id}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${serviceKey}`,
+      'apikey': serviceKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(patch),
+  });
+
+  if (!patchRes.ok) {
+    const err = await patchRes.json().catch(() => ({}));
+    return new Response(JSON.stringify({ error: err.message || 'Update failed' }), { status: 400, headers: cors });
+  }
+
+  return new Response(JSON.stringify({ ok: true }), { headers: cors });
 }
 
 /* ── PRODUCT SSR ── */

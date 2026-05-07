@@ -1053,24 +1053,18 @@ async function saveProfile(){
 
   if(newPass && newPass.length < 6){ showToast('Password must be at least 6 characters','err'); return; }
 
-  // Update metadata (name, phone)
-  const { data: { user: authUser }, error: metaErr } = await sb.auth.updateUser({
-    data: { name: newName, phone: newPhone }
-  });
-  if(metaErr){ showToast('Failed to update profile: ' + metaErr.message, 'err'); return; }
-
-  // Sync phone and name to profiles table
-  if(authUser) {
-    try {
-      const { error: profErr } = await sb.from('profiles').upsert({
-        id:         authUser.id,
-        name:       newName,
-        phone:      newPhone,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
-      if(profErr) console.warn('Profile table sync failed:', profErr.message);
-    } catch(e) { console.warn('Profile upsert error:', e.message); }
-  }
+  // Write phone + name directly to auth.users via server endpoint (uses service key)
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if(session) {
+      const res = await fetch('/api/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ phone: newPhone, name: newName }),
+      });
+      if(!res.ok){ const e = await res.json().catch(()=>({})); showToast('Failed to update profile: '+(e.error||'unknown error'), 'err'); return; }
+    }
+  } catch(e) { showToast('Failed to update profile: '+e.message, 'err'); return; }
 
   // Update password if provided
   if(newPass){
