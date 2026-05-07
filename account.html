@@ -1053,18 +1053,24 @@ async function saveProfile(){
 
   if(newPass && newPass.length < 6){ showToast('Password must be at least 6 characters','err'); return; }
 
-  // Write phone + name directly to auth.users via server endpoint (uses service key)
+  // Step 1: always update user_metadata via Supabase Auth client (works with anon key, no API needed)
+  const { error: metaErr } = await sb.auth.updateUser({
+    data: { name: newName, phone: newPhone }
+  });
+  if(metaErr){ showToast('Failed to update profile: ' + metaErr.message, 'err'); return; }
+
+  // Step 2: also try to write phone to the auth.users.phone column via worker endpoint
+  // (requires worker redeployment + SUPABASE_SERVICE_KEY env var — silent if unavailable)
   try {
     const { data: { session } } = await sb.auth.getSession();
     if(session) {
-      const res = await fetch('/api/update-profile', {
+      await fetch('/api/update-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify({ phone: newPhone, name: newName }),
       });
-      if(!res.ok){ const e = await res.json().catch(()=>({})); showToast('Failed to update profile: '+(e.error||'unknown error'), 'err'); return; }
     }
-  } catch(e) { showToast('Failed to update profile: '+e.message, 'err'); return; }
+  } catch(e) { /* silent fallback — user_metadata already updated above */ }
 
   // Update password if provided
   if(newPass){
