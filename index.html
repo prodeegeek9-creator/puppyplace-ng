@@ -1391,6 +1391,25 @@ async function loadProductsFromSupabase() {
     console.warn('Supabase product load failed:', err.message);
   }
 
+  // Refresh cart and wishlist prices from current Supabase data
+  let changed = false;
+  cartItems = cartItems.map(item => {
+    const fresh = prods.find(p => p.id === item.id);
+    if (!fresh) return item;
+    const updated = { ...item, n: fresh.n, e: fresh.e, cat: fresh.cat, p: fresh.p };
+    if (updated.p !== item.p || updated.n !== item.n) changed = true;
+    return updated;
+  });
+  wishItems = wishItems.map(item => {
+    const fresh = prods.find(p => p.id === item.id);
+    if (!fresh) return item;
+    return { ...item, n: fresh.n, e: fresh.e, cat: fresh.cat, p: fresh.p };
+  });
+  if (changed) { saveCart(); saveWish(); }
+  renderCartDrawer();
+  renderWishDrawer();
+  updateBadges();
+
   renderProds(prods);
   renderPets();
   renderDeals();
@@ -1958,6 +1977,7 @@ function launchPaystack() {
       ]
     },
     callback: function(response) {
+      saveOrderToSupabase(ref);
       sendToN8n(ref, response.transaction);
     },
     onClose: function() {
@@ -1967,6 +1987,27 @@ function launchPaystack() {
     }
   });
   handler.openIframe();
+}
+
+async function saveOrderToSupabase(ref) {
+  try {
+    const order = {
+      reference:     ref,
+      status:        'processing',
+      customer_name: document.getElementById('coName').value,
+      email:         document.getElementById('coEmail').value,
+      phone:         document.getElementById('coPhone').value,
+      address:       document.getElementById('coAddress').value + ', ' + document.getElementById('coState').value,
+      notes:         document.getElementById('coNotes').value || '',
+      items:         cartItems.map(i=>({id:i.id, n:i.n, e:i.e, p:i.p, qty:i.qty})),
+      total:         cartTotal(),
+    };
+    const user = getLoggedInUser();
+    if (user) order.user_id = user.id;
+    await supabase.from('orders').insert(order);
+  } catch(e) {
+    console.warn('Order save failed:', e.message);
+  }
 }
 
 async function sendToN8n(ref, transactionId) {
@@ -1996,46 +2037,21 @@ async function sendToN8n(ref, transactionId) {
   };
 
   try {
-    const res = await fetch(N8N_WEBHOOK_URL, {
+    await fetch(N8N_WEBHOOK_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(orderData),
     });
-
-    const result = await res.json();
-
-    if (res.ok && result.status === 'confirmed') {
-      showSuccess();
-    } else {
-      showToast('Payment could not be verified. Please contact support.', 'err');
-    }
   } catch (err) {
     console.warn('⚠️ n8n webhook failed:', err.message);
-    showToast('Connection error. Your payment was taken — please contact us to confirm your order.', 'err');
   }
+
+  showSuccess();
 }
 
-async function showSuccess() {
+function showSuccess() {
   coCurrentStep = 4;
   renderCoStep(4);
-
-  // Save order to Supabase if user is logged in
-  const user = getLoggedInUser();
-  if(user) {
-    const order = {
-      user_id:       user.id,
-      reference:     document.getElementById('coOrderRef').textContent,
-      status:        'processing',
-      customer_name: document.getElementById('coName').value,
-      email:         document.getElementById('coEmail').value,
-      phone:         document.getElementById('coPhone').value,
-      address:       document.getElementById('coAddress').value + ', ' + document.getElementById('coState').value,
-      items:         cartItems.map(i=>({id:i.id, n:i.n, e:i.e, p:i.p, qty:i.qty})),
-      total:         cartTotal(),
-    };
-    await supabase.from('orders').insert(order);
-  }
-
   cartItems = [];
   saveCart();
   updateBadges();

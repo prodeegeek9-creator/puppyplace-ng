@@ -314,6 +314,71 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
   .shop-wrap{padding:10px!important;}
   .footer-inner{grid-template-columns:1fr!important;}
 }
+/* CHECKOUT MODAL */
+.co-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.co-bg.open{display:flex;}
+.co-modal{background:#fff;border-radius:12px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;animation:popUp .25s ease;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.1);}
+.co-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.co-hd-title{font-size:18px;font-weight:900;}
+.co-close{background:var(--light);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.co-steps{display:flex;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.co-step{display:flex;align-items:center;gap:8px;flex:1;}
+.co-step-num{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:#fff;font-size:12px;font-weight:900;color:var(--gray);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.co-step-label{font-size:13px;font-weight:700;color:var(--gray);}
+.co-step.active .co-step-num{background:var(--orange);border-color:var(--orange);color:#fff;}
+.co-step.active .co-step-label{color:var(--black);}
+.co-step.done .co-step-num{background:var(--black);border-color:var(--black);color:#fff;}
+.co-step.done .co-step-label{color:var(--black);}
+.co-step-line{flex:1;height:2px;background:var(--border);margin:0 10px;}
+.co-step-line.done{background:var(--black);}
+.co-body{flex:1;padding:24px;overflow-y:auto;}
+.co-section{display:none;}
+.co-section.active{display:block;}
+.co-summary{background:var(--light);border-radius:12px;padding:16px;margin-bottom:24px;}
+.co-sum-title{font-size:12px;font-weight:800;text-transform:uppercase;color:var(--gray);margin-bottom:12px;}
+.co-sum-items{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.co-sum-item{display:flex;align-items:center;justify-content:space-between;font-size:14px;}
+.co-sum-item-left{display:flex;align-items:center;gap:10px;}
+.co-sum-emoji{font-size:20px;}
+.co-sum-name{font-weight:700;}
+.co-sum-qty{color:var(--gray);font-size:12px;}
+.co-sum-price{font-weight:900;}
+.co-sum-divider{height:1px;background:var(--border);margin:12px 0;}
+.co-sum-total{display:flex;justify-content:space-between;font-size:16px;font-weight:900;}
+.co-form{display:flex;flex-direction:column;gap:16px;}
+.co-field{display:flex;flex-direction:column;gap:6px;}
+.co-field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.co-label{font-size:12px;font-weight:800;color:var(--black);text-transform:uppercase;letter-spacing:.05em;}
+.co-label span{color:var(--orange);}
+.co-input{border:1.5px solid var(--border);border-radius:12px;padding:12px 16px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;background:var(--light);}
+.co-input:focus{border-color:var(--orange);background:#fff;}
+.co-input.error{border-color:#e74c3c;}
+.co-select{appearance:none;}
+.co-err{font-size:11px;color:#e74c3c;font-weight:700;display:none;margin-top:4px;}
+.co-err.show{display:block;}
+.co-pay-info{background:linear-gradient(135deg,#fff8f5,#fdeee7);border:1px solid rgba(237,100,54,.2);border-radius:12px;padding:20px;margin-bottom:24px;display:flex;gap:16px;align-items:center;}
+.co-pay-ico{font-size:28px;flex-shrink:0;}
+.co-pay-text h4{font-size:15px;font-weight:900;margin-bottom:4px;}
+.co-pay-text p{font-size:13px;color:var(--gray);line-height:1.6;}
+.co-test-banner{background:#e8f4fd;border:1px solid #bee3f8;border-radius:6px;padding:12px 16px;font-size:13px;font-weight:700;color:#2b6cb0;margin-bottom:20px;}
+.co-success{text-align:center;padding:24px 0;}
+.co-success-ico{font-size:80px;margin-bottom:20px;}
+.co-success h3{font-size:26px;font-weight:900;margin-bottom:10px;}
+.co-success p{font-size:15px;color:var(--gray);line-height:1.7;margin-bottom:24px;}
+.co-success-ref{background:var(--light);border-radius:6px;padding:14px 20px;font-size:14px;font-weight:700;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;}
+.co-success-steps{text-align:left;background:var(--light);border-radius:12px;padding:20px;margin-bottom:24px;}
+.co-success-steps h4{font-size:13px;font-weight:800;text-transform:uppercase;color:var(--gray);margin-bottom:12px;}
+.co-ss-item{display:flex;gap:12px;margin-bottom:12px;font-size:14px;line-height:1.6;}
+.co-ss-dot{width:24px;height:24px;border-radius:50%;background:var(--orange);color:#fff;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.co-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:12px;flex-shrink:0;}
+.co-btn-back{background:var(--light);border:none;border-radius:50px;padding:14px 24px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;}
+.co-btn-next{flex:1;background:var(--orange);color:#fff;border:none;border-radius:50px;padding:14px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
+.co-btn-next:hover{background:#c9530a;}
+.co-btn-next:disabled{opacity:.6;cursor:not-allowed;}
+.co-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:none;}
+.co-spinner.show{display:block;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:480px){.co-field-row{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -561,7 +626,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
   </div>
   <div id="cartFooter" style="display:none;padding:20px;border-top:1px solid var(--border);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><span style="font-size:14px;color:var(--gray);font-weight:700;">Subtotal</span><span style="font-size:20px;font-weight:900;" id="cartTotal">₦0</span></div>
-    <button class="btn-primary drawer-checkout" onclick="alert('Checkout available on homepage.')">Proceed to Checkout →</button>
+    <button class="btn-primary drawer-checkout" onclick="openCheckout()">Proceed to Checkout →</button>
     <button class="drawer-continue" onclick="closeCart()">← Continue Shopping</button>
   </div>
 </div>
@@ -580,6 +645,107 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
   <div id="wishFooter" style="display:none;padding:20px;border-top:1px solid var(--border);">
     <button class="btn-dark drawer-checkout" onclick="moveAllToCart()">🛒 Move All to Cart</button>
     <button class="drawer-continue" onclick="closeWishlist()">← Keep Browsing</button>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="co-bg" id="coBg" onclick="if(event.target===this)closeCheckout()">
+  <div class="co-modal" onclick="event.stopPropagation()">
+    <div class="co-hd">
+      <div class="co-hd-title">🛒 Checkout</div>
+      <button class="co-close" onclick="closeCheckout()">✕</button>
+    </div>
+    <div class="co-steps">
+      <div class="co-step active" id="step1ind"><span class="co-step-num">1</span><span class="co-step-label">Details</span></div>
+      <div class="co-step-line" id="line1"></div>
+      <div class="co-step" id="step2ind"><span class="co-step-num">2</span><span class="co-step-label">Review</span></div>
+      <div class="co-step-line" id="line2"></div>
+      <div class="co-step" id="step3ind"><span class="co-step-num">3</span><span class="co-step-label">Payment</span></div>
+    </div>
+    <div class="co-body">
+      <div class="co-section active" id="coStep1">
+        <div class="co-form">
+          <div class="co-field-row">
+            <div class="co-field">
+              <label class="co-label">Full Name <span>*</span></label>
+              <input class="co-input" id="coName" type="text" placeholder="e.g. Emeka Okafor"/>
+              <span class="co-err" id="coNameErr">Please enter your full name</span>
+            </div>
+            <div class="co-field">
+              <label class="co-label">Phone <span>*</span></label>
+              <input class="co-input" id="coPhone" type="tel" placeholder="e.g. 08012345678"/>
+              <span class="co-err" id="coPhoneErr">Please enter a valid phone number</span>
+            </div>
+          </div>
+          <div class="co-field">
+            <label class="co-label">Email Address <span>*</span></label>
+            <input class="co-input" id="coEmail" type="email" placeholder="emeka@example.com"/>
+            <span class="co-err" id="coEmailErr">Please enter a valid email address</span>
+          </div>
+          <div class="co-field">
+            <label class="co-label">Delivery Address <span>*</span></label>
+            <input class="co-input" id="coAddress" type="text" placeholder="Street address, area, landmark…"/>
+            <span class="co-err" id="coAddressErr">Please enter your delivery address</span>
+          </div>
+          <div class="co-field">
+            <label class="co-label">State <span>*</span></label>
+            <select class="co-input co-select" id="coState">
+              <option value="">Select your state…</option>
+              <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option><option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option><option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option><option>Ekiti</option><option>Enugu</option><option>FCT — Abuja</option><option>Gombe</option><option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option><option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option><option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option><option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option><option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+            </select>
+            <span class="co-err" id="coStateErr">Please select your state</span>
+          </div>
+          <div class="co-field">
+            <label class="co-label">Order Notes <span style="color:var(--gray);font-weight:600;text-transform:none;">(optional)</span></label>
+            <input class="co-input" id="coNotes" type="text" placeholder="Any special instructions for delivery…"/>
+          </div>
+        </div>
+      </div>
+      <div class="co-section" id="coStep2">
+        <div class="co-summary" id="coSummaryBlock"></div>
+        <div style="background:var(--light);border-radius:12px;padding:16px;font-size:13px">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-bottom:10px">Delivering to</div>
+          <div id="coReviewDetails" style="display:flex;flex-direction:column;gap:5px"></div>
+        </div>
+      </div>
+      <div class="co-section" id="coStep3">
+        <div class="co-test-banner">🧪 Test mode — use card <strong>4084 0840 8408 4081</strong> · Exp: any future date · CVV: any 3 digits</div>
+        <div class="co-pay-info">
+          <div class="co-pay-ico">🔒</div>
+          <div class="co-pay-text">
+            <h4>Secure payment via Paystack</h4>
+            <p>Your payment is encrypted and processed securely. PuppyPlace.ng never stores your card details.</p>
+          </div>
+        </div>
+        <div class="co-summary" id="coPaySummary"></div>
+        <div style="text-align:center;font-size:11px;color:var(--gray);font-weight:700;">🔐 SSL Encrypted &nbsp;·&nbsp; ✅ Paystack Secured &nbsp;·&nbsp; 🇳🇬 Nigerian Payment Gateway</div>
+      </div>
+      <div class="co-section" id="coStep4">
+        <div class="co-success">
+          <div class="co-success-ico">🎉</div>
+          <h3>Order Confirmed!</h3>
+          <p>Thank you for shopping with PuppyPlace.ng. A confirmation email is on its way to you.</p>
+          <div class="co-success-ref">
+            <span>Order Reference</span>
+            <strong id="coOrderRef">—</strong>
+          </div>
+          <div class="co-success-steps">
+            <h4>What happens next</h4>
+            <div class="co-ss-item"><div class="co-ss-dot">1</div><div><strong>Confirmation email</strong> sent to your inbox within 2 minutes with your order details.</div></div>
+            <div class="co-ss-item"><div class="co-ss-dot">2</div><div><strong>Order processing</strong> begins immediately. We'll pack and dispatch your items.</div></div>
+            <div class="co-ss-item"><div class="co-ss-dot">3</div><div><strong>Delivery update</strong> — you'll get a follow-up message with tracking info and expected delivery date.</div></div>
+          </div>
+          <button class="btn-primary" style="width:100%;justify-content:center" onclick="closeCheckout()">Continue Shopping 🐾</button>
+        </div>
+      </div>
+    </div>
+    <div class="co-footer" id="coFooter">
+      <button class="co-btn-back" id="coBtnBack" onclick="coBack()" style="display:none">← Back</button>
+      <button class="co-btn-next" id="coBtnNext" onclick="coNext()">
+        <span id="coBtnLabel">Continue to Review</span>
+        <div class="co-spinner" id="coSpinner"></div>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -615,6 +781,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
 <script>
 const supabase = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
@@ -661,6 +828,25 @@ async function loadProducts() {
   } catch(err) {
     console.warn('Shop load failed:', err.message);
   }
+
+  // Refresh cart/wishlist prices from Supabase data
+  let cartChanged = false;
+  cartItems = cartItems.map(item => {
+    const fresh = allProds.find(p => p.id === item.id);
+    if (!fresh) return item;
+    const updated = { ...item, n: fresh.n, e: fresh.e, cat: fresh.cat, p: fresh.p };
+    if (updated.p !== item.p || updated.n !== item.n) cartChanged = true;
+    return updated;
+  });
+  wishItems = wishItems.map(item => {
+    const fresh = allProds.find(p => p.id === item.id);
+    if (!fresh) return item;
+    return { ...item, n: fresh.n, e: fresh.e, cat: fresh.cat, p: fresh.p };
+  });
+  if (cartChanged) { saveCart(); saveWish(); }
+  renderCartDrawer();
+  renderWishDrawer();
+  updateBadges();
 
   // Read URL params for initial filter
   const params = new URLSearchParams(window.location.search);
@@ -929,6 +1115,189 @@ function getReviews(pid) { return JSON.parse(localStorage.getItem('pp_reviews')|
 function openMobNav(){ document.getElementById('mobNav').classList.add('open'); document.getElementById('mobNavOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
 function closeMobNav(){ document.getElementById('mobNav').classList.remove('open'); document.getElementById('mobNavOverlay').classList.remove('open'); document.body.style.overflow=''; }
 function toggleMobSearch(){ document.getElementById('mobSearch').classList.toggle('show'); }
+
+/* ── CHECKOUT ── */
+const PAYSTACK_PUBLIC_KEY = window.PPCONFIG?.PAYSTACK_PUBLIC_KEY || '';
+const N8N_WEBHOOK_URL     = window.PPCONFIG?.N8N_WEBHOOK_URL || '';
+let coCurrentStep = 1;
+
+function cartTotal() { return cartItems.reduce((s,i) => s + i.p * i.qty, 0); }
+
+function openCheckout() {
+  if (cartItems.length === 0) { alert('Your cart is empty!'); return; }
+  closeCart();
+  coCurrentStep = 1;
+  renderCoStep(1);
+  document.getElementById('coBg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCheckout() {
+  document.getElementById('coBg').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderCoStep(step) {
+  document.querySelectorAll('.co-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('coStep' + step).classList.add('active');
+  [1,2,3].forEach(n => {
+    const el = document.getElementById('step' + n + 'ind');
+    el.classList.remove('active','done');
+    if (n < step) el.classList.add('done');
+    else if (n === step) el.classList.add('active');
+  });
+  document.getElementById('line1').classList.toggle('done', step > 1);
+  document.getElementById('line2').classList.toggle('done', step > 2);
+  const footer = document.getElementById('coFooter');
+  const btnBack = document.getElementById('coBtnBack');
+  const btnLbl  = document.getElementById('coBtnLabel');
+  if (step === 4) { footer.style.display = 'none'; return; }
+  footer.style.display = '';
+  btnBack.style.display = step > 1 ? '' : 'none';
+  if (step === 1) btnLbl.textContent = 'Continue to Review →';
+  if (step === 2) { btnLbl.textContent = 'Proceed to Payment →'; buildReview(); }
+  if (step === 3) { btnLbl.textContent = '🔒 Pay Now — ' + fmt(cartTotal()); buildPaySummary(); }
+}
+
+function coNext() {
+  if (coCurrentStep === 1) { if (!validateStep1()) return; coCurrentStep = 2; }
+  else if (coCurrentStep === 2) { coCurrentStep = 3; }
+  else if (coCurrentStep === 3) { launchPaystack(); return; }
+  renderCoStep(coCurrentStep);
+}
+function coBack() {
+  if (coCurrentStep > 1) { coCurrentStep--; renderCoStep(coCurrentStep); }
+}
+
+function validateStep1() {
+  let ok = true;
+  const fields = [
+    { id:'coName',    err:'coNameErr',    test: v => v.trim().length >= 2 },
+    { id:'coPhone',   err:'coPhoneErr',   test: v => /^0[7-9][01]\d{8}$/.test(v.replace(/\s/g,'')) },
+    { id:'coEmail',   err:'coEmailErr',   test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+    { id:'coAddress', err:'coAddressErr', test: v => v.trim().length >= 5 },
+    { id:'coState',   err:'coStateErr',   test: v => v !== '' },
+  ];
+  fields.forEach(f => {
+    const inp = document.getElementById(f.id);
+    const err = document.getElementById(f.err);
+    const valid = f.test(inp.value);
+    inp.classList.toggle('error', !valid);
+    err.classList.toggle('show', !valid);
+    if (!valid) ok = false;
+  });
+  return ok;
+}
+
+['coName','coPhone','coEmail','coAddress','coState'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', function() {
+    this.classList.remove('error');
+    document.getElementById(id + 'Err')?.classList.remove('show');
+  });
+});
+
+function buildReview() {
+  const sb = document.getElementById('coSummaryBlock');
+  const itemsHtml = cartItems.map(i =>
+    `<div class="co-sum-item"><div class="co-sum-item-left"><span class="co-sum-emoji">${escHtml(i.e)}</span><span class="co-sum-name">${escHtml(i.n)}</span><span class="co-sum-qty">×${i.qty}</span></div><span class="co-sum-price">${fmt(i.p * i.qty)}</span></div>`).join('');
+  sb.innerHTML = `<div class="co-sum-title">Order Summary</div><div class="co-sum-items">${itemsHtml}</div><div class="co-sum-divider"></div><div class="co-sum-total"><span>Total</span><span>${fmt(cartTotal())}</span></div>`;
+  document.getElementById('coReviewDetails').innerHTML = [
+    ['👤 Name',    document.getElementById('coName').value],
+    ['📞 Phone',   document.getElementById('coPhone').value],
+    ['✉️ Email',   document.getElementById('coEmail').value],
+    ['📍 Address', document.getElementById('coAddress').value],
+    ['🗺️ State',   document.getElementById('coState').value],
+  ].map(([l,v]) => `<div style="display:flex;gap:8px;font-size:13px"><span style="color:var(--gray);width:90px;flex-shrink:0">${l}</span><strong>${escHtml(v)}</strong></div>`).join('');
+}
+
+function buildPaySummary() {
+  document.getElementById('coPaySummary').innerHTML =
+    `<div class="co-sum-title">Order Total</div><div class="co-sum-divider"></div><div class="co-sum-total" style="font-size:20px"><span>Amount to pay</span><span style="color:var(--orange)">${fmt(cartTotal())}</span></div>`;
+}
+
+function getLoggedInUser() {
+  const raw = localStorage.getItem('sb-fsrkzhknqonpjjkjwqlw-auth-token');
+  if (!raw) return null;
+  try {
+    const u = JSON.parse(raw)?.user;
+    if (!u) return null;
+    return { id: u.id, name: u.user_metadata?.name || u.email.split('@')[0], email: u.email, phone: u.user_metadata?.phone || '' };
+  } catch(e) { return null; }
+}
+
+async function saveOrderToSupabase(ref) {
+  try {
+    const order = {
+      reference:     ref,
+      status:        'processing',
+      customer_name: document.getElementById('coName').value,
+      email:         document.getElementById('coEmail').value,
+      phone:         document.getElementById('coPhone').value,
+      address:       document.getElementById('coAddress').value + ', ' + document.getElementById('coState').value,
+      notes:         document.getElementById('coNotes').value || '',
+      items:         cartItems.map(i=>({id:i.id, n:i.n, e:i.e, p:i.p, qty:i.qty})),
+      total:         cartTotal(),
+    };
+    const user = getLoggedInUser();
+    if (user) order.user_id = user.id;
+    await supabase.from('orders').insert(order);
+  } catch(e) { console.warn('Order save failed:', e.message); }
+}
+
+function launchPaystack() {
+  const btnNext = document.getElementById('coBtnNext');
+  const spinner = document.getElementById('coSpinner');
+  const btnLbl  = document.getElementById('coBtnLabel');
+  btnNext.disabled = true; spinner.classList.add('show'); btnLbl.textContent = 'Opening payment…';
+  const ref = 'PP-' + Date.now() + '-' + Math.random().toString(36).slice(2,7).toUpperCase();
+  document.getElementById('coOrderRef').textContent = ref;
+  const handler = PaystackPop.setup({
+    key:      PAYSTACK_PUBLIC_KEY,
+    email:    document.getElementById('coEmail').value,
+    amount:   cartTotal() * 100,
+    currency: 'NGN',
+    ref,
+    metadata: { custom_fields: [
+      { display_name:'Customer Name', variable_name:'name',    value: document.getElementById('coName').value },
+      { display_name:'Phone',         variable_name:'phone',   value: document.getElementById('coPhone').value },
+      { display_name:'Address',       variable_name:'address', value: document.getElementById('coAddress').value },
+      { display_name:'State',         variable_name:'state',   value: document.getElementById('coState').value },
+    ]},
+    callback: function(response) {
+      saveOrderToSupabase(ref);
+      sendToN8n(ref, response.transaction);
+    },
+    onClose: function() {
+      btnNext.disabled = false; spinner.classList.remove('show');
+      btnLbl.textContent = '🔒 Pay Now — ' + fmt(cartTotal());
+    }
+  });
+  handler.openIframe();
+}
+
+async function sendToN8n(ref, transactionId) {
+  const orderData = {
+    reference: ref, transaction_id: transactionId || 'N/A',
+    timestamp: new Date().toISOString(),
+    customer: {
+      name:    document.getElementById('coName').value,
+      phone:   document.getElementById('coPhone').value,
+      email:   document.getElementById('coEmail').value,
+      address: document.getElementById('coAddress').value,
+      state:   document.getElementById('coState').value,
+      notes:   document.getElementById('coNotes').value || '',
+    },
+    items: cartItems.map(i => ({ id:i.id, name:i.n, category:i.cat, price:i.p, quantity:i.qty, subtotal:i.p*i.qty })),
+    total: cartTotal(), currency:'NGN', source:'puppyplace.ng',
+  };
+  try { await fetch(N8N_WEBHOOK_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(orderData) }); }
+  catch(e) { console.warn('n8n webhook failed:', e.message); }
+  coCurrentStep = 4;
+  renderCoStep(4);
+  cartItems = [];
+  saveCart();
+  updateBadges();
+  renderCartDrawer();
+}
 
 /* ── INIT ── */
 updateBadges();

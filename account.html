@@ -1054,10 +1054,20 @@ async function saveProfile(){
   if(newPass && newPass.length < 6){ showToast('Password must be at least 6 characters','err'); return; }
 
   // Update metadata (name, phone)
-  const { error: metaErr } = await sb.auth.updateUser({
+  const { data: { user: authUser }, error: metaErr } = await sb.auth.updateUser({
     data: { name: newName, phone: newPhone }
   });
   if(metaErr){ showToast('Failed to update profile: ' + metaErr.message, 'err'); return; }
+
+  // Sync phone and name to profiles table
+  if(authUser) {
+    await sb.from('profiles').upsert({
+      id:         authUser.id,
+      name:       newName,
+      phone:      newPhone,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+  }
 
   // Update password if provided
   if(newPass){
