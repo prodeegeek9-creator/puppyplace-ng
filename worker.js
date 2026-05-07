@@ -478,6 +478,15 @@ async function handleAdminVerify(request, env) {
 
 /* ── USER PROFILE UPDATE (phone → auth.users via service key) ── */
 
+// Convert Nigerian local format (08012345678) to E.164 (+2348012345678)
+function toE164NG(phone) {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('234')) return '+' + digits;
+  if (digits.startsWith('0'))   return '+234' + digits.slice(1);
+  return '+234' + digits;
+}
+
 async function handleUpdateProfile(request, env) {
   const cors = {
     'Access-Control-Allow-Origin': '*',
@@ -504,12 +513,13 @@ async function handleUpdateProfile(request, env) {
     return new Response(JSON.stringify({ error: 'Invalid session' }), { status: 401, headers: cors });
   }
 
-  // Patch auth.users directly using the service key
-  const patch = {};
-  if (phone !== undefined) patch.phone = phone;
-  if (name  !== undefined) patch.data = { ...(userData.user_metadata || {}), name, phone };
-
   const serviceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_ANON;
+
+  // Patch auth.users via admin API — phone must be E.164 for Supabase to accept it
+  const patch = {};
+  if (phone !== undefined) patch.phone = toE164NG(phone);
+  if (name  !== undefined) patch.data  = { ...(userData.user_metadata || {}), name, phone };
+
   const patchRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${userData.id}`, {
     method: 'PUT',
     headers: {
@@ -523,6 +533,24 @@ async function handleUpdateProfile(request, env) {
   if (!patchRes.ok) {
     const err = await patchRes.json().catch(() => ({}));
     return new Response(JSON.stringify({ error: err.message || 'Update failed' }), { status: 400, headers: cors });
+  }
+
+  // Also sync to public.profiles so both tables stay consistent
+  if (phone !== undefined || name !== undefined) {
+    const profilePatch = { updated_at: new Date().toISOString() };
+    if (phone !== undefined) profilePatch.phone = phone; // store local format in profiles
+    if (name  !== undefined) profilePatch.name  = name;
+
+    await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userData.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`,
+        'apikey': serviceKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(profilePatch),
+    });
   }
 
   return new Response(JSON.stringify({ ok: true }), { headers: cors });
