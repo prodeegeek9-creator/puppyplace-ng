@@ -35,6 +35,10 @@ img{max-width:100%;display:block;}
 .mob-logo-icon{width:34px;height:34px;background:var(--orange);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;}
 .mob-logo-text{font-size:18px;font-weight:900;color:var(--black);}
 .mob-logo-text span{color:var(--orange);}
+.mob-search-bar{display:none;padding:10px 16px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:60px;z-index:399;box-shadow:0 4px 20px rgba(0,0,0,.06);}
+.mob-search-inner{display:flex;align-items:center;background:var(--light);border:1.5px solid var(--border);border-radius:50px;overflow:hidden;}
+.mob-search-inner input{flex:1;border:none;background:transparent;padding:10px 16px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;}
+.mob-search-inner button{background:var(--orange);border:none;width:50px;height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff;}
 
 /* HERO */
 .page-hero{background:linear-gradient(135deg,var(--black) 0%,#2c2c24 100%);padding:80px 24px;text-align:center;position:relative;overflow:hidden;}
@@ -93,6 +97,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;marg
 @media(max-width:768px){
   .site-header{display:none;}
   .mob-bar{display:flex;}
+  .mob-search-bar{display:block;}
   .page-hero{padding:56px 20px;}
   .stats-grid{grid-template-columns:1fr 1fr;gap:12px;}
   .values-grid{grid-template-columns:1fr;gap:12px;}
@@ -113,6 +118,13 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;marg
   </a>
   <a href="shop.html" style="font-size:13px;font-weight:800;color:var(--orange);">🛍️ Shop</a>
 </div>
+<div class="mob-search-bar" id="mobSearch">
+  <div class="mob-search-inner">
+    <input type="text" id="mobSearchInp" placeholder="Search products…" onkeydown="if(event.key==='Enter')goSearch()"/>
+    <button onclick="goSearch()">🔍</button>
+  </div>
+</div>
+<script>function goSearch(){var q=document.getElementById('mobSearchInp').value.trim();window.location.href='shop.html'+(q?'?q='+encodeURIComponent(q):'');}</script>
 
 <!-- DESKTOP HEADER -->
 <header class="site-header">

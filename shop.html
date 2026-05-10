@@ -73,8 +73,7 @@ img{max-width:100%;height:auto;display:block;}
 .mob-badge{position:absolute;top:-2px;right:-2px;width:18px;height:18px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--white);}
 .mob-ham{background:none;border:none;cursor:pointer;padding:4px;display:flex;flex-direction:column;gap:5px;}
 .mob-ham span{display:block;width:24px;height:2.5px;background:var(--black);border-radius:3px;}
-.mob-search-bar{display:none;padding:12px 16px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:60px;z-index:399;box-shadow:var(--shadow);}
-.mob-search-bar.show{display:block;}
+.mob-search-bar{display:none;padding:10px 16px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:60px;z-index:399;box-shadow:var(--shadow);}
 .mob-search-inner{display:flex;align-items:center;background:var(--light);border:1.5px solid var(--border);border-radius:50px;overflow:hidden;}
 .mob-search-inner input{flex:1;border:none;background:transparent;padding:12px 16px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;}
 .mob-search-inner button{background:var(--orange);border:none;width:50px;height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff;}
@@ -238,6 +237,10 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
 .pay-row{display:flex;gap:8px;}
 .pay-badge{background:rgba(255,255,255,.08);border-radius:var(--rxs);padding:4px 12px;font-size:11px;font-weight:800;color:rgba(255,255,255,.6);}
 
+/* Mobile sticky Add to Cart bar */
+.mob-atc-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--white);border-top:1.5px solid var(--border);padding:12px 16px;align-items:center;gap:12px;box-shadow:0 -4px 24px rgba(0,0,0,.14);}
+@media(max-width:768px){.mob-atc-bar.show{display:flex!important;}}
+
 /* MODALS */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
 .pv-group{margin-bottom:14px;}
@@ -294,6 +297,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
   #topbar{display:none!important;}
   .site-header{display:none!important;}
   .mob-bar{display:flex!important;}
+  .mob-search-bar{display:block!important;}
   .filter-sidebar{display:none!important;}
   .shop-wrap{padding:12px 14px;}
   .shop-layout{grid-template-columns:1fr;}
@@ -390,7 +394,6 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
     <div class="mob-logo-text">Puppy<span>Place</span></div>
   </a>
   <div class="mob-right">
-    <div class="mob-ico" onclick="toggleMobSearch()">🔍</div>
     <div class="mob-ico" onclick="openWishlist()">❤️<span class="mob-badge" id="mwBadge">0</span></div>
     <div class="mob-ico" onclick="openCart()">🛒<span class="mob-badge" id="mcBadge">0</span></div>
     <button class="mob-ham" onclick="openMobNav()"><span></span><span></span><span></span></button>
@@ -399,7 +402,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
 <div class="mob-search-bar" id="mobSearch">
   <div class="mob-search-inner">
     <input type="text" placeholder="Search products…" oninput="doSearch(this.value)"/>
-    <button onclick="toggleMobSearch()">✕</button>
+    <button onclick="doSearch(document.querySelector('#mobSearch input').value)" style="background:var(--orange);border:none;width:50px;height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff;">🔍</button>
   </div>
 </div>
 
@@ -1109,8 +1112,14 @@ function openModal(id) {
     : '<div class="rv-empty">No reviews yet.</div>';
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  if (window.innerWidth <= 768) {
+    document.getElementById('mobAtcBtn').onclick = () => { addCart(p.id, p.n, p.e, p.cat, p.p); closeModal(); };
+    document.getElementById('mobWaBtn').href = 'https://wa.me/2348000000000?text=' + encodeURIComponent('Hi! I\'m interested in ' + p.n + ' (₦' + (p.p||0).toLocaleString('en-NG') + ')');
+    document.getElementById('mobAtcBar').classList.add('show');
+  }
 }
-function closeModal() { document.getElementById('modal').style.display = 'none'; document.body.style.overflow = ''; }
+function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('mobAtcBar').classList.remove('show'); document.body.style.overflow = ''; }
 
 function getReviews(pid) { return JSON.parse(localStorage.getItem('pp_reviews')||'{}')[pid] || []; }
 
@@ -1308,5 +1317,13 @@ renderCartDrawer();
 renderWishDrawer();
 loadProducts();
 </script>
+
+<!-- MOBILE STICKY ADD TO CART BAR -->
+<div class="mob-atc-bar" id="mobAtcBar">
+  <a id="mobWaBtn" href="https://wa.me/2348000000000" target="_blank" rel="noopener"
+     style="width:54px;height:54px;background:#25D366;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;text-decoration:none;">💬</a>
+  <button id="mobAtcBtn" class="btn-primary" style="flex:1;height:54px;font-size:15px;justify-content:center;border-radius:12px;">🛒 Add to Cart</button>
+</div>
+
 </body>
 </html>
