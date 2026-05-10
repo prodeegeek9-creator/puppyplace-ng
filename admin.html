@@ -188,6 +188,14 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 .vg-val-remove:hover{color:var(--red)}
 .vg-val-input{border:1.5px dashed var(--border);border-radius:50px;padding:5px 12px;font-family:'Nunito',sans-serif;font-size:13px;color:var(--black);outline:none;width:110px;background:transparent;transition:border-color var(--trans)}
 .vg-val-input:focus{border-color:var(--orange)}
+.vg-val-price{border:none;border-left:1.5px solid var(--border);padding:0 6px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;color:var(--orange);outline:none;background:transparent;width:76px;min-width:0}
+.vg-val-price::placeholder{color:var(--gray);font-weight:600}
+.img-thumb-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;min-height:0}
+.img-thumb{position:relative;width:88px;height:88px;border-radius:var(--rxs);overflow:hidden;flex-shrink:0;border:2px solid var(--border)}
+.img-thumb.primary{border-color:var(--orange)}
+.img-thumb img{width:100%;height:100%;object-fit:cover}
+.img-thumb-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:800;text-align:center;padding:2px 0;letter-spacing:.04em}
+.img-thumb-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
 .form-footer{padding:20px 28px;border-top:1px solid var(--border);display:flex;gap:12px;position:sticky;bottom:0;background:var(--white)}
 .form-cancel{flex:0 0 auto;background:transparent;border:1.5px solid var(--border);border-radius:50px;padding:12px 24px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--black);transition:all var(--trans)}
 .form-cancel:hover{border-color:var(--black)}
@@ -821,15 +829,12 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           <input class="form-input" id="fRating" type="number" min="0" max="5" step="0.1" placeholder="e.g. 4.8"/>
         </div>
         <div class="form-field full">
-          <label class="form-label">Product Image <span style="color:var(--gray);font-weight:600;text-transform:none">(optional — overrides emoji)</span></label>
-          <div id="imgUploadArea" onclick="document.getElementById('fImgFile').click()" style="border:2px dashed var(--border);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:all var(--trans);background:var(--light);" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'">
-            <div id="imgPreviewWrap" style="display:none;position:relative;width:fit-content;margin:0 auto 10px;">
-              <img id="imgPreview" src="" style="max-height:140px;max-width:100%;border-radius:var(--r);display:block;"/>
-              <button type="button" onclick="event.stopPropagation();clearImage()" style="position:absolute;top:-8px;right:-8px;background:var(--orange);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
-            </div>
-            <div id="imgPlaceholder" style="color:var(--gray);font-size:14px;font-weight:700;">📷 Click to upload image<br><span style="font-weight:400;font-size:12px">PNG, JPG, WebP · Max 2MB</span></div>
+          <label class="form-label">Product Images <span style="color:var(--gray);font-weight:600;text-transform:none">(optional — first image is primary)</span></label>
+          <div id="imgUploadArea" onclick="document.getElementById('fImgFile').click()" style="border:2px dashed var(--border);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;transition:all var(--trans);background:var(--light);" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div id="imgPlaceholder" style="color:var(--gray);font-size:14px;font-weight:700;">📷 Click to add images<br><span style="font-weight:400;font-size:12px">PNG, JPG, WebP · Max 2MB each · Multiple allowed</span></div>
           </div>
-          <input type="file" id="fImgFile" accept="image/*" style="display:none" onchange="handleImageUpload(this)"/>
+          <div class="img-thumb-grid" id="imgThumbGrid"></div>
+          <input type="file" id="fImgFile" accept="image/*" multiple style="display:none" onchange="handleImageUpload(this)"/>
           <input type="hidden" id="fImg"/>
         </div>
         <div class="form-field full">
@@ -880,6 +885,9 @@ const sbAdmin = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, windo
 let _cachedProducts = [];
 
 function rowToApp(row){
+  const rawImg = row.image_url || '';
+  let img = rawImg, images = rawImg ? [rawImg] : [];
+  try { const a=JSON.parse(rawImg); if(Array.isArray(a)&&a.length){ images=a; img=a[0]||''; } } catch{}
   return {
     id:       row.id,
     n:        row.name        || '',
@@ -892,7 +900,7 @@ function rowToApp(row){
     r:        row.rating        || 4.5,
     rv:       row.review_count  || 0,
     tag:      row.tag           || '',
-    img:      row.image_url     || '',
+    img, images,
     slug:     row.slug          || '',
     desc:     row.description   || '',
     vars:     Array.isArray(row.variants)  ? row.variants  : [],
@@ -914,7 +922,7 @@ function appToRow(prod){
     rating:         prod.r || 4.5,
     review_count:   prod.rv || 0,
     tag:            prod.tag || '',
-    image_url:      prod.img || '',
+    image_url:      (prod.images&&prod.images.length>1) ? JSON.stringify(prod.images) : (prod.images&&prod.images[0] || prod.img || ''),
     slug:           (prod.slug || prod.n || '').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),
     description:    prod.desc || '',
     variants:       prod.vars || [],
@@ -1121,6 +1129,7 @@ function setCustomEmoji(val){
 
 /* ── VARIATION GROUPS ── */
 let varGroups = [];
+let imagesList = [];
 const VAR_TYPES = ['Size','Color','Weight','Material','Flavor','Pack Size','Age Group','Other'];
 
 function renderVarGroups(){
@@ -1139,7 +1148,7 @@ function renderVarGroups(){
         <button class="vg-del" onclick="removeVarGroup(${gi})" title="Remove group">✕</button>
       </div>
       <div class="vg-values" id="vgValues${gi}">
-        ${g.values.map((v,vi)=>`<span class="vg-val-tag">${escHtml(v)}<button class="vg-val-remove" onclick="removeVgValue(${gi},${vi})">✕</button></span>`).join('')}
+        ${g.values.map((v,vi)=>{const vp=(g.prices&&g.prices[vi]!=null)?g.prices[vi]:'';return`<span class="vg-val-tag">${escHtml(v)}<input class="vg-val-price" type="number" min="0" placeholder="₦ base" title="Custom price (blank = product price)" value="${escHtml(String(vp))}" oninput="if(!varGroups[${gi}].prices)varGroups[${gi}].prices=varGroups[${gi}].values.map(()=>null);varGroups[${gi}].prices[${vi}]=this.value?parseFloat(this.value):null"><button class="vg-val-remove" onclick="removeVgValue(${gi},${vi})">✕</button></span>`;}).join('')}
         <input class="vg-val-input" type="text" placeholder="+ Add value"
           onkeydown="if(event.key==='Enter'){addVgValue(${gi},this);event.preventDefault()}"
           onblur="if(this.value.trim())addVgValue(${gi},this)">
@@ -1149,7 +1158,7 @@ function renderVarGroups(){
 }
 
 function addVarGroup(){
-  varGroups.push({type:'Size', customLabel:'', values:[]});
+  varGroups.push({type:'Size', customLabel:'', values:[], prices:[]});
   renderVarGroups();
   setTimeout(()=>{
     const inputs = document.querySelectorAll('.vg-val-input');
@@ -1162,6 +1171,8 @@ function addVgValue(gi, input){
   const val = input.value.trim();
   if(val && !varGroups[gi].values.includes(val)){
     varGroups[gi].values.push(val);
+    if(!varGroups[gi].prices) varGroups[gi].prices = [];
+    varGroups[gi].prices.push(null);
     input.value='';
     renderVarGroups();
     setTimeout(()=>{
@@ -1170,7 +1181,7 @@ function addVgValue(gi, input){
     },30);
   } else { input.value=''; }
 }
-function removeVgValue(gi, vi){ varGroups[gi].values.splice(vi,1); renderVarGroups(); }
+function removeVgValue(gi, vi){ varGroups[gi].values.splice(vi,1); if(varGroups[gi].prices) varGroups[gi].prices.splice(vi,1); renderVarGroups(); }
 
 /* ── FORM OPEN / CLOSE ── */
 function openForm(id){
@@ -1189,22 +1200,16 @@ function openForm(id){
   document.getElementById('fRating').value= p ? (p.r||4.5) : 4.5;
   document.getElementById('fDesc').value  = p ? (p.desc||'') : '';
 
-  const imgVal = p ? (p.img||'') : '';
-  document.getElementById('fImg').value = imgVal;
-  if(imgVal){
-    document.getElementById('imgPreview').src = imgVal;
-    document.getElementById('imgPreviewWrap').style.display='block';
-    document.getElementById('imgPlaceholder').style.display='none';
-  } else {
-    document.getElementById('imgPreviewWrap').style.display='none';
-    document.getElementById('imgPlaceholder').style.display='block';
-  }
+  // Load images
+  imagesList = p ? (p.images && p.images.length ? [...p.images] : (p.img ? [p.img] : [])) : [];
+  renderImagePreviews();
 
   selectedEmoji = p ? p.e : '📦';
   if(p && p.varGroups && p.varGroups.length){
     varGroups = JSON.parse(JSON.stringify(p.varGroups));
+    varGroups.forEach(g=>{ if(!g.prices) g.prices=g.values.map(()=>null); });
   } else if(p && p.vars && p.vars.length){
-    varGroups = [{type:'Size', customLabel:'', values:[...p.vars]}];
+    varGroups = [{type:'Size', customLabel:'', values:[...p.vars], prices:p.vars.map(()=>null)}];
   } else {
     varGroups = [];
   }
@@ -1224,25 +1229,33 @@ function closeForm(){
 }
 
 /* ── IMAGE UPLOAD ── */
+function renderImagePreviews(){
+  const grid = document.getElementById('imgThumbGrid');
+  const placeholder = document.getElementById('imgPlaceholder');
+  grid.innerHTML = imagesList.map((src,i)=>`
+    <div class="img-thumb${i===0?' primary':''}">
+      <img src="${src}" alt=""/>
+      ${i===0?'<div class="img-thumb-label">PRIMARY</div>':''}
+      <button class="img-thumb-del" onclick="removeImage(${i})" title="Remove">✕</button>
+    </div>`).join('');
+  placeholder.style.display = imagesList.length ? 'none' : '';
+}
+function removeImage(idx){ imagesList.splice(idx,1); renderImagePreviews(); }
 function handleImageUpload(input){
-  const file = input.files[0];
-  if(!file) return;
-  if(file.size > 2*1024*1024){ showToast('Image too large — max 2MB','error'); input.value=''; return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    const data = e.target.result;
-    document.getElementById('fImg').value = data;
-    document.getElementById('imgPreview').src = data;
-    document.getElementById('imgPreviewWrap').style.display='block';
-    document.getElementById('imgPlaceholder').style.display='none';
-  };
-  reader.readAsDataURL(file);
+  const files = Array.from(input.files);
+  if(!files.length) return;
+  files.forEach(file=>{
+    if(file.size > 2*1024*1024){ showToast('Image too large — max 2MB','error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => { imagesList.push(e.target.result); renderImagePreviews(); };
+    reader.readAsDataURL(file);
+  });
+  input.value='';
 }
 function clearImage(){
-  document.getElementById('fImg').value = '';
-  document.getElementById('fImgFile').value = '';
-  document.getElementById('imgPreviewWrap').style.display='none';
-  document.getElementById('imgPlaceholder').style.display='block';
+  imagesList=[];
+  document.getElementById('fImgFile').value='';
+  renderImagePreviews();
 }
 
 /* ── SAVE PRODUCT ── */
@@ -1270,7 +1283,8 @@ async function saveProduct(){
     rv:       existingRv,
     varGroups:varGroups.filter(g=>g.values.length>0),
     vars:     varGroups.flatMap(g=>g.values),
-    img:      document.getElementById('fImg').value || '',
+    images:   imagesList,
+    img:      imagesList[0] || '',
     desc:     document.getElementById('fDesc').value.trim(),
   };
 
@@ -1358,72 +1372,74 @@ async function importProducts(input) {
   reader.onload = async e => {
     try {
       const prods = JSON.parse(e.target.result);
-      if (!Array.isArray(prods)) throw new Error('Invalid format');
+      if(!Array.isArray(prods)) throw new Error('Invalid format');
+      let imported = 0, failed = 0;
+      showToast(`⏳ Importing ${prods.length} products…`,'warning');
 
-      showToast(`⏳ Importing ${prods.length} products…`, 'warning');
-
-      let imported = 0;
-      let failed   = 0;
-
-      for (const p of prods) {
+      for(const p of prods){
 
         // ── Rehost external image to Supabase ──
-        if (p.img && p.img.startsWith('http') && !p.img.includes('supabase')) {
-          try {
-            // 1. Fetch the image as a blob
+        if(p.img && p.img.startsWith('http') && !p.img.includes('supabase')){
+          try{
             const imgRes = await fetch(p.img);
-            if (!imgRes.ok) throw new Error('Fetch failed');
+            if(!imgRes.ok) throw new Error('Fetch failed');
             const blob = await imgRes.blob();
 
-            // 2. Derive a clean filename from the URL
-            const rawName  = p.img.split('/').pop().split('?')[0];
-            const ext      = rawName.match(/\.(webp|jpg|jpeg|png|gif|avif)/i)?.[0] || '.jpg';
-            const safeName = (p.n || 'product')
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .slice(0, 40) + '-' + Date.now() + ext;
+            const converted = await new Promise(resolve=>{
+              const img = new Image();
+              const objectUrl = URL.createObjectURL(blob);
+              img.onload = ()=>{
+                URL.revokeObjectURL(objectUrl);
+                let{width,height}=img;
+                const maxW=1200;
+                if(width>maxW){height=Math.round(height*maxW/width);width=maxW;}
+                const canvas=document.createElement('canvas');
+                canvas.width=width; canvas.height=height;
+                canvas.getContext('2d').drawImage(img,0,0,width,height);
+                canvas.toBlob(jpegBlob=>{
+                  const uniqueName=(p.n||'product').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,30)
+                    +'-'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.jpg';
+                  resolve(new File([jpegBlob],uniqueName,{type:'image/jpeg'}));
+                },'image/jpeg',0.85);
+              };
+              img.onerror=()=>{URL.revokeObjectURL(objectUrl);resolve(null);};
+              img.src=objectUrl;
+            });
 
-            // 3. Upload to Supabase via the worker endpoint
-            const fd = new FormData();
-            fd.append('file', new File([blob], safeName, { type: blob.type || 'image/jpeg' }));
-            fd.append('bucket', 'hero-images'); // change to your products bucket if needed
+            if(!converted) throw new Error('Canvas conversion failed');
 
-            const upRes  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
-            const upData = await upRes.json();
+            const fd=new FormData();
+            fd.append('file',converted);
+            fd.append('bucket','hero-images');
 
-            if (upRes.ok && upData.url) {
-              p.img = upData.url; // ✅ swap external URL for Supabase URL
-            } else {
-              throw new Error(upData.error || 'Upload failed');
-            }
-          } catch (imgErr) {
-            console.warn('Image rehost failed for:', p.n, imgErr.message);
-            p.img = ''; // fall back to emoji if image rehost fails
+            const upRes=await fetch('/api/hero-upload',{method:'POST',body:fd});
+            const upData=await upRes.json();
+
+            if(upRes.ok&&upData.url){ p.img=upData.url; }
+            else throw new Error(upData.error||'Upload failed');
+
+            await new Promise(r=>setTimeout(r,800));
+
+          }catch(imgErr){
+            console.warn('Image rehost failed for:',p.n,imgErr.message);
+            p.img='';
           }
         }
 
-        // ── Save product to Supabase ──
-        const row = appToRow(p);
+        // ── Save to Supabase ──
+        const row=appToRow(p);
         delete row.id;
-        const { error } = await sbAdmin.from('shop_products').insert(row);
-        if (error) { console.error('Insert failed:', p.n, error.message); failed++; }
+        const{error}=await sbAdmin.from('shop_products').insert(row);
+        if(error){console.error('Insert failed:',p.n,error.message);failed++;}
         else imported++;
 
-        // Live progress toast
-        showToast(`⏳ Processing ${imported + failed} / ${prods.length}…`, 'warning');
+        showToast(`⏳ Processing ${imported+failed} / ${prods.length}…`,'warning');
       }
 
       await loadAllProducts();
       renderTable(); updateStats(); renderDashRecent();
-      showToast(
-        `✅ Imported ${imported} product${imported !== 1 ? 's' : ''}` +
-        (failed ? ` · ❌ ${failed} failed` : ''),
-        imported > 0 ? 'success' : 'error'
-      );
-
-    } catch (err) {
-      showToast('❌ Invalid JSON file: ' + err.message, 'error');
-    }
+      showToast(`✅ Imported ${imported} product${imported!==1?'s':''}${failed?' ('+failed+' failed)':''}`,'success');
+    }catch(err){showToast('❌ Invalid JSON file','error');console.error(err);}
   };
   reader.readAsText(file);
   input.value = '';

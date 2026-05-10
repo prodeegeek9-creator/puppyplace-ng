@@ -1325,9 +1325,12 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       <h3 style="font-size:18px; font-weight:900;" id="mT">Product</h3>
       <button onclick="closeModal()" style="background:var(--light); border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:var(--trans); flex-shrink:0;">✕</button>
     </div>
-    <div id="mImgWrap" style="margin:16px 24px; border-radius:var(--r); overflow:hidden; background:var(--light); display:flex; align-items:center; justify-content:center; min-height:180px;">
+    <div id="mImgWrap" style="margin:16px 24px; border-radius:var(--r); overflow:hidden; background:var(--light); display:flex; align-items:center; justify-content:center; min-height:180px; position:relative;">
       <img id="mImg" src="" alt="" loading="lazy" style="width:100%; max-height:260px; object-fit:cover; display:none;"/>
       <span id="mE" style="font-size:72px; padding:24px;">📦</span>
+      <button id="mImgPrev" onclick="changeModalImage(-1)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.4);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:none;align-items:center;justify-content:center;line-height:1;">‹</button>
+      <button id="mImgNext" onclick="changeModalImage(1)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.4);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:none;align-items:center;justify-content:center;line-height:1;">›</button>
+      <div id="mImgDots" style="position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px;"></div>
     </div>
     <div style="padding:0 24px 24px;">
       <div style="display:flex; align-items:flex-end; gap:12px; margin-bottom:4px;">
@@ -1387,7 +1390,8 @@ async function loadProductsFromSupabase() {
       r:     row.rating     || 4.5,
       rv:    row.review_count || 0,
       tag:   row.tag        || '',
-      img:   row.image_url  || null,
+      img:   (()=>{const r=row.image_url||'';try{const a=JSON.parse(r);if(Array.isArray(a))return a[0]||'';}catch{}return r;})(),
+      images:(()=>{const r=row.image_url||'';try{const a=JSON.parse(r);if(Array.isArray(a))return a;}catch{}return r?[r]:[];})(),
       slug:  row.slug       || '',
       desc:  row.description || '',
       vars:  row.variants   || [],
@@ -1402,7 +1406,8 @@ async function loadProductsFromSupabase() {
   cartItems = cartItems.map(item => {
     const fresh = prods.find(p => p.id === item.id);
     if (!fresh) return item;
-    const updated = { ...item, n: fresh.n, e: fresh.e, cat: fresh.cat, p: fresh.p };
+    const newP = (item.varGroups&&item.varGroups.length) ? item.p : fresh.p;
+    const updated = { ...item, n: fresh.n, e: fresh.e, cat: fresh.cat, p: newP };
     if (updated.p !== item.p || updated.n !== item.n) changed = true;
     return updated;
   });
@@ -1748,6 +1753,25 @@ function renderPets() {
   });
 }
 
+let _mImgs=[], _mImgIdx=0, _mEmoji='📦';
+function _renderModalImg(){
+  const imgEl=document.getElementById('mImg'),emoEl=document.getElementById('mE');
+  const dots=document.getElementById('mImgDots'),prev=document.getElementById('mImgPrev'),next=document.getElementById('mImgNext');
+  if(_mImgs.length){imgEl.src=_mImgs[_mImgIdx];imgEl.style.display='block';emoEl.style.display='none';}
+  else{imgEl.style.display='none';emoEl.style.display='block';emoEl.textContent=_mEmoji;}
+  const multi=_mImgs.length>1;
+  prev.style.display=next.style.display=multi?'flex':'none';
+  dots.innerHTML=multi?_mImgs.map((_,i)=>`<span onclick="_mImgIdx=${i};_renderModalImg()" style="width:7px;height:7px;border-radius:50%;background:${i===_mImgIdx?'var(--orange)':'rgba(255,255,255,.65)'};cursor:pointer;display:inline-block;transition:background .2s;"></span>`).join(''):'';
+}
+function changeModalImage(dir){if(!_mImgs.length)return;_mImgIdx=(_mImgIdx+dir+_mImgs.length)%_mImgs.length;_renderModalImg();}
+function updateModalPrice(basePrice){
+  const btns=document.querySelectorAll('#mVarGroups .pv-opt.selected');
+  let price=basePrice;
+  btns.forEach(b=>{const vp=parseFloat(b.dataset.vprice);if(!isNaN(vp)&&vp>0)price=vp;});
+  document.getElementById('mP').textContent=fmt(price);
+  return price;
+}
+
 function openModal(id) {
   let p = null;
   if (id.startsWith('d')) { p = dealData[parseInt(id.slice(1))]; }
@@ -1761,14 +1785,10 @@ function openModal(id) {
   document.getElementById('mP').textContent = fmt(p.p || p.price);
   document.getElementById('mO').textContent = (p.o || p.orig) ? 'Was ' + fmt(p.o || p.orig) : '';
 
-  // Image vs emoji
-  const imgEl = document.getElementById('mImg');
-  const emojiEl = document.getElementById('mE');
-  if (p.img) {
-    imgEl.src = p.img; imgEl.style.display = 'block'; emojiEl.style.display = 'none';
-  } else {
-    imgEl.style.display = 'none'; emojiEl.style.display = 'block'; emojiEl.textContent = p.e;
-  }
+  // Image gallery
+  _mImgs = p.images && p.images.length ? p.images : (p.img ? [p.img] : []);
+  _mImgIdx = 0; _mEmoji = p.e || '📦';
+  _renderModalImg();
 
   // Description
   const descWrap = document.getElementById('mDescWrap');
@@ -1784,35 +1804,37 @@ function openModal(id) {
 
   // Variation groups
   const vgEl = document.getElementById('mVarGroups');
-  const groups = p.varGroups || (p.vars && p.vars.length ? [{type:'Size', customLabel:'', values: p.vars}] : []);
+  const groups = p.varGroups || (p.vars && p.vars.length ? [{type:'Size', customLabel:'', values: p.vars, prices:null}] : []);
   if (groups.length) {
-    // Known color names for swatch rendering
     const COLOR_MAP = {
       red:'#e74c3c',orange:'#e67e22',yellow:'#f1c40f',green:'#2ecc71',
       blue:'#3498db',purple:'#9b59b6',pink:'#e91e8c',brown:'#8B4513',
       black:'#2c2c2c',white:'#f5f5f5',grey:'#95a5a6',gray:'#95a5a6',
       cream:'#f5f0dc',beige:'#d4c5a9',navy:'#1a237e',teal:'#00796b',
     };
+    const baseP = p.p || p.price;
     vgEl.innerHTML = groups.map((g, gi) => {
       const label = g.type === 'Other' ? (g.customLabel || 'Option') : g.type;
       const isColor = g.type === 'Color';
       const opts = g.values.map((v, vi) => {
+        const vp = g.prices && g.prices[vi] != null ? g.prices[vi] : null;
         if (isColor) {
           const cssColor = COLOR_MAP[v.toLowerCase()] || v;
           const isLight = ['white','cream','beige','yellow'].includes(v.toLowerCase());
-          return `<button class="pv-opt color-swatch" title="${v}"
+          return `<button class="pv-opt color-swatch" title="${v}" data-vprice="${vp!=null?vp:''}"
             style="background:${cssColor};border-color:${cssColor};${isLight?'border-color:#ccc;':''}"
-            onclick="selectVarOpt(this,${gi})">${''}</button>`;
+            onclick="selectVarOpt(this,${gi});updateModalPrice(${baseP})">${''}</button>`;
         }
-        return `<button class="pv-opt" onclick="selectVarOpt(this,${gi})">${v}</button>`;
+        const priceTag = vp ? `<span style="display:block;font-size:10px;font-weight:800;color:var(--orange);margin-top:2px;">${fmt(vp)}</span>` : '';
+        return `<button class="pv-opt" data-vprice="${vp!=null?vp:''}" onclick="selectVarOpt(this,${gi});updateModalPrice(${baseP})">${escHtml(v)}${priceTag}</button>`;
       }).join('');
       return `<div class="pv-group"><div class="pv-label">${label}</div><div class="pv-options" id="pvg${gi}">${opts}</div></div>`;
     }).join('');
-    // Auto-select first option in each group
     groups.forEach((_, gi) => {
       const first = document.querySelector(`#pvg${gi} .pv-opt`);
-      if (first) first.classList.add('selected');
+      if (first) { first.classList.add('selected'); }
     });
+    updateModalPrice(baseP);
   } else {
     vgEl.innerHTML = '';
   }
@@ -1820,7 +1842,8 @@ function openModal(id) {
   const _doAddCart = () => {
     const vc = collectVariants(document.getElementById('mVarGroups'), p.id || 'd');
     if (!vc) { showToast('Please select all options'); return false; }
-    addCart(p.id || 'd', p.n, p.e, p.cat, p.p, vc.variantStr, vc.storedGroups, vc.cid);
+    const effectivePrice = updateModalPrice(p.p || p.price);
+    addCart(p.id || 'd', p.n, p.e, p.cat, effectivePrice, vc.variantStr, vc.storedGroups, vc.cid);
     return true;
   };
   document.getElementById('modalCartBtn').onclick = () => { if (_doAddCart()) closeModal(); };
