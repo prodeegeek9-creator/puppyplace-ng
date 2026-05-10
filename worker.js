@@ -808,11 +808,14 @@ a{text-decoration:none;color:inherit}
 .pi-meta-item{background:var(--light);border-radius:var(--r);padding:12px 16px}
 .pi-meta-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:4px}
 .pi-meta-val{font-size:14px;font-weight:700;color:var(--black)}
-.pi-actions{display:flex;gap:12px;margin-bottom:10px}
-.btn-cart{flex:1;background:var(--orange);color:#fff;border:none;border-radius:50px;padding:15px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer}
+.pi-actions{display:flex;gap:10px;margin-bottom:12px}
+.btn-wa-page{width:50px;height:50px;background:#fff;border:1.5px solid #25D366;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;text-decoration:none;cursor:pointer;transition:background .2s}
+.btn-wa-page:hover{background:#f0fff4}
+.btn-cart{flex:1;background:var(--orange);color:#fff;border:none;border-radius:10px;height:50px;padding:0 18px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s}
 .btn-cart:hover{background:#c9530a}
-.btn-wish{background:var(--white);border:1.5px solid var(--border);color:var(--black);border-radius:50px;padding:15px 22px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer}
-.btn-wish:hover{border-color:var(--orange);color:var(--orange)}
+.pi-social-row{display:flex;gap:10px;margin-bottom:16px}
+.pi-soc-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:42px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;color:var(--black);transition:all .2s}
+.pi-soc-btn:hover{border-color:var(--orange);color:var(--orange)}
 .breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);margin-bottom:24px}
 .breadcrumb a{color:var(--orange);font-weight:700}
 .breadcrumb a:hover{text-decoration:underline}
@@ -850,7 +853,8 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 .mob-si input{flex:1;border:none;background:transparent;padding:10px 16px;font-family:'Nunito',sans-serif;font-size:14px;outline:none}
 .mob-si button{background:#ed6436;border:none;width:50px;height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff}
 /* Mobile sticky Add to Cart bar */
-.mob-atc-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#fff;border-top:1.5px solid #e9ecef;padding:12px 16px;align-items:center;gap:12px;box-shadow:0 -4px 24px rgba(0,0,0,.14)}
+.mob-atc-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#fff;border-top:1.5px solid #e9ecef;padding:10px 14px;align-items:center;gap:10px;box-shadow:0 -4px 24px rgba(0,0,0,.14)}
+.mob-atc-bar a,.mob-atc-bar button{font-size:13px}
 @media(max-width:768px){
   .nav{padding:0 12px;height:56px}
   .nav-back{padding:7px 12px;font-size:12px}
@@ -859,12 +863,10 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   .product-grid{grid-template-columns:1fr;gap:20px}
   .img-box{max-height:320px}
   .pi-meta{grid-template-columns:1fr}
-  .pi-actions{flex-direction:column}
   footer{padding:32px 20px 20px}
   .co-field-row{grid-template-columns:1fr}
   .mob-search-bar{display:block}
-  .mob-atc-bar{display:flex!important}
-  body{padding-bottom:80px}
+  body{padding-bottom:74px}
 }
 </style>
 </head>
@@ -918,11 +920,15 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
         ${p.brand     ? `<div class="pi-meta-item"><div class="pi-meta-label">Brand</div><div class="pi-meta-val">${esc(p.brand)}</div></div>` : ''}
         <div class="pi-meta-item"><div class="pi-meta-label">Stock</div><div class="pi-meta-val" style="color:#2ecc71">✅ In Stock</div></div>
       </div>
-      <div class="pi-actions">
+      <div class="pi-actions" id="piActions">
+        <a href="https://wa.me/2348000000000?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener" class="btn-wa-page">💬</a>
         <button class="btn-cart" onclick="addToCartBtn()">🛒 Add to Cart</button>
-        <button class="btn-wish" onclick="addToWishBtn()">❤️ Wishlist</button>
       </div>
-      <div style="font-size:13px;color:var(--gray);margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;">
+      <div class="pi-social-row">
+        <button class="pi-soc-btn" onclick="addToWishBtn()">❤️ Wishlist</button>
+        <button class="pi-soc-btn" onclick="shareProduct()">↗ Share</button>
+      </div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;">
         <span>🚚 Fast delivery across Nigeria</span>
         <span>↩️ 7-day returns</span>
       </div>
@@ -1046,11 +1052,11 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   </div>
 </div>
 
-<!-- MOBILE STICKY ADD TO CART BAR -->
-<div class="mob-atc-bar">
+<!-- MOBILE STICKY ADD TO CART BAR (shown/hidden by IntersectionObserver) -->
+<div class="mob-atc-bar" id="mobAtcBar">
   <a href="https://wa.me/2348000000000?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener"
-     style="width:54px;height:54px;background:#25D366;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;text-decoration:none;">💬</a>
-  <button onclick="addToCartBtn()" style="flex:1;height:54px;background:#ed6436;color:#fff;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">🛒 Add to Cart</button>
+     style="width:46px;height:46px;background:#fff;border:1.5px solid #25D366;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;text-decoration:none;">💬</a>
+  <button onclick="addToCartBtn()" style="flex:1;height:46px;background:#ed6436;color:#fff;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">🛒 Add to Cart</button>
 </div>
 
 <footer>
@@ -1283,6 +1289,21 @@ async function sendToN8n(ref,transactionId){
   coCurrentStep=4;renderCoStep(4);cartItems=[];saveCart();updateBadges();renderCartDrawer();
 }
 function goSearch(){var q=document.getElementById('mobSI').value.trim();window.location.href='/shop.html'+(q?'?q='+encodeURIComponent(q):'');}
+async function shareProduct(){
+  var prod=window.__pp_prod||{};
+  var data={title:prod.n||'PuppyPlace Product',text:(prod.n||'')+(prod.p?' — ₦'+prod.p.toLocaleString('en-NG'):''),url:window.location.href};
+  try{if(navigator.share){await navigator.share(data);}else{await navigator.clipboard.writeText(data.url);showToast('Link copied!');}}catch(e){}
+}
+/* Smart sticky ATC: show only when page's own ATC is scrolled out of view */
+(function(){
+  if(!('IntersectionObserver' in window))return;
+  var bar=document.getElementById('mobAtcBar');
+  var anchor=document.getElementById('piActions');
+  if(!bar||!anchor)return;
+  new IntersectionObserver(function(entries){
+    bar.style.display=entries[0].isIntersecting?'none':'flex';
+  },{threshold:0}).observe(anchor);
+})();
 try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error('[PuppyPlace] Cart init error:',e);}
 </script>
 </body>
