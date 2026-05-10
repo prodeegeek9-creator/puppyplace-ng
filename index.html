@@ -1383,6 +1383,7 @@ async function loadProductsFromSupabase() {
       rv:    row.review_count || 0,
       tag:   row.tag        || '',
       img:   row.image_url  || null,
+      slug:  row.slug       || '',
       desc:  row.description || '',
       vars:  row.variants   || [],
       varGroups: row.var_groups || [],
@@ -1610,14 +1611,15 @@ function renderProds(list) {
   g.innerHTML = '';
   shown.forEach(p => {
     const disc = p.o ? Math.round((1 - p.p / p.o) * 100) : 0;
-    g.innerHTML += `<div class="pcard" onclick="openModal('${escHtml(p.id)}')">
+    const pUrl = p.slug ? `/product/${escHtml(p.slug)}` : `/product/${p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}--${escHtml(p.id)}`;
+    g.innerHTML += `<div class="pcard" onclick="window.location.href='${pUrl}'">
       <div class="pc-thumb">
         ${p.tag ? `<span class="pc-badge ${lblMap[p.tag]||'lbl-sale'}">${escHtml(lblText[p.tag]||p.tag)}</span>` : ''}
         <button class="pc-wish" onclick="event.stopPropagation();addWishFromCard(this,'${escHtml(p.id)}')">♡</button>
         ${p.img ? `<img src="${escHtml(p.img)}" alt="${escHtml(p.n)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${escHtml(p.e)}</span>`}
         <div class="pc-actions">
           <button class="pa-btn" data-pid="${escHtml(p.id)}" onclick="event.stopPropagation();addCartFromCard(this)">🛒 Add to Cart</button>
-          <span class="pa-icon" onclick="event.stopPropagation();openModal('${escHtml(p.id)}')">👁</span>
+          <span class="pa-icon" onclick="event.stopPropagation();window.location.href='${pUrl}'">👁</span>
         </div>
       </div>
       <div class="pc-body">

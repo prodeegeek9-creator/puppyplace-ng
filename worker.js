@@ -48,11 +48,7 @@ export default {
 
     const productMatch = url.pathname.match(/^\/product\/(.+?)(?:\.html)?$/);
     if (productMatch) {
-      const raw = decodeURIComponent(productMatch[1]);
-      // Support slug--uuid format: extract the uuid after the last '--'
-      const sep = raw.lastIndexOf('--');
-      const productId = sep >= 0 ? raw.slice(sep + 2) : raw;
-      return serveProduct(productId, env);
+      return serveProduct(decodeURIComponent(productMatch[1]), env);
     }
 
     return env.ASSETS.fetch(request);
@@ -562,22 +558,47 @@ async function handleUpdateProfile(request, env) {
 
 /* ── PRODUCT SSR ── */
 
-async function serveProduct(id, env) {
+async function serveProduct(slugOrId, env) {
   if (!env.SUPABASE_URL) return html(productErrorPage('Server not configured.'), 503);
 
   let product;
   try {
-    const res = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(id)}&active=eq.true&select=*`,
-      { headers: sbHeaders(env) }
-    );
-    const rows = await res.json();
-    if (!rows || !rows.length) return html(productNotFoundPage(), 404);
-    product = rows[0];
+    const h = sbHeaders(env);
+    const base = env.SUPABASE_URL;
+
+    // 1. Try slug column lookup
+    const slugRes = await fetch(`${base}/rest/v1/shop_products?slug=eq.${encodeURIComponent(slugOrId)}&active=eq.true&select=*`, { headers: h });
+    if (slugRes.ok) {
+      const rows = await slugRes.json();
+      if (rows && rows.length) product = rows[0];
+    }
+
+    // 2. Try direct ID lookup
+    if (!product) {
+      const idRes = await fetch(`${base}/rest/v1/shop_products?id=eq.${encodeURIComponent(slugOrId)}&active=eq.true&select=*`, { headers: h });
+      if (idRes.ok) {
+        const rows = await idRes.json();
+        if (rows && rows.length) product = rows[0];
+      }
+    }
+
+    // 3. If slug--uuid format (transition from old URLs), extract uuid and retry
+    if (!product) {
+      const sep = slugOrId.lastIndexOf('--');
+      if (sep >= 0) {
+        const extractedId = slugOrId.slice(sep + 2);
+        const idRes = await fetch(`${base}/rest/v1/shop_products?id=eq.${encodeURIComponent(extractedId)}&active=eq.true&select=*`, { headers: h });
+        if (idRes.ok) {
+          const rows = await idRes.json();
+          if (rows && rows.length) product = rows[0];
+        }
+      }
+    }
   } catch (e) {
     return html(productErrorPage('Failed to load product.'), 500);
   }
 
+  if (!product) return html(productNotFoundPage(), 404);
   return html(renderProductPage(product), 200);
 }
 
@@ -589,7 +610,7 @@ function renderProductPage(p) {
   const desc     = p.description || '';
   const slug     = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const imgUrl   = p.image_url ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(p.image_url)}`) : '';
-  const pageUrl  = `https://puppyplace.ng/product/${slug}--${encodeURIComponent(p.id)}`;
+  const pageUrl  = `https://puppyplace.ng/product/${p.slug || slug}`;
   const metaDesc = plainText(desc, 160) || `${name} — available at PuppyPlace.ng`;
 
   const jsonLd = JSON.stringify({
@@ -817,8 +838,8 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
         <div class="pi-meta-item"><div class="pi-meta-label">Stock</div><div class="pi-meta-val" style="color:#2ecc71">✅ In Stock</div></div>
       </div>
       <div class="pi-actions">
-        <button class="btn-cart" onclick="addToCart()">🛒 Add to Cart</button>
-        <button class="btn-wish" onclick="addToWish()">❤️ Wishlist</button>
+        <button class="btn-cart" data-id="${esc(String(p.id||''))}" data-n="${esc(name)}" data-e="${esc(p.emoji||'📦')}" data-cat="${esc(p.category||'')}" data-p="${Number(p.price)||0}" onclick="addToCartBtn(this)">🛒 Add to Cart</button>
+        <button class="btn-wish" data-id="${esc(String(p.id||''))}" data-n="${esc(name)}" data-e="${esc(p.emoji||'📦')}" data-cat="${esc(p.category||'')}" data-p="${Number(p.price)||0}" onclick="addToWishBtn(this)">❤️ Wishlist</button>
       </div>
       <div style="font-size:13px;color:var(--gray);margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;">
         <span>🚚 Fast delivery across Nigeria</span>
@@ -937,7 +958,6 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="/config.js"></script>
 <script>
-const _prod=${JSON.stringify({id:p.id||'',n:name,e:p.emoji||'📦',cat:p.category||'',p:p.price||0}).replace(/<\//g,'<\\/')};
 const fmt=n=>'₦'+n.toLocaleString('en-NG');
 const escH=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const PAYSTACK_PUBLIC_KEY=(window.PPCONFIG&&window.PPCONFIG.PAYSTACK_PUBLIC_KEY)||'';
@@ -956,9 +976,10 @@ function updateBadges(){
   document.getElementById('wishDrawerCount').textContent=wishItems.length;
 }
 function showToast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2500);}
-function addToCart(){
-  var ex=cartItems.find(function(i){return i.id===_prod.id;});
-  if(ex)ex.qty++;else cartItems.push(Object.assign({},_prod,{qty:1}));
+function addToCartBtn(btn){
+  var id=btn.dataset.id,n=btn.dataset.n,e=btn.dataset.e,cat=btn.dataset.cat,p=Number(btn.dataset.p);
+  var ex=cartItems.find(function(i){return i.id===id;});
+  if(ex)ex.qty++;else cartItems.push({id:id,n:n,e:e,cat:cat,p:p,qty:1});
   saveCart();updateBadges();renderCartDrawer();openCart();
 }
 function removeFromCart(id){
@@ -996,9 +1017,10 @@ function renderCartDrawer(){
 }
 function openCart(){document.getElementById('cartDrawer').classList.add('open');document.getElementById('cartOverlay').classList.add('open');document.body.style.overflow='hidden';}
 function closeCart(){document.getElementById('cartDrawer').classList.remove('open');document.getElementById('cartOverlay').classList.remove('open');document.body.style.overflow='';}
-function addToWish(){
-  if(wishItems.find(function(i){return i.id===_prod.id;})){showToast('Already in wishlist!');return;}
-  wishItems.push({id:_prod.id,n:_prod.n,e:_prod.e,cat:_prod.cat,p:_prod.p});
+function addToWishBtn(btn){
+  var id=btn.dataset.id;
+  if(wishItems.find(function(i){return i.id===id;})){showToast('Already in wishlist!');return;}
+  wishItems.push({id:id,n:btn.dataset.n,e:btn.dataset.e,cat:btn.dataset.cat,p:Number(btn.dataset.p)});
   saveWish();updateBadges();renderWishDrawer();openWishlist();
 }
 function removeFromWish(id){
