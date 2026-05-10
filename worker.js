@@ -607,7 +607,7 @@ async function serveProduct(slugOrId, env) {
     const base = env.SUPABASE_URL;
     const catFilter = product.category ? `&category=eq.${encodeURIComponent(product.category)}` : '';
     const relRes = await fetch(
-      `${base}/rest/v1/shop_products?active=eq.true&id=neq.${encodeURIComponent(product.id)}${catFilter}&select=id,name,slug,emoji,image_url,category,price,original_price&order=created_at.desc&limit=4`,
+      `${base}/rest/v1/shop_products?active=eq.true&id=neq.${encodeURIComponent(product.id)}${catFilter}&select=id,name,slug,emoji,image_url,category,price,original_price&order=created_at.desc&limit=5`,
       { headers: h }
     );
     if (relRes.ok) related = await relRes.json() || [];
@@ -615,7 +615,7 @@ async function serveProduct(slugOrId, env) {
     if (related.length < 4) {
       const excludeIds = [product.id, ...related.map(r => r.id)].map(id => `id=neq.${encodeURIComponent(id)}`).join('&');
       const fillRes = await fetch(
-        `${base}/rest/v1/shop_products?active=eq.true&${excludeIds}&select=id,name,slug,emoji,image_url,category,price,original_price&order=created_at.desc&limit=${4 - related.length}`,
+        `${base}/rest/v1/shop_products?active=eq.true&${excludeIds}&select=id,name,slug,emoji,image_url,category,price,original_price&order=created_at.desc&limit=${5 - related.length}`,
         { headers: h }
       );
       if (fillRes.ok) {
@@ -827,18 +827,19 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 .pv-opt:hover{border-color:var(--orange);color:var(--orange)}
 .pv-opt.selected{border-color:var(--orange);background:var(--orange);color:#fff}
 .related-section{padding:48px 0 0}
-.related-title{font-size:22px;font-weight:900;color:var(--black);margin-bottom:20px}
-.related-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.rel-prod-card{display:block;background:var(--white);border-radius:var(--r);overflow:hidden;border:1px solid var(--border);transition:box-shadow .2s,transform .2s}
-.rel-prod-card:hover{box-shadow:var(--shadow);transform:translateY(-3px)}
-.rel-prod-img{aspect-ratio:1;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;position:relative}
+.related-title{font-size:18px;font-weight:900;color:var(--black);margin-bottom:16px}
+.related-scroll{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:12px;scrollbar-width:none}
+.related-scroll::-webkit-scrollbar{display:none}
+.rel-prod-card{display:block;background:var(--white);border-radius:var(--r);overflow:hidden;border:1px solid var(--border);transition:box-shadow .2s;flex:0 0 160px;scroll-snap-align:start}
+.rel-prod-card:hover{box-shadow:var(--shadow)}
+.rel-prod-img{aspect-ratio:1;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:48px;overflow:hidden;position:relative}
 .rel-prod-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.rel-prod-info{padding:12px}
-.rel-prod-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--orange);margin-bottom:4px}
-.rel-prod-name{font-size:14px;font-weight:800;color:var(--black);margin-bottom:6px;line-height:1.3}
-.rel-prod-price{font-size:15px;font-weight:900;color:var(--black);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.rel-prod-orig{font-size:12px;color:var(--gray);text-decoration:line-through;font-weight:600}
-.rel-prod-disc{background:rgba(231,76,60,.1);color:#e74c3c;font-size:11px;font-weight:800;padding:2px 6px;border-radius:4px}
+.rel-prod-info{padding:10px}
+.rel-prod-cat{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--orange);margin-bottom:3px}
+.rel-prod-name{font-size:12px;font-weight:800;color:var(--black);margin-bottom:5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rel-prod-price{font-size:14px;font-weight:900;color:var(--black)}
+.rel-prod-orig{font-size:11px;color:var(--gray);text-decoration:line-through;font-weight:600;display:block;margin-top:1px}
+.rel-prod-disc{background:#ed6436;color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;position:absolute;top:8px;left:8px}
 @media(max-width:768px){
   .nav{padding:0 12px;height:56px}
   .nav-back{padding:7px 12px;font-size:12px}
@@ -850,7 +851,6 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   .pi-actions{flex-direction:column}
   footer{padding:32px 20px 20px}
   .co-field-row{grid-template-columns:1fr}
-  .related-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -910,19 +910,22 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   </div>
 
   ${related.length ? `<section class="related-section">
-    <h2 class="related-title">You May Also Like</h2>
-    <div class="related-grid">
+    <h2 class="related-title">Customers Also Viewed</h2>
+    <div class="related-scroll">
       ${related.map(r => {
         const rPrice = r.price ? '&#x20A6;' + Number(r.price).toLocaleString('en-NG') : '';
         const rOrig  = r.original_price ? '&#x20A6;' + Number(r.original_price).toLocaleString('en-NG') : '';
         const rDisc  = (r.price && r.original_price) ? Math.round((1 - r.price / r.original_price) * 100) : 0;
         const rSlug  = r.slug || (r.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         return `<a href="/product/${esc(rSlug)}.html" class="rel-prod-card">
-          <div class="rel-prod-img">${r.image_url ? `<img src="${esc(r.image_url)}" alt="${esc(r.name || '')}" loading="lazy"/>` : `<span>${esc(r.emoji || '📦')}</span>`}</div>
+          <div class="rel-prod-img">
+            ${r.image_url ? `<img src="${esc(r.image_url)}" alt="${esc(r.name || '')}" loading="lazy"/>` : `<span>${esc(r.emoji || '📦')}</span>`}
+            ${rDisc > 0 ? `<span class="rel-prod-disc">-${rDisc}%</span>` : ''}
+          </div>
           <div class="rel-prod-info">
-            ${r.category ? `<div class="rel-prod-cat">${esc(r.category)}</div>` : ''}
             <div class="rel-prod-name">${esc(r.name || '')}</div>
-            <div class="rel-prod-price">${rPrice}${rOrig ? `<span class="rel-prod-orig">${rOrig}</span>` : ''}${rDisc > 0 ? `<span class="rel-prod-disc">-${rDisc}%</span>` : ''}</div>
+            <div class="rel-prod-price">${rPrice}</div>
+            ${rOrig ? `<span class="rel-prod-orig">${rOrig}</span>` : ''}
           </div>
         </a>`;
       }).join('')}
