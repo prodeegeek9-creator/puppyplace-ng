@@ -599,10 +599,50 @@ async function serveProduct(slugOrId, env) {
   }
 
   if (!product) return html(productNotFoundPage(), 404);
-  return html(renderProductPage(product), 200);
+
+  // Fetch related products from the same category (excluding current product)
+  let related = [];
+  try {
+    const h = sbHeaders(env);
+    const base = env.SUPABASE_URL;
+    const catFilter = product.category ? `&category=eq.${encodeURIComponent(product.category)}` : '';
+    const relRes = await fetch(
+      `${base}/rest/v1/shop_products?active=eq.true&id=neq.${encodeURIComponent(product.id)}${catFilter}&select=id,name,slug,emoji,image_url,category,price,original_price&order=created_at.desc&limit=4`,
+      { headers: h }
+    );
+    if (relRes.ok) related = await relRes.json() || [];
+    // If same-category has fewer than 4, fill up with other products
+    if (related.length < 4) {
+      const excludeIds = [product.id, ...related.map(r => r.id)].map(id => `id=neq.${encodeURIComponent(id)}`).join('&');
+      const fillRes = await fetch(
+        `${base}/rest/v1/shop_products?active=eq.true&${excludeIds}&select=id,name,slug,emoji,image_url,category,price,original_price&order=created_at.desc&limit=${4 - related.length}`,
+        { headers: h }
+      );
+      if (fillRes.ok) {
+        const fill = await fillRes.json() || [];
+        related = [...related, ...fill];
+      }
+    }
+  } catch (e) { /* non-critical */ }
+
+  return html(renderProductPage(product, related), 200);
 }
 
-function renderProductPage(p) {
+function renderVarGroups(p) {
+  const groups = Array.isArray(p.var_groups) && p.var_groups.length
+    ? p.var_groups
+    : (Array.isArray(p.variants) && p.variants.length ? [{ type: 'Size', values: p.variants }] : []);
+  if (!groups.length) return '';
+  return groups.map(g => {
+    const label = g.type === 'Other' ? (g.customLabel || 'Option') : (g.type || 'Option');
+    const opts = (g.values || []).map(v =>
+      `<button class="pv-opt" onclick="this.closest('.pv-options').querySelectorAll('.pv-opt').forEach(b=>b.classList.remove('selected'));this.classList.add('selected')">${esc(v)}</button>`
+    ).join('');
+    return `<div class="pv-group"><div class="pv-label">${esc(label)}</div><div class="pv-options">${opts}</div></div>`;
+  }).join('');
+}
+
+function renderProductPage(p, related = []) {
   const name     = p.name      || 'Product';
   const price    = p.price     ? '₦' + Number(p.price).toLocaleString('en-NG') : '';
   const origPrice= p.original_price ? '₦' + Number(p.original_price).toLocaleString('en-NG') : '';
@@ -780,6 +820,25 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 .footer-links a{font-size:13px;color:rgba(255,255,255,.55)}
 .footer-links a:hover{color:var(--orange)}
 .footer-copy{font-size:12px;color:rgba(255,255,255,.3)}
+.pv-group{margin-bottom:16px}
+.pv-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:8px}
+.pv-options{display:flex;flex-wrap:wrap;gap:8px}
+.pv-opt{border:1.5px solid var(--border);border-radius:50px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;background:var(--white);font-family:'Nunito',sans-serif;transition:all .15s}
+.pv-opt:hover{border-color:var(--orange);color:var(--orange)}
+.pv-opt.selected{border-color:var(--orange);background:var(--orange);color:#fff}
+.related-section{padding:48px 0 0}
+.related-title{font-size:22px;font-weight:900;color:var(--black);margin-bottom:20px}
+.related-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.rel-prod-card{display:block;background:var(--white);border-radius:var(--r);overflow:hidden;border:1px solid var(--border);transition:box-shadow .2s,transform .2s}
+.rel-prod-card:hover{box-shadow:var(--shadow);transform:translateY(-3px)}
+.rel-prod-img{aspect-ratio:1;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;position:relative}
+.rel-prod-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.rel-prod-info{padding:12px}
+.rel-prod-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--orange);margin-bottom:4px}
+.rel-prod-name{font-size:14px;font-weight:800;color:var(--black);margin-bottom:6px;line-height:1.3}
+.rel-prod-price{font-size:15px;font-weight:900;color:var(--black);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rel-prod-orig{font-size:12px;color:var(--gray);text-decoration:line-through;font-weight:600}
+.rel-prod-disc{background:rgba(231,76,60,.1);color:#e74c3c;font-size:11px;font-weight:800;padding:2px 6px;border-radius:4px}
 @media(max-width:768px){
   .nav{padding:0 12px;height:56px}
   .nav-back{padding:7px 12px;font-size:12px}
@@ -791,6 +850,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   .pi-actions{flex-direction:column}
   footer{padding:32px 20px 20px}
   .co-field-row{grid-template-columns:1fr}
+  .related-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -830,6 +890,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
         <span class="pi-stars">★★★★${(p.rating || 4.5) >= 5 ? '★' : '☆'}</span>
         <span>${esc(String(p.rating || '4.5'))} · ${esc(String(p.review_count || 0))} reviews</span>
       </div>
+      ${renderVarGroups(p) ? `<div style="margin-bottom:20px">${renderVarGroups(p)}</div>` : ''}
       ${desc ? `<div class="pi-desc">${desc}</div>` : ''}
       <div class="pi-meta">
         ${p.category ? `<div class="pi-meta-item"><div class="pi-meta-label">Category</div><div class="pi-meta-val">${esc(p.category)}</div></div>` : ''}
@@ -847,6 +908,26 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
       </div>
     </div>
   </div>
+
+  ${related.length ? `<section class="related-section">
+    <h2 class="related-title">You May Also Like</h2>
+    <div class="related-grid">
+      ${related.map(r => {
+        const rPrice = r.price ? '&#x20A6;' + Number(r.price).toLocaleString('en-NG') : '';
+        const rOrig  = r.original_price ? '&#x20A6;' + Number(r.original_price).toLocaleString('en-NG') : '';
+        const rDisc  = (r.price && r.original_price) ? Math.round((1 - r.price / r.original_price) * 100) : 0;
+        const rSlug  = r.slug || (r.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        return `<a href="/product/${esc(rSlug)}.html" class="rel-prod-card">
+          <div class="rel-prod-img">${r.image_url ? `<img src="${esc(r.image_url)}" alt="${esc(r.name || '')}" loading="lazy"/>` : `<span>${esc(r.emoji || '📦')}</span>`}</div>
+          <div class="rel-prod-info">
+            ${r.category ? `<div class="rel-prod-cat">${esc(r.category)}</div>` : ''}
+            <div class="rel-prod-name">${esc(r.name || '')}</div>
+            <div class="rel-prod-price">${rPrice}${rOrig ? `<span class="rel-prod-orig">${rOrig}</span>` : ''}${rDisc > 0 ? `<span class="rel-prod-disc">-${rDisc}%</span>` : ''}</div>
+          </div>
+        </a>`;
+      }).join('')}
+    </div>
+  </section>` : ''}
 </div>
 
 <!-- CART DRAWER -->
