@@ -401,6 +401,8 @@ img { max-width: 100%; height: auto; display: block; }
 .pv-opt { border:1.5px solid var(--border); border-radius:50px; padding:6px 14px; font-size:13px; font-weight:700; cursor:pointer; transition:all var(--trans); background:var(--white); }
 .pv-opt:hover { border-color:var(--orange); color:var(--orange); }
 .pv-opt.selected { border-color:var(--orange); background:var(--orange); color:#fff; }
+.pv-group-err { outline:2px solid #e74c3c; border-radius:8px; padding:6px; animation:pvShake .35s; }
+@keyframes pvShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 .pv-opt.color-swatch { width:32px; height:32px; padding:0; border-radius:50%; position:relative; }
 .pv-opt.color-swatch.selected::after { content:'✓'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4); }
 /* Product Modal — Reviews */
@@ -1450,28 +1452,73 @@ function updateBadges() {
   if(document.getElementById('mwBadge')) document.getElementById('mwBadge').textContent = wishItems.length;
 }
 
-function addCart(id, name, emoji, cat, price) {
-  const existing = cartItems.find(i => i.id === id);
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;border-radius:50px;padding:10px 22px;font-size:13px;font-weight:800;z-index:99999;white-space:nowrap;pointer-events:none;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function collectVariants(container, id) {
+  const groups = container.querySelectorAll('.pv-group');
+  if (!groups.length) return { variantStr: '', cid: id, storedGroups: [] };
+  const varParts = [], storedGroups = [];
+  let missing = false;
+  groups.forEach(grp => {
+    const label = grp.querySelector('.pv-label')?.textContent.trim() || 'Option';
+    const sel = grp.querySelector('.pv-opt.selected');
+    if (!sel) {
+      grp.classList.add('pv-group-err');
+      setTimeout(() => grp.classList.remove('pv-group-err'), 800);
+      missing = true;
+    } else {
+      varParts.push(label + ': ' + sel.textContent.trim());
+      storedGroups.push({ label, values: [...grp.querySelectorAll('.pv-opt')].map(b => b.textContent.trim()), selected: sel.textContent.trim() });
+    }
+  });
+  if (missing) return null;
+  const variantStr = varParts.join(', ');
+  return { variantStr, cid: variantStr ? id + '||' + variantStr : id, storedGroups };
+}
+
+function changeCartVariant(cid, groupLabel, newValue) {
+  const item = cartItems.find(i => (i.cid || i.id) === cid);
+  if (!item || !item.varGroups) return;
+  const group = item.varGroups.find(g => g.label === groupLabel);
+  if (!group) return;
+  group.selected = newValue;
+  const newVariant = item.varGroups.map(g => g.label + ': ' + g.selected).join(', ');
+  const newCid = newVariant ? item.id + '||' + newVariant : item.id;
+  const existing = cartItems.find(i => (i.cid || i.id) === newCid && (i.cid || i.id) !== cid);
+  if (existing) { existing.qty += item.qty; cartItems = cartItems.filter(i => (i.cid || i.id) !== cid); }
+  else { item.cid = newCid; item.variant = newVariant; }
+  saveCart(); updateBadges(); renderCartDrawer();
+}
+
+function addCart(id, name, emoji, cat, price, variant = '', varGroups = [], cid = null) {
+  cid = cid || id;
+  const existing = cartItems.find(i => (i.cid || i.id) === cid);
   if (existing) { existing.qty++; }
-  else { cartItems.push({ id, n: name, e: emoji, cat, p: price, qty: 1 }); }
+  else { cartItems.push({ cid, id, n: name, e: emoji, cat, p: price, qty: 1, variant: variant || '', varGroups: varGroups || [] }); }
   saveCart();
   updateBadges();
   renderCartDrawer();
   openCart();
 }
 
-function removeFromCart(id) {
-  cartItems = cartItems.filter(i => i.id !== id);
+function removeFromCart(cid) {
+  cartItems = cartItems.filter(i => (i.cid || i.id) !== cid);
   saveCart();
   updateBadges();
   renderCartDrawer();
 }
 
-function changeQty(id, delta) {
-  const item = cartItems.find(i => i.id === id);
+function changeQty(cid, delta) {
+  const item = cartItems.find(i => (i.cid || i.id) === cid);
   if (!item) return;
   item.qty += delta;
-  if (item.qty <= 0) { removeFromCart(id); return; }
+  if (item.qty <= 0) { removeFromCart(cid); return; }
   saveCart();
   updateBadges();
   renderCartDrawer();
@@ -1492,21 +1539,32 @@ function renderCartDrawer() {
   emptyEl.style.display = 'none';
   footerEl.style.display = 'block';
 
-  itemsEl.innerHTML = cartItems.map(item => `
-    <div style="display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); position:relative;">
-      <div style="width:64px; height:64px; background:var(--light); border-radius:var(--rxs); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;">${escHtml(item.e)}</div>
+  itemsEl.innerHTML = cartItems.map(item => {
+    const itemCid = escHtml(item.cid || item.id);
+    const varHtml = (item.varGroups && item.varGroups.length) ? `
+      <div style="margin:6px 0;">${item.varGroups.map(g => `
+        <div style="margin-bottom:6px;">
+          <div style="font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;margin-bottom:4px;">${escHtml(g.label)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">${g.values.map(v => `<button style="border:${v===g.selected?'1.5px solid var(--orange)':'1px solid var(--border)'};border-radius:50px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;background:${v===g.selected?'var(--orange)':'#fff'};color:${v===g.selected?'#fff':'inherit'};" onclick="changeCartVariant('${itemCid}','${escHtml(g.label)}','${escHtml(v)}')">${escHtml(v)}</button>`).join('')}</div>
+        </div>`).join('')}
+      </div>` : '';
+    return `
+    <div style="display:flex; align-items:flex-start; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); position:relative;">
+      <div style="width:56px; height:56px; background:var(--light); border-radius:var(--rxs); display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0;">${escHtml(item.e)}</div>
       <div style="flex:1; min-width:0;">
         <div style="font-size:10px; color:var(--gray); font-weight:700; text-transform:uppercase; margin-bottom:2px;">${escHtml(item.cat)}</div>
         <div style="font-size:14px; font-weight:800; color:var(--black); margin-bottom:5px;">${escHtml(item.n)}</div>
+        ${varHtml}
         <div style="font-size:15px; font-weight:900; color:var(--orange);">${fmt(item.p * item.qty)}</div>
         <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${escHtml(item.id)}',-1)">−</button>
+          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${itemCid}',-1)">−</button>
           <span style="font-size:13px; font-weight:800;">${item.qty}</span>
-          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${escHtml(item.id)}',1)">+</button>
+          <button style="width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer;" onclick="changeQty('${itemCid}',1)">+</button>
         </div>
       </div>
-      <button style="position:absolute; top:14px; right:0; background:none; border:none; color:#ccc; font-size:16px; cursor:pointer;" onclick="removeFromCart('${escHtml(item.id)}')">✕</button>
-    </div>`).join('');
+      <button style="position:absolute; top:14px; right:0; background:none; border:none; color:#ccc; font-size:16px; cursor:pointer;" onclick="removeFromCart('${itemCid}')">✕</button>
+    </div>`;
+  }).join('');
 
   totalEl.textContent = fmt(cartItems.reduce((s, i) => s + i.p * i.qty, 0));
 }
@@ -1747,7 +1805,13 @@ function openModal(id) {
     vgEl.innerHTML = '';
   }
 
-  document.getElementById('modalCartBtn').onclick = () => { addCart(p.id || 'd', p.n, p.e, p.cat, p.p); closeModal(); };
+  const _doAddCart = () => {
+    const vc = collectVariants(document.getElementById('mVarGroups'), p.id || 'd');
+    if (!vc) { showToast('Please select all options'); return false; }
+    addCart(p.id || 'd', p.n, p.e, p.cat, p.p, vc.variantStr, vc.storedGroups, vc.cid);
+    return true;
+  };
+  document.getElementById('modalCartBtn').onclick = () => { if (_doAddCart()) closeModal(); };
   document.getElementById('modalWishBtn').onclick = () => { addWish(p.id || 'd', p.n, p.e, p.cat, p.p); closeModal(); };
 
   // Reviews
@@ -1757,7 +1821,7 @@ function openModal(id) {
   document.body.style.overflow = 'hidden';
 
   if (window.innerWidth <= 768) {
-    document.getElementById('mobAtcBtn').onclick = () => { addCart(p.id || 'd', p.n, p.e, p.cat, p.p); closeModal(); };
+    document.getElementById('mobAtcBtn').onclick = () => { if (_doAddCart()) closeModal(); };
     document.getElementById('mobWaBtn').href = 'https://wa.me/2348156740438?text=' + encodeURIComponent('Hi! I\'m interested in ' + p.n + ' (₦' + (p.p||0).toLocaleString('en-NG') + ')');
     document.getElementById('mobAtcBar').classList.add('show');
   }

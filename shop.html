@@ -249,6 +249,8 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
 .pv-opt{border:1.5px solid var(--border);border-radius:50px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all var(--trans);background:var(--white);}
 .pv-opt:hover{border-color:var(--orange);color:var(--orange);}
 .pv-opt.selected{border-color:var(--orange);background:var(--orange);color:#fff;}
+.pv-group-err{outline:2px solid #e74c3c;border-radius:8px;padding:6px;animation:pvShake .35s;}
+@keyframes pvShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .pv-opt.color-swatch{width:32px;height:32px;padding:0;border-radius:50%;position:relative;}
 .pv-opt.color-swatch.selected::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;}
 .rv-section{border-top:1px solid var(--border);margin:20px 0 0;padding-top:20px;}
@@ -1017,29 +1019,38 @@ function updateBadges() {
   if(document.getElementById('mcBadge')) document.getElementById('mcBadge').textContent = qty;
   if(document.getElementById('mwBadge')) document.getElementById('mwBadge').textContent = wishItems.length;
 }
-function addCart(id,name,emoji,cat,price) {
-  const ex = cartItems.find(i=>i.id===id);
-  if(ex) ex.qty++; else cartItems.push({id,n:name,e:emoji,cat,p:price,qty:1});
+function showToast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;border-radius:50px;padding:10px 22px;font-size:13px;font-weight:800;z-index:99999;white-space:nowrap;pointer-events:none;';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+function collectVariants(container,id){const groups=container.querySelectorAll('.pv-group');if(!groups.length)return{variantStr:'',cid:id,storedGroups:[]};const varParts=[],storedGroups=[];let missing=false;groups.forEach(grp=>{const label=grp.querySelector('.pv-label')?.textContent.trim()||'Option';const sel=grp.querySelector('.pv-opt.selected');if(!sel){grp.classList.add('pv-group-err');setTimeout(()=>grp.classList.remove('pv-group-err'),800);missing=true;}else{varParts.push(label+': '+sel.textContent.trim());storedGroups.push({label,values:[...grp.querySelectorAll('.pv-opt')].map(b=>b.textContent.trim()),selected:sel.textContent.trim()});}});if(missing)return null;const variantStr=varParts.join(', ');return{variantStr,cid:variantStr?id+'||'+variantStr:id,storedGroups};}
+function changeCartVariant(cid,groupLabel,newValue){const item=cartItems.find(i=>(i.cid||i.id)===cid);if(!item||!item.varGroups)return;const group=item.varGroups.find(g=>g.label===groupLabel);if(!group)return;group.selected=newValue;const newVariant=item.varGroups.map(g=>g.label+': '+g.selected).join(', ');const newCid=newVariant?item.id+'||'+newVariant:item.id;const existing=cartItems.find(i=>(i.cid||i.id)===newCid&&(i.cid||i.id)!==cid);if(existing){existing.qty+=item.qty;cartItems=cartItems.filter(i=>(i.cid||i.id)!==cid);}else{item.cid=newCid;item.variant=newVariant;}saveCart();updateBadges();renderCartDrawer();}
+function addCart(id,name,emoji,cat,price,variant='',varGroups=[],cid=null) {
+  cid=cid||id;
+  const ex = cartItems.find(i=>(i.cid||i.id)===cid);
+  if(ex) ex.qty++; else cartItems.push({cid,id,n:name,e:emoji,cat,p:price,qty:1,variant:variant||'',varGroups:varGroups||[]});
   saveCart(); updateBadges(); renderCartDrawer(); openCart();
 }
-function removeFromCart(id){ cartItems=cartItems.filter(i=>i.id!==id); saveCart(); updateBadges(); renderCartDrawer(); }
-function changeQty(id,d){ const it=cartItems.find(i=>i.id===id); if(!it)return; it.qty+=d; if(it.qty<=0){removeFromCart(id);return;} saveCart(); updateBadges(); renderCartDrawer(); }
+function removeFromCart(cid){ cartItems=cartItems.filter(i=>(i.cid||i.id)!==cid); saveCart(); updateBadges(); renderCartDrawer(); }
+function changeQty(cid,d){ const it=cartItems.find(i=>(i.cid||i.id)===cid); if(!it)return; it.qty+=d; if(it.qty<=0){removeFromCart(cid);return;} saveCart(); updateBadges(); renderCartDrawer(); }
 function renderCartDrawer(){
   const el=document.getElementById('cartItems'), em=document.getElementById('cartEmpty'), ft=document.getElementById('cartFooter');
   if(!cartItems.length){em.style.display='';el.innerHTML='';ft.style.display='none';return;}
   em.style.display='none'; ft.style.display='block';
-  el.innerHTML=cartItems.map(i=>`<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;">
-    <div style="width:64px;height:64px;background:var(--light);border-radius:var(--rxs);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">${escHtml(i.e)}</div>
+  el.innerHTML=cartItems.map(i=>{
+    const cid=escHtml(i.cid||i.id);
+    const varHtml=(i.varGroups&&i.varGroups.length)?`<div style="margin:6px 0;">${i.varGroups.map(g=>`<div style="margin-bottom:6px;"><div style="font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;margin-bottom:4px;">${escHtml(g.label)}</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${g.values.map(v=>`<button style="border:${v===g.selected?'1.5px solid var(--orange)':'1px solid var(--border)'};border-radius:50px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;background:${v===g.selected?'var(--orange)':'#fff'};color:${v===g.selected?'#fff':'inherit'};" onclick="changeCartVariant('${cid}','${escHtml(g.label)}','${escHtml(v)}')">${escHtml(v)}</button>`).join('')}</div></div>`).join('')}</div>`:'';
+    return `<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;">
+    <div style="width:56px;height:56px;background:var(--light);border-radius:var(--rxs);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">${escHtml(i.e)}</div>
     <div style="flex:1;min-width:0;"><div style="font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;">${escHtml(i.cat)}</div>
     <div style="font-size:14px;font-weight:800;">${escHtml(i.n)}</div>
+    ${varHtml}
     <div style="font-size:15px;font-weight:900;color:var(--orange);">${fmt(i.p*i.qty)}</div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-      <button style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;" onclick="changeQty('${escHtml(i.id)}',-1)">−</button>
+      <button style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;" onclick="changeQty('${cid}',-1)">−</button>
       <span style="font-size:13px;font-weight:800;">${i.qty}</span>
-      <button style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;" onclick="changeQty('${escHtml(i.id)}',1)">+</button>
+      <button style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;" onclick="changeQty('${cid}',1)">+</button>
     </div></div>
-    <button style="position:absolute;top:14px;right:0;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;" onclick="removeFromCart('${escHtml(i.id)}')">✕</button>
-  </div>`).join('');
+    <button style="position:absolute;top:14px;right:0;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;" onclick="removeFromCart('${cid}')">✕</button>
+  </div>`;
+  }).join('');
   document.getElementById('cartTotal').textContent = fmt(cartItems.reduce((s,i)=>s+i.p*i.qty,0));
 }
 function openCart(){ document.getElementById('cartDrawer').classList.add('open'); document.getElementById('cartOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
@@ -1104,7 +1115,13 @@ function openModal(id) {
     const opts = (g.values||[]).map(v => `<button class="pv-opt" onclick="this.closest('.pv-options').querySelectorAll('.pv-opt').forEach(b=>b.classList.remove('selected'));this.classList.add('selected')">${v}</button>`).join('');
     return `<div class="pv-group"><div class="pv-label">${label}</div><div class="pv-options">${opts}</div></div>`;
   }).join('');
-  document.getElementById('modalCartBtn').onclick = () => { addCart(p.id, p.n, p.e, p.cat, p.p); closeModal(); };
+  const _doAddCart = () => {
+    const vc = collectVariants(document.getElementById('mVarGroups'), p.id);
+    if (!vc) { showToast('Please select all options'); return false; }
+    addCart(p.id, p.n, p.e, p.cat, p.p, vc.variantStr, vc.storedGroups, vc.cid);
+    return true;
+  };
+  document.getElementById('modalCartBtn').onclick = () => { if (_doAddCart()) closeModal(); };
   document.getElementById('modalWishBtn').onclick = () => { addWish(p.id, p.n, p.e, p.cat, p.p); closeModal(); };
   const rv = getReviews(p.id);
   document.getElementById('mReviews').innerHTML = rv.length
@@ -1114,7 +1131,7 @@ function openModal(id) {
   document.body.style.overflow = 'hidden';
 
   if (window.innerWidth <= 768) {
-    document.getElementById('mobAtcBtn').onclick = () => { addCart(p.id, p.n, p.e, p.cat, p.p); closeModal(); };
+    document.getElementById('mobAtcBtn').onclick = () => { if (_doAddCart()) closeModal(); };
     document.getElementById('mobWaBtn').href = 'https://wa.me/2348156740438?text=' + encodeURIComponent('Hi! I\'m interested in ' + p.n + ' (₦' + (p.p||0).toLocaleString('en-NG') + ')');
     document.getElementById('mobAtcBar').classList.add('show');
   }
