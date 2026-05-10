@@ -1758,7 +1758,7 @@ function openModal(id) {
 
   if (window.innerWidth <= 768) {
     document.getElementById('mobAtcBtn').onclick = () => { addCart(p.id || 'd', p.n, p.e, p.cat, p.p); closeModal(); };
-    document.getElementById('mobWaBtn').href = 'https://wa.me/2348000000000?text=' + encodeURIComponent('Hi! I\'m interested in ' + p.n + ' (₦' + (p.p||0).toLocaleString('en-NG') + ')');
+    document.getElementById('mobWaBtn').href = 'https://wa.me/2348156740438?text=' + encodeURIComponent('Hi! I\'m interested in ' + p.n + ' (₦' + (p.p||0).toLocaleString('en-NG') + ')');
     document.getElementById('mobAtcBar').classList.add('show');
   }
 }
@@ -2562,7 +2562,7 @@ function toggleFc(h) {
 
 <!-- MOBILE STICKY ADD TO CART BAR -->
 <div class="mob-atc-bar" id="mobAtcBar">
-  <a id="mobWaBtn" href="https://wa.me/2348000000000" target="_blank" rel="noopener"
+  <a id="mobWaBtn" href="https://wa.me/2348156740438" target="_blank" rel="noopener"
      style="width:54px;height:54px;background:#25D366;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;text-decoration:none;">💬</a>
   <button id="mobAtcBtn" class="btn-primary" style="flex:1;height:54px;font-size:15px;justify-content:center;border-radius:12px;">🛒 Add to Cart</button>
 </div>
