@@ -921,7 +921,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
         <div class="pi-meta-item"><div class="pi-meta-label">Stock</div><div class="pi-meta-val" style="color:#2ecc71">✅ In Stock</div></div>
       </div>
       <div class="pi-actions" id="piActions">
-        <a href="https://wa.me/2348000000000?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener" class="btn-wa-page">💬</a>
+        <a href="https://wa.me/2348156740438?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener" class="btn-wa-page">💬</a>
         <button class="btn-cart" onclick="addToCartBtn()">🛒 Add to Cart</button>
       </div>
       <div class="pi-social-row">
@@ -1054,7 +1054,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 
 <!-- MOBILE STICKY ADD TO CART BAR (shown/hidden by IntersectionObserver) -->
 <div class="mob-atc-bar" id="mobAtcBar">
-  <a href="https://wa.me/2348000000000?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener"
+  <a href="https://wa.me/2348156740438?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener"
      style="width:46px;height:46px;background:#fff;border:1.5px solid #25D366;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;text-decoration:none;">💬</a>
   <button onclick="addToCartBtn()" style="flex:1;height:46px;background:#ed6436;color:#fff;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">🛒 Add to Cart</button>
 </div>
@@ -1071,7 +1071,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   <div class="footer-copy">&copy; 2025 PuppyPlace.ng &#x2014; All rights reserved.</div>
 </footer>
 
-<script>window.__pp_prod=${JSON.stringify({id:String(p.id||''),n:name,e:p.emoji||'📦',cat:p.category||'',p:Number(p.price)||0}).replace(/<\//g,'<\\/')};</script>
+<script>window.__pp_prod=${JSON.stringify({id:String(p.id||''),n:name,e:p.emoji||'📦',cat:p.category||'',p:Number(p.price)||0,img:p.image_url||null}).replace(/<\//g,'<\\/')};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="/config.js"></script>
@@ -1291,8 +1291,16 @@ async function sendToN8n(ref,transactionId){
 function goSearch(){var q=document.getElementById('mobSI').value.trim();window.location.href='/shop.html'+(q?'?q='+encodeURIComponent(q):'');}
 async function shareProduct(){
   var prod=window.__pp_prod||{};
-  var data={title:prod.n||'PuppyPlace Product',text:(prod.n||'')+(prod.p?' — ₦'+prod.p.toLocaleString('en-NG'):''),url:window.location.href};
-  try{if(navigator.share){await navigator.share(data);}else{await navigator.clipboard.writeText(data.url);showToast('Link copied!');}}catch(e){}
+  var shareData={title:prod.n||'PuppyPlace Product',text:(prod.n||'')+(prod.p?' — ₦'+prod.p.toLocaleString('en-NG'):''),url:window.location.href};
+  if(prod.img&&navigator.canShare){
+    try{
+      var res=await fetch(prod.img);
+      var blob=await res.blob();
+      var file=new File([blob],'product.jpg',{type:blob.type||'image/jpeg'});
+      if(navigator.canShare({files:[file]}))shareData.files=[file];
+    }catch(e){}
+  }
+  try{if(navigator.share){await navigator.share(shareData);}else{await navigator.clipboard.writeText(shareData.url);showToast('Link copied!');}}catch(e){}
 }
 /* Smart sticky ATC: show only when page's own ATC is scrolled out of view */
 (function(){
