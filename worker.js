@@ -838,8 +838,8 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
         <div class="pi-meta-item"><div class="pi-meta-label">Stock</div><div class="pi-meta-val" style="color:#2ecc71">✅ In Stock</div></div>
       </div>
       <div class="pi-actions">
-        <button class="btn-cart" data-id="${esc(String(p.id||''))}" data-n="${esc(name)}" data-e="${esc(p.emoji||'📦')}" data-cat="${esc(p.category||'')}" data-p="${Number(p.price)||0}" onclick="addToCartBtn(this)">🛒 Add to Cart</button>
-        <button class="btn-wish" data-id="${esc(String(p.id||''))}" data-n="${esc(name)}" data-e="${esc(p.emoji||'📦')}" data-cat="${esc(p.category||'')}" data-p="${Number(p.price)||0}" onclick="addToWishBtn(this)">❤️ Wishlist</button>
+        <button class="btn-cart" onclick="addToCartBtn()">🛒 Add to Cart</button>
+        <button class="btn-wish" onclick="addToWishBtn()">❤️ Wishlist</button>
       </div>
       <div style="font-size:13px;color:var(--gray);margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;">
         <span>🚚 Fast delivery across Nigeria</span>
@@ -954,6 +954,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   <div class="footer-copy">&copy; 2025 PuppyPlace.ng &#x2014; All rights reserved.</div>
 </footer>
 
+<script>window.__pp_prod=${JSON.stringify({id:String(p.id||''),n:name,e:p.emoji||'📦',cat:p.category||'',p:Number(p.price)||0}).replace(/<\//g,'<\\/')};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="/config.js"></script>
@@ -964,23 +965,26 @@ const PAYSTACK_PUBLIC_KEY=(window.PPCONFIG&&window.PPCONFIG.PAYSTACK_PUBLIC_KEY)
 const N8N_WEBHOOK_URL=(window.PPCONFIG&&window.PPCONFIG.N8N_WEBHOOK_URL)||'';
 let _supabase=null;
 try{if(window.supabase&&window.PPCONFIG&&window.PPCONFIG.SUPABASE_URL){_supabase=window.supabase.createClient(window.PPCONFIG.SUPABASE_URL,window.PPCONFIG.SUPABASE_ANON);}}catch(e){console.warn('Supabase init failed:',e.message);}
-let cartItems=JSON.parse(localStorage.getItem('pp_cart')||'[]');
-let wishItems=JSON.parse(localStorage.getItem('pp_wish')||'[]');
-function saveCart(){localStorage.setItem('pp_cart',JSON.stringify(cartItems));}
-function saveWish(){localStorage.setItem('pp_wish',JSON.stringify(wishItems));}
+let cartItems=[],wishItems=[];
+try{var _rc=localStorage.getItem('pp_cart');var _pc=JSON.parse(_rc||'[]');cartItems=Array.isArray(_pc)?_pc:[];}catch(e){cartItems=[];}
+try{var _rw=localStorage.getItem('pp_wish');var _pw=JSON.parse(_rw||'[]');wishItems=Array.isArray(_pw)?_pw:[];}catch(e){wishItems=[];}
+function saveCart(){try{localStorage.setItem('pp_cart',JSON.stringify(cartItems));}catch(e){}}
+function saveWish(){try{localStorage.setItem('pp_wish',JSON.stringify(wishItems));}catch(e){}}
 function updateBadges(){
-  const qty=cartItems.reduce(function(s,i){return s+i.qty;},0);
-  document.getElementById('cBadge').textContent=qty;
-  document.getElementById('wBadge').textContent=wishItems.length;
-  document.getElementById('cartDrawerCount').textContent=qty;
-  document.getElementById('wishDrawerCount').textContent=wishItems.length;
+  var qty=cartItems.reduce(function(s,i){return s+(i.qty||0);},0);
+  var cb=document.getElementById('cBadge'),wb=document.getElementById('wBadge'),cd=document.getElementById('cartDrawerCount'),wd=document.getElementById('wishDrawerCount');
+  if(cb)cb.textContent=qty;if(wb)wb.textContent=wishItems.length;if(cd)cd.textContent=qty;if(wd)wd.textContent=wishItems.length;
 }
 function showToast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2500);}
-function addToCartBtn(btn){
-  var id=btn.dataset.id,n=btn.dataset.n,e=btn.dataset.e,cat=btn.dataset.cat,p=Number(btn.dataset.p);
+function addToCartBtn(){
+  var prod=window.__pp_prod||{};
+  var id=prod.id;if(!id)return;
   var ex=cartItems.find(function(i){return i.id===id;});
-  if(ex)ex.qty++;else cartItems.push({id:id,n:n,e:e,cat:cat,p:p,qty:1});
-  saveCart();updateBadges();renderCartDrawer();openCart();
+  if(ex)ex.qty++;else cartItems.push({id:id,n:prod.n,e:prod.e,cat:prod.cat,p:prod.p||0,qty:1});
+  try{saveCart();}catch(e){}
+  try{updateBadges();}catch(e){}
+  try{renderCartDrawer();}catch(e){console.error('[PuppyPlace] renderCartDrawer error:',e);}
+  openCart();
 }
 function removeFromCart(id){
   cartItems=cartItems.filter(function(i){return i.id!==id;});
@@ -1017,11 +1021,15 @@ function renderCartDrawer(){
 }
 function openCart(){document.getElementById('cartDrawer').classList.add('open');document.getElementById('cartOverlay').classList.add('open');document.body.style.overflow='hidden';}
 function closeCart(){document.getElementById('cartDrawer').classList.remove('open');document.getElementById('cartOverlay').classList.remove('open');document.body.style.overflow='';}
-function addToWishBtn(btn){
-  var id=btn.dataset.id;
+function addToWishBtn(){
+  var prod=window.__pp_prod||{};
+  var id=prod.id;if(!id)return;
   if(wishItems.find(function(i){return i.id===id;})){showToast('Already in wishlist!');return;}
-  wishItems.push({id:id,n:btn.dataset.n,e:btn.dataset.e,cat:btn.dataset.cat,p:Number(btn.dataset.p)});
-  saveWish();updateBadges();renderWishDrawer();openWishlist();
+  wishItems.push({id:id,n:prod.n,e:prod.e,cat:prod.cat,p:prod.p||0});
+  try{saveWish();}catch(e){}
+  try{updateBadges();}catch(e){}
+  try{renderWishDrawer();}catch(e){console.error('[PuppyPlace] renderWishDrawer error:',e);}
+  openWishlist();
 }
 function removeFromWish(id){
   wishItems=wishItems.filter(function(i){return i.id!==id;});
@@ -1163,7 +1171,7 @@ async function sendToN8n(ref,transactionId){
   }catch(e){console.warn('n8n webhook failed:',e.message);}
   coCurrentStep=4;renderCoStep(4);cartItems=[];saveCart();updateBadges();renderCartDrawer();
 }
-updateBadges();renderCartDrawer();renderWishDrawer();
+try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error('[PuppyPlace] Cart init error:',e);}
 </script>
 </body>
 </html>`;
