@@ -583,7 +583,7 @@ function renderProductPage(p) {
   const origPrice= p.original_price ? '₦' + Number(p.original_price).toLocaleString('en-NG') : '';
   const disc     = (p.price && p.original_price) ? Math.round((1 - p.price / p.original_price) * 100) : 0;
   const desc     = p.description || '';
-  const imgUrl   = p.image_url ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(p.image_url)}`) : '';
+  const imgUrl   = p.image_url ? esc(p.image_url) : '';
   const pageUrl  = `https://puppyplace.ng/product/${encodeURIComponent(p.id)}`;
   const metaDesc = plainText(desc, 160) || `${name} — available at PuppyPlace.ng`;
   const slug     = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -931,7 +931,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="/config.js"></script>
 <script>
-const _prod={id:'${esc(p.id)}',n:'${esc(name)}',e:'${esc(p.emoji||'📦')}',cat:'${esc(p.category||'')}',p:${p.price||0}};
+const _prod=${JSON.stringify({id:p.id||'',n:name,e:p.emoji||'📦',cat:p.category||'',p:p.price||0}).replace(/<\//g,'<\\/')};
 const fmt=n=>'₦'+n.toLocaleString('en-NG');
 const escH=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const PAYSTACK_PUBLIC_KEY=(window.PPCONFIG&&window.PPCONFIG.PAYSTACK_PUBLIC_KEY)||'';
