@@ -196,6 +196,33 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 .img-thumb img{width:100%;height:100%;object-fit:cover}
 .img-thumb-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:800;text-align:center;padding:2px 0;letter-spacing:.04em}
 .img-thumb-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+/* ── IMPORT LOG MODAL ── */
+.ilog-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:700;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.ilog-bg.open{display:flex}
+.ilog-modal{background:var(--white);border-radius:var(--r);width:100%;max-width:620px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.18);animation:fadeUp .25s ease}
+.ilog-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ilog-title{font-size:16px;font-weight:900}
+.ilog-stats{display:flex;gap:16px;font-size:13px;font-weight:700}
+.ilog-stat-ok{color:var(--green)}
+.ilog-stat-fail{color:var(--red)}
+.ilog-stat-skip{color:var(--gray)}
+.ilog-body{flex:1;overflow-y:auto;padding:12px 0}
+.ilog-row{display:grid;grid-template-columns:28px 1fr auto;align-items:start;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);font-size:13px}
+.ilog-row:last-child{border-bottom:none}
+.ilog-icon{font-size:15px;line-height:1.4;flex-shrink:0}
+.ilog-name{font-weight:700;color:var(--black);word-break:break-word}
+.ilog-detail{font-size:11px;font-weight:600;color:var(--gray);margin-top:2px}
+.ilog-detail.ok{color:var(--green)}
+.ilog-detail.warn{color:#e67e22}
+.ilog-detail.err{color:var(--red)}
+.ilog-badge{font-size:10px;font-weight:800;border-radius:50px;padding:2px 8px;white-space:nowrap;margin-top:3px}
+.ilog-badge-ok{background:#e8f9ef;color:var(--green)}
+.ilog-badge-fail{background:#fdecea;color:var(--red)}
+.ilog-badge-img{background:#fff3e0;color:#e67e22}
+.ilog-badge-imgok{background:#e3f2fd;color:var(--blue,#2196f3)}
+.ilog-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-shrink:0}
+.ilog-progress{flex:1;height:6px;background:var(--border);border-radius:50px;overflow:hidden}
+.ilog-progress-bar{height:100%;background:var(--orange);border-radius:50px;transition:width .3s}
 .form-footer{padding:20px 28px;border-top:1px solid var(--border);display:flex;gap:12px;position:sticky;bottom:0;background:var(--white)}
 .form-cancel{flex:0 0 auto;background:transparent;border:1.5px solid var(--border);border-radius:50px;padding:12px 24px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--black);transition:all var(--trans)}
 .form-cancel:hover{border-color:var(--black)}
@@ -864,6 +891,24 @@ input,select,textarea{font-family:'Nunito',sans-serif}
   </div>
 </div>
 
+<div class="ilog-bg" id="ilogBg">
+  <div class="ilog-modal">
+    <div class="ilog-head">
+      <div class="ilog-title">📥 Import Log</div>
+      <div class="ilog-stats">
+        <span class="ilog-stat-ok" id="ilogOk">✅ 0</span>
+        <span class="ilog-stat-fail" id="ilogFail">❌ 0</span>
+        <span class="ilog-stat-skip" id="ilogTotal">/ 0</span>
+      </div>
+    </div>
+    <div class="ilog-body" id="ilogBody"></div>
+    <div class="ilog-foot">
+      <div class="ilog-progress"><div class="ilog-progress-bar" id="ilogBar" style="width:0%"></div></div>
+      <button id="ilogCloseBtn" onclick="document.getElementById('ilogBg').classList.remove('open')" class="del-cancel" style="padding:8px 20px;font-size:13px;" disabled>Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="del-bg" id="delBg">
   <div class="del-modal">
     <div class="del-ico">🗑️</div>
@@ -1361,22 +1406,44 @@ function exportProducts(){
   showToast('⬇️ Products exported','success');
 }
 
-/* ══════════════════════════════════════
-   IMPORT PRODUCTS
-   — fetches external images and rehosts
-     them to Supabase before inserting
-   ══════════════════════════════════════ */
-async function importProducts(input) {
-  const file = input.files[0]; if (!file) return;
+function _ilogOpen(total){
+  const bg=document.getElementById('ilogBg');
+  document.getElementById('ilogBody').innerHTML='';
+  document.getElementById('ilogOk').textContent='✅ 0';
+  document.getElementById('ilogFail').textContent='❌ 0';
+  document.getElementById('ilogTotal').textContent='/ '+total;
+  document.getElementById('ilogBar').style.width='0%';
+  document.getElementById('ilogCloseBtn').disabled=true;
+  bg.classList.add('open');
+}
+function _ilogEntry(name, icon, detailText, detailClass, badgeText, badgeClass){
+  const body=document.getElementById('ilogBody');
+  const row=document.createElement('div');
+  row.className='ilog-row';
+  row.innerHTML=`<span class="ilog-icon">${icon}</span>
+    <div><div class="ilog-name">${escAdm(name)}</div><div class="ilog-detail ${detailClass}">${escAdm(detailText)}</div></div>
+    <span class="ilog-badge ${badgeClass}">${escAdm(badgeText)}</span>`;
+  body.appendChild(row);
+  body.scrollTop=body.scrollHeight;
+}
+function _ilogUpdate(ok, fail, total){
+  document.getElementById('ilogOk').textContent='✅ '+ok;
+  document.getElementById('ilogFail').textContent='❌ '+fail;
+  document.getElementById('ilogBar').style.width=Math.round((ok+fail)/total*100)+'%';
+}
+
+function importProducts(input){
+  const file = input.files[0]; if(!file) return;
   const reader = new FileReader();
   reader.onload = async e => {
     try {
       const prods = JSON.parse(e.target.result);
       if(!Array.isArray(prods)) throw new Error('Invalid format');
       let imported = 0, failed = 0;
-      showToast(`⏳ Importing ${prods.length} products…`,'warning');
+      _ilogOpen(prods.length);
 
       for(const p of prods){
+        let imgDetail = '', imgClass = 'skip', imgBadge = '', imgBadgeClass = '';
 
         // ── Rehost external image to Supabase ──
         if(p.img && p.img.startsWith('http') && !p.img.includes('supabase')){
@@ -1415,31 +1482,45 @@ async function importProducts(input) {
             const upRes=await fetch('/api/hero-upload',{method:'POST',body:fd});
             const upData=await upRes.json();
 
-            if(upRes.ok&&upData.url){ p.img=upData.url; }
-            else throw new Error(upData.error||'Upload failed');
+            if(upRes.ok&&upData.url){
+              p.img=upData.url;
+              imgDetail='Image rehosted to Supabase'; imgClass='ok'; imgBadge='🖼️ Rehosted'; imgBadgeClass='ilog-badge-imgok';
+            } else throw new Error(upData.error||'Upload failed');
 
             await new Promise(r=>setTimeout(r,800));
 
           }catch(imgErr){
             console.warn('Image rehost failed for:',p.n,imgErr.message);
+            imgDetail='Image failed: '+imgErr.message; imgClass='err'; imgBadge='⚠️ No image'; imgBadgeClass='ilog-badge-img';
             p.img='';
           }
+        } else if(p.img && p.img.includes('supabase')){
+          imgDetail='Image already on Supabase'; imgClass='ok'; imgBadge='☁️ Supabase'; imgBadgeClass='ilog-badge-imgok';
+        } else if(!p.img){
+          imgDetail='No image provided'; imgClass=''; imgBadge=''; imgBadgeClass='';
         }
 
         // ── Save to Supabase ──
         const row=appToRow(p);
         delete row.id;
         const{error}=await sbAdmin.from('shop_products').insert(row);
-        if(error){console.error('Insert failed:',p.n,error.message);failed++;}
-        else imported++;
+        if(error){
+          console.error('Insert failed:',p.n,error.message);
+          failed++;
+          _ilogEntry(p.n||'Unnamed','❌','Insert failed: '+error.message,'err','Failed','ilog-badge-fail');
+        } else {
+          imported++;
+          _ilogEntry(p.n||'Unnamed','✅',imgDetail||'Saved',imgClass,imgBadge||'Imported',imgBadge?imgBadgeClass:'ilog-badge-ok');
+        }
 
-        showToast(`⏳ Processing ${imported+failed} / ${prods.length}…`,'warning');
+        _ilogUpdate(imported, failed, prods.length);
       }
 
+      document.getElementById('ilogCloseBtn').disabled=false;
       await loadAllProducts();
       renderTable(); updateStats(); renderDashRecent();
       showToast(`✅ Imported ${imported} product${imported!==1?'s':''}${failed?' ('+failed+' failed)':''}`,'success');
-    }catch(err){showToast('❌ Invalid JSON file','error');console.error(err);}
+    }catch(err){showToast('❌ Invalid JSON file','error');console.error(err);document.getElementById('ilogCloseBtn').disabled=false;}
   };
   reader.readAsText(file);
   input.value = '';
