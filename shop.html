@@ -761,9 +761,12 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
       <h3 style="font-size:18px;font-weight:900;" id="mT">Product</h3>
       <button onclick="closeModal()" style="background:var(--light);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
-    <div style="margin:16px 24px;border-radius:var(--r);overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center;min-height:180px;">
+    <div style="margin:16px 24px;border-radius:var(--r);overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center;min-height:180px;position:relative;">
       <img id="mImg" src="" alt="" loading="lazy" style="width:100%;max-height:260px;object-fit:cover;display:none;"/>
       <span id="mE" style="font-size:72px;padding:24px;">📦</span>
+      <button id="mImgPrev" onclick="changeModalImage(-1)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.4);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:none;align-items:center;justify-content:center;line-height:1;">‹</button>
+      <button id="mImgNext" onclick="changeModalImage(1)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.4);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:none;align-items:center;justify-content:center;line-height:1;">›</button>
+      <div id="mImgDots" style="position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px;"></div>
     </div>
     <div style="padding:0 24px 24px;">
       <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:4px;">
@@ -826,7 +829,8 @@ async function loadProducts() {
       r:        row.rating      || 4.5,
       rv:       row.review_count|| 0,
       tag:      row.tag         || '',
-      img:      row.image_url   || null,
+      img:      (()=>{const r=row.image_url||'';try{const a=JSON.parse(r);if(Array.isArray(a))return a[0]||'';}catch{}return r;})(),
+      images:   (()=>{const r=row.image_url||'';try{const a=JSON.parse(r);if(Array.isArray(a))return a;}catch{}return r?[r]:[];})(),
       slug:     row.slug        || '',
       desc:     row.description || '',
       vars:     Array.isArray(row.variants)   ? row.variants   : [],
@@ -841,7 +845,8 @@ async function loadProducts() {
   cartItems = cartItems.map(item => {
     const fresh = allProds.find(p => p.id === item.id);
     if (!fresh) return item;
-    const updated = { ...item, n: fresh.n, e: fresh.e, cat: fresh.cat, p: fresh.p };
+    const newP = (item.varGroups&&item.varGroups.length) ? item.p : fresh.p;
+    const updated = { ...item, n: fresh.n, e: fresh.e, cat: fresh.cat, p: newP };
     if (updated.p !== item.p || updated.n !== item.n) cartChanged = true;
     return updated;
   });
@@ -1101,6 +1106,26 @@ function addCartFromWish(id) {
   addCart(p.id, p.n, p.e, p.cat, p.p);
 }
 
+/* ── MODAL IMAGE GALLERY ── */
+let _mImgs=[], _mImgIdx=0, _mEmoji='📦';
+function _renderModalImg(){
+  const imgEl=document.getElementById('mImg'),emoEl=document.getElementById('mE');
+  const dots=document.getElementById('mImgDots'),prev=document.getElementById('mImgPrev'),next=document.getElementById('mImgNext');
+  if(_mImgs.length){imgEl.src=_mImgs[_mImgIdx];imgEl.style.display='block';emoEl.style.display='none';}
+  else{imgEl.style.display='none';emoEl.style.display='block';emoEl.textContent=_mEmoji;}
+  const multi=_mImgs.length>1;
+  prev.style.display=next.style.display=multi?'flex':'none';
+  dots.innerHTML=multi?_mImgs.map((_,i)=>`<span onclick="_mImgIdx=${i};_renderModalImg()" style="width:7px;height:7px;border-radius:50%;background:${i===_mImgIdx?'var(--orange)':'rgba(255,255,255,.65)'};cursor:pointer;display:inline-block;transition:background .2s;"></span>`).join(''):'';
+}
+function changeModalImage(dir){if(!_mImgs.length)return;_mImgIdx=(_mImgIdx+dir+_mImgs.length)%_mImgs.length;_renderModalImg();}
+function updateModalPrice(basePrice){
+  const btns=document.querySelectorAll('#mVarGroups .pv-opt.selected');
+  let price=basePrice;
+  btns.forEach(b=>{const vp=parseFloat(b.dataset.vprice);if(!isNaN(vp)&&vp>0)price=vp;});
+  document.getElementById('mP').textContent=fmt(price);
+  return price;
+}
+
 /* ── PRODUCT MODAL ── */
 function openModal(id) {
   const p = allProds.find(x => x.id === id);
@@ -1108,9 +1133,9 @@ function openModal(id) {
   document.getElementById('mT').textContent = p.n;
   document.getElementById('mP').textContent = fmt(p.p);
   document.getElementById('mO').textContent = p.o ? 'Was ' + fmt(p.o) : '';
-  const imgEl = document.getElementById('mImg'), emoEl = document.getElementById('mE');
-  if (p.img) { imgEl.src = p.img; imgEl.style.display = 'block'; emoEl.style.display = 'none'; }
-  else { imgEl.style.display = 'none'; emoEl.style.display = 'block'; emoEl.textContent = p.e; }
+  _mImgs = p.images && p.images.length ? p.images : (p.img ? [p.img] : []);
+  _mImgIdx = 0; _mEmoji = p.e;
+  _renderModalImg();
   const dw = document.getElementById('mDescWrap');
   if (p.desc) { document.getElementById('mDesc').innerHTML = p.desc; dw.style.display = 'block'; }
   else { dw.style.display = 'none'; }
@@ -1120,16 +1145,21 @@ function openModal(id) {
     <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Brand</span><span style="font-weight:700;">${escHtml(p.brand||'—')}</span></div>
     <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Rating</span><span style="font-weight:700;">⭐ ${escHtml(String(p.r||'4.7'))}</span></div>`;
   const vgEl = document.getElementById('mVarGroups');
-  const groups = p.varGroups.length ? p.varGroups : (p.vars.length ? [{type:'Size',values:p.vars}] : []);
+  const groups = p.varGroups.length ? p.varGroups : (p.vars.length ? [{type:'Size',values:p.vars,prices:null}] : []);
   vgEl.innerHTML = groups.map((g,gi) => {
     const label = g.type==='Other'?(g.customLabel||'Option'):g.type;
-    const opts = (g.values||[]).map(v => `<button class="pv-opt" onclick="this.closest('.pv-options').querySelectorAll('.pv-opt').forEach(b=>b.classList.remove('selected'));this.classList.add('selected')">${v}</button>`).join('');
+    const opts = (g.values||[]).map((v,vi) => {
+      const vp = g.prices && g.prices[vi]!=null ? g.prices[vi] : null;
+      const priceTag = vp ? `<span style="display:block;font-size:10px;font-weight:800;color:var(--orange);margin-top:2px;">${fmt(vp)}</span>` : '';
+      return `<button class="pv-opt" data-vprice="${vp!=null?vp:''}" onclick="this.closest('.pv-options').querySelectorAll('.pv-opt').forEach(b=>b.classList.remove('selected'));this.classList.add('selected');updateModalPrice(${p.p})">${escHtml(v)}${priceTag}</button>`;
+    }).join('');
     return `<div class="pv-group"><div class="pv-label">${label}</div><div class="pv-options">${opts}</div></div>`;
   }).join('');
   const _doAddCart = () => {
     const vc = collectVariants(document.getElementById('mVarGroups'), p.id);
     if (!vc) { showToast('Please select all options'); return false; }
-    addCart(p.id, p.n, p.e, p.cat, p.p, vc.variantStr, vc.storedGroups, vc.cid);
+    const effectivePrice = updateModalPrice(p.p);
+    addCart(p.id, p.n, p.e, p.cat, effectivePrice, vc.variantStr, vc.storedGroups, vc.cid);
     return true;
   };
   document.getElementById('modalCartBtn').onclick = () => { if (_doAddCart()) closeModal(); };
