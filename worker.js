@@ -46,9 +46,13 @@ export default {
       return servePost(decodeURIComponent(postMatch[1]), env);
     }
 
-    const productMatch = url.pathname.match(/^\/product\/([^/]+?)(?:\.html)?$/);
+    const productMatch = url.pathname.match(/^\/product\/(.+?)(?:\.html)?$/);
     if (productMatch) {
-      return serveProduct(decodeURIComponent(productMatch[1]), env);
+      const raw = decodeURIComponent(productMatch[1]);
+      // Support slug--uuid format: extract the uuid after the last '--'
+      const sep = raw.lastIndexOf('--');
+      const productId = sep >= 0 ? raw.slice(sep + 2) : raw;
+      return serveProduct(productId, env);
     }
 
     return env.ASSETS.fetch(request);
@@ -583,10 +587,10 @@ function renderProductPage(p) {
   const origPrice= p.original_price ? '₦' + Number(p.original_price).toLocaleString('en-NG') : '';
   const disc     = (p.price && p.original_price) ? Math.round((1 - p.price / p.original_price) * 100) : 0;
   const desc     = p.description || '';
-  const imgUrl   = p.image_url ? esc(p.image_url) : '';
-  const pageUrl  = `https://puppyplace.ng/product/${encodeURIComponent(p.id)}`;
-  const metaDesc = plainText(desc, 160) || `${name} — available at PuppyPlace.ng`;
   const slug     = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const imgUrl   = p.image_url ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(p.image_url)}`) : '';
+  const pageUrl  = `https://puppyplace.ng/product/${slug}--${encodeURIComponent(p.id)}`;
+  const metaDesc = plainText(desc, 160) || `${name} — available at PuppyPlace.ng`;
 
   const jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -617,7 +621,9 @@ function renderProductPage(p) {
 <meta property="og:title" content="${esc(name)} — PuppyPlace.ng"/>
 <meta property="og:description" content="${esc(metaDesc)}"/>
 <meta property="og:url" content="${escUrl(pageUrl)}"/>
-${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>` : ''}
+${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>
+<meta property="og:image:secure_url" content="${imgUrl}"/>
+<meta property="og:image:alt" content="${esc(name)}"/>` : ''}
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:title" content="${esc(name)}"/>
 <meta name="twitter:description" content="${esc(metaDesc)}"/>
@@ -991,8 +997,9 @@ function renderCartDrawer(){
 function openCart(){document.getElementById('cartDrawer').classList.add('open');document.getElementById('cartOverlay').classList.add('open');document.body.style.overflow='hidden';}
 function closeCart(){document.getElementById('cartDrawer').classList.remove('open');document.getElementById('cartOverlay').classList.remove('open');document.body.style.overflow='';}
 function addToWish(){
-  if(!wishItems.find(function(i){return i.id===_prod.id;})){wishItems.push(_prod);saveWish();updateBadges();renderWishDrawer();}
-  showToast('Added to wishlist!');
+  if(wishItems.find(function(i){return i.id===_prod.id;})){showToast('Already in wishlist!');return;}
+  wishItems.push({id:_prod.id,n:_prod.n,e:_prod.e,cat:_prod.cat,p:_prod.p});
+  saveWish();updateBadges();renderWishDrawer();openWishlist();
 }
 function removeFromWish(id){
   wishItems=wishItems.filter(function(i){return i.id!==id;});
