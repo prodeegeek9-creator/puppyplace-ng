@@ -798,7 +798,7 @@ const fmt = n => '₦' + n.toLocaleString('en-NG');
 function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 const lblMap={sale:'lbl-sale',new:'lbl-new',hot:'lbl-hot',best:'lbl-best',popular:'lbl-sale'};
 const lblText={sale:'Sale',new:'New',hot:'Hot',best:'Best Seller',popular:'Popular'};
-const productUrl = p => { const s = p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); return `/product/${s}--${p.id}`; };
+const productUrl = p => { const s = p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); return p.slug ? `/product/${p.slug}` : `/product/${s}--${p.id}`; };
 
 /* ── SUPABASE LOAD ── */
 async function loadProducts() {
@@ -822,6 +822,7 @@ async function loadProducts() {
       rv:       row.review_count|| 0,
       tag:      row.tag         || '',
       img:      row.image_url   || null,
+      slug:     row.slug        || '',
       desc:     row.description || '',
       vars:     Array.isArray(row.variants)   ? row.variants   : [],
       varGroups:Array.isArray(row.var_groups) ? row.var_groups : [],
