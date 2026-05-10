@@ -844,6 +844,13 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 .rel-prod-price{font-size:14px;font-weight:900;color:var(--black)}
 .rel-prod-orig{font-size:11px;color:var(--gray);text-decoration:line-through;font-weight:600;display:block;margin-top:1px}
 .rel-prod-disc{background:#ed6436;color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;position:absolute;top:8px;left:8px}
+/* Mobile search bar */
+.mob-search-bar{display:none;padding:10px 16px;background:#fff;border-bottom:1px solid #e9ecef;position:sticky;top:56px;z-index:99;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.mob-si{display:flex;align-items:center;background:#f1f3f5;border:1.5px solid #e9ecef;border-radius:50px;overflow:hidden}
+.mob-si input{flex:1;border:none;background:transparent;padding:10px 16px;font-family:'Nunito',sans-serif;font-size:14px;outline:none}
+.mob-si button{background:#ed6436;border:none;width:50px;height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff}
+/* Mobile sticky Add to Cart bar */
+.mob-atc-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#fff;border-top:1.5px solid #e9ecef;padding:12px 16px;align-items:center;gap:12px;box-shadow:0 -4px 24px rgba(0,0,0,.14)}
 @media(max-width:768px){
   .nav{padding:0 12px;height:56px}
   .nav-back{padding:7px 12px;font-size:12px}
@@ -855,6 +862,9 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   .pi-actions{flex-direction:column}
   footer{padding:32px 20px 20px}
   .co-field-row{grid-template-columns:1fr}
+  .mob-search-bar{display:block}
+  .mob-atc-bar{display:flex!important}
+  body{padding-bottom:80px}
 }
 </style>
 </head>
@@ -868,6 +878,12 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
     <a href="/account.html" class="nav-ico">👤</a>
   </div>
 </nav>
+<div class="mob-search-bar">
+  <div class="mob-si">
+    <input type="text" id="mobSI" placeholder="Search products…" onkeydown="if(event.key==='Enter')goSearch()"/>
+    <button onclick="goSearch()">🔍</button>
+  </div>
+</div>
 
 <div class="page">
   <div class="breadcrumb">
@@ -1028,6 +1044,13 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
       <button class="co-btn-next" id="coBtnNext" onclick="coNext()"><span id="coBtnLabel">Continue to Review</span><div class="co-spinner" id="coSpinner"></div></button>
     </div>
   </div>
+</div>
+
+<!-- MOBILE STICKY ADD TO CART BAR -->
+<div class="mob-atc-bar">
+  <a href="https://wa.me/2348000000000?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener"
+     style="width:54px;height:54px;background:#25D366;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;text-decoration:none;">💬</a>
+  <button onclick="addToCartBtn()" style="flex:1;height:54px;background:#ed6436;color:#fff;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">🛒 Add to Cart</button>
 </div>
 
 <footer>
@@ -1259,6 +1282,7 @@ async function sendToN8n(ref,transactionId){
   }catch(e){console.warn('n8n webhook failed:',e.message);}
   coCurrentStep=4;renderCoStep(4);cartItems=[];saveCart();updateBadges();renderCartDrawer();
 }
+function goSearch(){var q=document.getElementById('mobSI').value.trim();window.location.href='/shop.html'+(q?'?q='+encodeURIComponent(q):'');}
 try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error('[PuppyPlace] Cart init error:',e);}
 </script>
 </body>
