@@ -1009,12 +1009,12 @@ function renderCartDrawer(){
         +'<div style="font-size:14px;font-weight:800;margin-bottom:5px;">'+escH(item.n)+'</div>'
         +'<div style="font-size:15px;font-weight:900;color:#ed6436;">'+fmt(item.p*item.qty)+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;margin-top:8px;">'
-          +'<button style="width:28px;height:28px;border-radius:50%;border:1px solid #e9ecef;background:#fff;cursor:pointer;" onclick="changeQty(\''+escH(item.id)+'\',-1)">&minus;</button>'
+          +'<button style="width:28px;height:28px;border-radius:50%;border:1px solid #e9ecef;background:#fff;cursor:pointer;" onclick="changeQty(\\''+escH(item.id)+'\\',-1)">&minus;</button>'
           +'<span style="font-size:13px;font-weight:800;">'+item.qty+'</span>'
-          +'<button style="width:28px;height:28px;border-radius:50%;border:1px solid #e9ecef;background:#fff;cursor:pointer;" onclick="changeQty(\''+escH(item.id)+'\',1)">+</button>'
+          +'<button style="width:28px;height:28px;border-radius:50%;border:1px solid #e9ecef;background:#fff;cursor:pointer;" onclick="changeQty(\\''+escH(item.id)+'\\',1)">+</button>'
         +'</div>'
       +'</div>'
-      +'<button style="position:absolute;top:14px;right:0;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;" onclick="removeFromCart(\''+escH(item.id)+'\')">&times;</button>'
+      +'<button style="position:absolute;top:14px;right:0;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;" onclick="removeFromCart(\\''+escH(item.id)+'\\')">&times;</button>'
       +'</div>';
   }).join('');
   totalEl.textContent=fmt(cartItems.reduce(function(s,i){return s+i.p*i.qty;},0));
@@ -1061,9 +1061,9 @@ function renderWishDrawer(){
       +'<div style="flex:1;min-width:0;">'
         +'<div style="font-size:14px;font-weight:800;margin-bottom:5px;">'+escH(item.n)+'</div>'
         +'<div style="font-size:15px;font-weight:900;">'+fmt(item.p)+'</div>'
-        +'<button style="margin-top:8px;padding:6px 12px;font-size:11px;background:#0e0e0c;color:#fff;border:none;border-radius:50px;cursor:pointer;font-family:inherit;font-weight:800;" onclick="moveToCart(\''+escH(item.id)+'\')">Add to Cart</button>'
+        +'<button style="margin-top:8px;padding:6px 12px;font-size:11px;background:#0e0e0c;color:#fff;border:none;border-radius:50px;cursor:pointer;font-family:inherit;font-weight:800;" onclick="moveToCart(\\''+escH(item.id)+'\\')" >Add to Cart</button>'
       +'</div>'
-      +'<button style="position:absolute;top:14px;right:0;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;" onclick="removeFromWish(\''+escH(item.id)+'\')">&times;</button>'
+      +'<button style="position:absolute;top:14px;right:0;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;" onclick="removeFromWish(\\''+escH(item.id)+'\\')">&times;</button>'
       +'</div>';
   }).join('');
 }
