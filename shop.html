@@ -1023,6 +1023,8 @@ function showToast(msg){const t=document.createElement('div');t.style.cssText='p
 function collectVariants(container,id){const groups=container.querySelectorAll('.pv-group');if(!groups.length)return{variantStr:'',cid:id,storedGroups:[]};const varParts=[],storedGroups=[];let missing=false;groups.forEach(grp=>{const label=grp.querySelector('.pv-label')?.textContent.trim()||'Option';const sel=grp.querySelector('.pv-opt.selected');if(!sel){grp.classList.add('pv-group-err');setTimeout(()=>grp.classList.remove('pv-group-err'),800);missing=true;}else{varParts.push(label+': '+sel.textContent.trim());storedGroups.push({label,values:[...grp.querySelectorAll('.pv-opt')].map(b=>b.textContent.trim()),selected:sel.textContent.trim()});}});if(missing)return null;const variantStr=varParts.join(', ');return{variantStr,cid:variantStr?id+'||'+variantStr:id,storedGroups};}
 function changeCartVariant(cid,groupLabel,newValue){const item=cartItems.find(i=>(i.cid||i.id)===cid);if(!item||!item.varGroups)return;const group=item.varGroups.find(g=>g.label===groupLabel);if(!group)return;group.selected=newValue;const newVariant=item.varGroups.map(g=>g.label+': '+g.selected).join(', ');const newCid=newVariant?item.id+'||'+newVariant:item.id;const existing=cartItems.find(i=>(i.cid||i.id)===newCid&&(i.cid||i.id)!==cid);if(existing){existing.qty+=item.qty;cartItems=cartItems.filter(i=>(i.cid||i.id)!==cid);}else{item.cid=newCid;item.variant=newVariant;}saveCart();updateBadges();renderCartDrawer();}
 function addCart(id,name,emoji,cat,price,variant='',varGroups=[],cid=null) {
+  const prod=allProds.find(x=>x.id===id);
+  if(prod){const g=prod.varGroups.length?prod.varGroups:(prod.vars.length?[{values:prod.vars}]:[]);if(g.length&&!varGroups.length){showToast('Please select all options');return;}}
   cid=cid||id;
   const ex = cartItems.find(i=>(i.cid||i.id)===cid);
   if(ex) ex.qty++; else cartItems.push({cid,id,n:name,e:emoji,cat,p:price,qty:1,variant:variant||'',varGroups:varGroups||[]});
@@ -1059,7 +1061,7 @@ function closeCart(){ document.getElementById('cartDrawer').classList.remove('op
 /* ── WISHLIST ── */
 function addWish(id,name,emoji,cat,price){ if(wishItems.find(i=>i.id===id))return; wishItems.push({id,n:name,e:emoji,cat,p:price}); saveWish(); updateBadges(); renderWishDrawer(); openWishlist(); }
 function removeFromWish(id){ wishItems=wishItems.filter(i=>i.id!==id); saveWish(); updateBadges(); renderWishDrawer(); }
-function moveAllToCart(){ [...wishItems].forEach(i=>{ const ex=cartItems.find(c=>c.id===i.id); if(ex)ex.qty++; else cartItems.push({...i,qty:1}); }); wishItems=[]; updateBadges(); renderWishDrawer(); renderCartDrawer(); closeWishlist(); openCart(); }
+function moveAllToCart(){ const skipped=[]; [...wishItems].forEach(i=>{ const prod=allProds.find(x=>x.id===i.id); const g=prod?(prod.varGroups.length?prod.varGroups:(prod.vars.length?[{values:prod.vars}]:[])):[];if(g.length){skipped.push(i);return;} const ex=cartItems.find(c=>c.id===i.id); if(ex)ex.qty++; else cartItems.push({...i,qty:1}); }); wishItems=skipped; if(skipped.length)showToast(skipped.length+' item(s) need a variant selected'); updateBadges(); renderWishDrawer(); renderCartDrawer(); if(!skipped.length)closeWishlist(); openCart(); }
 function renderWishDrawer(){
   const el=document.getElementById('wishItems'), em=document.getElementById('wishEmpty'), ft=document.getElementById('wishFooter');
   if(!wishItems.length){em.style.display='';el.innerHTML='';ft.style.display='none';return;}
@@ -1068,7 +1070,7 @@ function renderWishDrawer(){
     <div style="width:64px;height:64px;background:var(--light);border-radius:var(--rxs);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">${escHtml(i.e)}</div>
     <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:800;">${escHtml(i.n)}</div>
     <div style="font-size:15px;font-weight:900;color:var(--black);">${fmt(i.p)}</div>
-    <button class="btn-dark" style="margin-top:8px;padding:6px 12px;font-size:11px;" onclick="addCart('${escHtml(i.id)}','${escHtml(i.n)}','${escHtml(i.e)}','${escHtml(i.cat)}',${i.p})">🛒 Add to Cart</button>
+    <button class="btn-dark" style="margin-top:8px;padding:6px 12px;font-size:11px;" onclick="addCartFromWish('${escHtml(i.id)}')">🛒 Add to Cart</button>
     </div>
     <button style="position:absolute;top:14px;right:0;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;" onclick="removeFromWish('${escHtml(i.id)}')">✕</button>
   </div>`).join('');
@@ -1087,6 +1089,15 @@ function addCartFromCard(btn) {
   const id = btn.dataset.pid;
   const p = allProds.find(x => x.id === id);
   if (!p) return;
+  const groups = p.varGroups.length ? p.varGroups : (p.vars.length ? [{values:p.vars}] : []);
+  if (groups.length) { openModal(p.id); return; }
+  addCart(p.id, p.n, p.e, p.cat, p.p);
+}
+function addCartFromWish(id) {
+  const p = allProds.find(x => x.id === id);
+  if (!p) return;
+  const groups = p.varGroups.length ? p.varGroups : (p.vars.length ? [{values:p.vars}] : []);
+  if (groups.length) { closeWishlist(); openModal(p.id); return; }
   addCart(p.id, p.n, p.e, p.cat, p.p);
 }
 
