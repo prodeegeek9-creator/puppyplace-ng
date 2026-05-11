@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /account.html
+Disallow: /admin.html
 
 Sitemap: https://puppyplace.ng/sitemap.xml

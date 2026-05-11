@@ -397,24 +397,41 @@ async function serveSitemap(env) {
   if (!env.SUPABASE_URL) {
     return new Response('Server not configured', { status: 503 });
   }
-  let posts;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const staticPages = [
+    { loc: 'https://puppyplace.ng/', lastmod: today },
+    { loc: 'https://puppyplace.ng/shop.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/about.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/contact.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/blog.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/privacy.html', lastmod: today },
+  ];
+
+  let posts = [];
+  let products = [];
   try {
-    const res = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.published&select=slug,published_at&order=published_at.desc`,
-      { headers: sbHeaders(env) }
-    );
-    posts = await res.json();
-    if (!Array.isArray(posts)) posts = [];
+    const h = sbHeaders(env);
+    const base = env.SUPABASE_URL;
+    const [postsRes, productsRes] = await Promise.all([
+      fetch(`${base}/rest/v1/blog_posts?status=eq.published&select=slug,published_at&order=published_at.desc`, { headers: h }),
+      fetch(`${base}/rest/v1/shop_products?active=eq.true&select=slug,updated_at`, { headers: h }),
+    ]);
+    if (postsRes.ok) { const d = await postsRes.json(); if (Array.isArray(d)) posts = d; }
+    if (productsRes.ok) { const d = await productsRes.json(); if (Array.isArray(d)) products = d; }
   } catch {
     return new Response('Failed to generate sitemap', { status: 500 });
   }
 
-  const urls = posts.map(p => {
-    const lastmod = p.published_at ? p.published_at.slice(0, 10) : '';
-    return `  <url>\n    <loc>https://puppyplace.ng/posts/${encodeURIComponent(p.slug)}.html</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
-  }).join('\n');
+  const toUrl = (loc, lastmod) =>
+    `  <url>\n    <loc>${loc}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
+  const staticUrls = staticPages.map(p => toUrl(p.loc, p.lastmod));
+  const postUrls = posts.map(p => toUrl(`https://puppyplace.ng/posts/${encodeURIComponent(p.slug)}.html`, p.published_at ? p.published_at.slice(0, 10) : ''));
+  const productUrls = products.map(p => toUrl(`https://puppyplace.ng/product/${encodeURIComponent(p.slug)}.html`, p.updated_at ? p.updated_at.slice(0, 10) : ''));
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...postUrls, ...productUrls].join('\n')}\n</urlset>`;
 
   return new Response(xml, {
     status: 200,
@@ -586,15 +603,17 @@ async function serveProduct(slugOrId, env) {
       }
     }
 
-    // 3. If slug--uuid format (transition from old URLs), extract uuid and retry
+    // 3. If slug--uuid format (transition from old URLs), extract uuid and redirect to canonical URL
     if (!product) {
       const sep = slugOrId.lastIndexOf('--');
       if (sep >= 0) {
         const extractedId = slugOrId.slice(sep + 2);
-        const idRes = await fetch(`${base}/rest/v1/shop_products?id=eq.${encodeURIComponent(extractedId)}&active=eq.true&select=*`, { headers: h });
+        const idRes = await fetch(`${base}/rest/v1/shop_products?id=eq.${encodeURIComponent(extractedId)}&active=eq.true&select=slug`, { headers: h });
         if (idRes.ok) {
           const rows = await idRes.json();
-          if (rows && rows.length) product = rows[0];
+          if (rows && rows.length && rows[0].slug) {
+            return Response.redirect(`https://puppyplace.ng/product/${encodeURIComponent(rows[0].slug)}.html`, 301);
+          }
         }
       }
     }
