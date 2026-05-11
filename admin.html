@@ -435,6 +435,20 @@ input,select,textarea{font-family:'Nunito',sans-serif}
   .blog-form-modal{max-height:100vh;border-radius:var(--r) var(--r) 0 0;align-self:flex-end;}
   .blog-form-bg{align-items:flex-end;padding:0;}
 }
+
+/* ── STATS PANEL ── */
+.stats-toolbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px}
+.stats-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:24px}
+.stats-chart-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px 20px 12px;margin-bottom:24px;box-shadow:var(--shadow)}
+.stats-chart{display:flex;align-items:flex-end;gap:3px;height:80px;margin-top:8px}
+.stat-hour-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.stat-hour-fill{width:100%;background:var(--orange);border-radius:3px 3px 0 0;min-height:2px;transition:height .3s}
+.stat-hour-label{font-size:9px;color:var(--gray);font-weight:700;white-space:nowrap;line-height:1}
+.stats-tables{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.stats-table-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.stats-table-title{font-size:13px;font-weight:800;color:var(--black);padding:14px 20px;border-bottom:1px solid var(--border);background:var(--light)}
+@media(max-width:900px){.stats-summary{grid-template-columns:1fr 1fr}.stats-tables{grid-template-columns:1fr}}
+@media(max-width:600px){.stats-summary{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -473,6 +487,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link on" onclick="showPanel('dashboard',this)"><span class="sb-link-ico">📊</span> Dashboard</div>
         <div class="sb-link" onclick="showPanel('products',this)"><span class="sb-link-ico">📦</span> Products <span class="sb-badge" id="sbProdCount">0</span></div>
         <div class="sb-link" onclick="showPanel('blog',this)"><span class="sb-link-ico">📝</span> Blog Posts <span class="sb-badge" id="sbBlogCount">0</span></div>
+        <div class="sb-link" onclick="showPanel('stats',this)"><span class="sb-link-ico">📈</span> Stats</div>
         <div class="sb-section">Store</div>
         <div class="sb-link" onclick="showPanel('hero',this)"><span class="sb-link-ico">🖼️</span> Hero Images</div>
         <div class="sb-link" onclick="showPanel('homepage',this)"><span class="sb-link-ico">🏠</span> Homepage</div>
@@ -653,6 +668,22 @@ input,select,textarea{font-family:'Nunito',sans-serif}
               <thead><tr><th>Title</th><th>Category</th><th>Author</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody id="blogTableBody"><tr><td colspan="6" class="empty-table"><div class="empty-table-ico">📝</div><div>No posts yet</div></td></tr></tbody>
             </table>
+          </div>
+        </div>
+
+        <div class="panel" id="panelStats">
+          <div class="stats-toolbar">
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--black)">Page Analytics</div>
+              <div style="font-size:13px;color:var(--gray);margin-top:2px">Server-side — no cookies, no third-party scripts</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <input type="date" id="statsDate" class="filter-sel" style="padding:10px 14px"/>
+              <button class="add-btn" onclick="loadStats()">↻ Refresh</button>
+            </div>
+          </div>
+          <div id="statsContent">
+            <div style="text-align:center;padding:60px;color:var(--gray)">Loading stats…</div>
           </div>
         </div>
 
@@ -1075,7 +1106,7 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
   const title = titles[name]||name;
   document.getElementById('pageTitle').textContent = title;
   const mobTitle = document.getElementById('mobPageTitle');
@@ -1086,9 +1117,66 @@ function showPanel(name, el){
   if(name==='products') renderTable();
   if(name==='dashboard'){ updateStats(); renderDashRecent(); }
   if(name==='blog') loadBlogPosts();
+  if(name==='stats') loadStats();
   if(name==='hero') loadHeroSettings();
   if(name==='homepage') renderHomepagePanel();
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── STATS ── */
+async function loadStats() {
+  const token = sessionStorage.getItem('pp_token');
+  if (!token) return;
+  const dateInput = document.getElementById('statsDate');
+  if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+  const date = dateInput.value;
+  const content = document.getElementById('statsContent');
+  content.innerHTML = '<div style="text-align:center;padding:60px;color:var(--gray)">Loading…</div>';
+  try {
+    const res = await fetch(`/api/stats?token=${encodeURIComponent(token)}&date=${encodeURIComponent(date)}`);
+    if (!res.ok) throw new Error('Failed');
+    renderStats(await res.json());
+  } catch {
+    content.innerHTML = '<div style="text-align:center;padding:60px;color:var(--red);font-weight:700">Failed to load stats. Try again.</div>';
+  }
+}
+
+function renderStats(data) {
+  const flag = code => (!code || code === '--') ? '🌍' :
+    code.toUpperCase().split('').map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join('');
+  const countryNames = {NG:'Nigeria',US:'United States',GB:'United Kingdom',CA:'Canada',AU:'Australia',DE:'Germany',FR:'France',IN:'India',ZA:'South Africa',GH:'Ghana',KE:'Kenya',EG:'Egypt',AE:'UAE',SG:'Singapore',NL:'Netherlands',IT:'Italy',ES:'Spain',BR:'Brazil',JP:'Japan',CN:'China',NG:'Nigeria'};
+  const maxH = Math.max(...data.hours, 1);
+  const bars = data.hours.map((v, h) =>
+    `<div class="stat-hour-bar" title="${h}:00 UTC — ${v} view${v===1?'':'s'}">
+      <div class="stat-hour-fill" style="height:${Math.round(v/maxH*100)}%"></div>
+      <div class="stat-hour-label">${h%6===0?h+'h':''}</div>
+    </div>`).join('');
+  const pageRows = data.pages.length
+    ? data.pages.map(p => `<tr><td style="font-size:12px;font-family:monospace;word-break:break-all;max-width:260px">${escHtml(p.path)}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${p.views.toLocaleString()}</td></tr>`).join('')
+    : '<tr><td colspan="2" style="text-align:center;color:var(--gray);padding:24px">No views recorded yet</td></tr>';
+  const countryRows = data.countries.length
+    ? data.countries.map(c => `<tr><td><span style="font-size:16px;margin-right:8px">${flag(c.country)}</span>${escHtml(countryNames[c.country]||c.country||'Unknown')}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${c.views.toLocaleString()}</td></tr>`).join('')
+    : '<tr><td colspan="2" style="text-align:center;color:var(--gray);padding:24px">No data yet</td></tr>';
+  document.getElementById('statsContent').innerHTML = `
+    <div class="stats-summary">
+      <div class="stat-card" data-ico="👁️"><div class="stat-label">Total Views</div><div class="stat-val">${data.total.toLocaleString()}</div><div class="stat-sub">on ${data.date}</div></div>
+      <div class="stat-card" data-ico="📄"><div class="stat-label">Unique Pages</div><div class="stat-val">${data.pages.length}</div><div class="stat-sub">viewed this day</div></div>
+      <div class="stat-card" data-ico="🌍"><div class="stat-label">Countries</div><div class="stat-val">${data.countries.length}</div><div class="stat-sub">represented</div></div>
+    </div>
+    <div class="stats-chart-wrap">
+      <div style="font-size:13px;font-weight:800;color:var(--black)">Views by Hour <span style="font-weight:500;color:var(--gray)">(UTC)</span></div>
+      <div class="stats-chart">${bars}</div>
+    </div>
+    <div class="stats-tables">
+      <div class="stats-table-card">
+        <div class="stats-table-title">Top Pages</div>
+        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Page</th><th style="text-align:right">Views</th></tr></thead><tbody>${pageRows}</tbody></table></div>
+      </div>
+      <div class="stats-table-card">
+        <div class="stats-table-title">Top Countries</div>
+        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Country</th><th style="text-align:right">Views</th></tr></thead><tbody>${countryRows}</tbody></table></div>
+      </div>
+    </div>`;
 }
 
 function updateStats(){
