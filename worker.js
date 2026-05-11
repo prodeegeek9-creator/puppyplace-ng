@@ -2,6 +2,10 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    if (shouldTrack(url.pathname)) {
+      ctx.waitUntil(trackView(url.pathname, request.cf?.country, env));
+    }
+
     if (url.pathname === '/config.js') {
       const config = {
         SUPABASE_URL:        env.SUPABASE_URL        || '',
@@ -31,6 +35,10 @@ export default {
       return handleAdminVerify(request, env);
     }
 
+    if (url.pathname === '/api/stats' && request.method === 'GET') {
+      return handleStats(request, url, env);
+    }
+
     if (url.pathname === '/sitemap.xml') {
       return serveSitemap(env);
     }
@@ -58,6 +66,26 @@ export default {
     return env.ASSETS.fetch(request);
   },
 };
+
+function shouldTrack(pathname) {
+  if (pathname.startsWith('/api/')) return false;
+  if (['/config.js', '/sitemap.xml', '/favicon.ico'].includes(pathname)) return false;
+  if (pathname === '/') return true;
+  if (pathname.endsWith('.html')) return true;
+  return false;
+}
+
+async function trackView(path, country, env) {
+  if (!env.SUPABASE_URL) return;
+  const normalPath = path === '/index.html' ? '/' : path;
+  try {
+    await fetch(`${env.SUPABASE_URL}/rest/v1/page_views`, {
+      method: 'POST',
+      headers: { ...sbHeaders(env), 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ path: normalPath, country: country || null }),
+    });
+  } catch { /* non-critical */ }
+}
 
 // Returns headers using the service key when available, anon key as fallback
 function sbHeaders(env) {
@@ -437,6 +465,55 @@ async function serveSitemap(env) {
     status: 200,
     headers: { 'Content-Type': 'application/xml; charset=utf-8' },
   });
+}
+
+/* ── PAGE VIEW STATS ── */
+
+async function handleStats(request, url, env) {
+  if (!env.SUPABASE_URL) return jsonResp({ error: 'Server not configured' }, 503);
+
+  const token = url.searchParams.get('token');
+  if (!await verifyToken(token, env)) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  const date = url.searchParams.get('date') || new Date().toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return jsonResp({ error: 'Invalid date' }, 400);
+
+  const next = new Date(date + 'T00:00:00.000Z');
+  next.setUTCDate(next.getUTCDate() + 1);
+  const nextDate = next.toISOString().slice(0, 10);
+
+  try {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/page_views?viewed_at=gte.${date}T00:00:00.000Z&viewed_at=lt.${nextDate}T00:00:00.000Z&select=path,country,viewed_at&limit=5000&order=viewed_at.asc`,
+      { headers: sbHeaders(env) }
+    );
+    if (!res.ok) return jsonResp({ error: 'Failed to fetch stats' }, 500);
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return jsonResp({ error: 'Unexpected response' }, 500);
+
+    const pageMap = {};
+    const countryMap = {};
+    const hours = new Array(24).fill(0);
+
+    for (const row of rows) {
+      pageMap[row.path] = (pageMap[row.path] || 0) + 1;
+      const c = row.country || '--';
+      countryMap[c] = (countryMap[c] || 0) + 1;
+      if (row.viewed_at) hours[new Date(row.viewed_at).getUTCHours()]++;
+    }
+
+    const pages = Object.entries(pageMap)
+      .map(([path, views]) => ({ path, views }))
+      .sort((a, b) => b.views - a.views);
+
+    const countries = Object.entries(countryMap)
+      .map(([country, views]) => ({ country, views }))
+      .sort((a, b) => b.views - a.views);
+
+    return jsonResp({ date, total: rows.length, pages, countries, hours });
+  } catch {
+    return jsonResp({ error: 'Failed to generate stats' }, 500);
+  }
 }
 
 /* ── ADMIN AUTH ── */
