@@ -1152,15 +1152,16 @@ function renderStats(data) {
       <div class="stat-hour-label">${h%6===0?h+'h':''}</div>
     </div>`).join('');
   const pageRows = data.pages.length
-    ? data.pages.map(p => `<tr><td style="font-size:12px;font-family:monospace;word-break:break-all;max-width:260px">${escHtml(p.path)}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${p.views.toLocaleString()}</td></tr>`).join('')
-    : '<tr><td colspan="2" style="text-align:center;color:var(--gray);padding:24px">No views recorded yet</td></tr>';
+    ? data.pages.map(p => `<tr><td style="font-size:12px;font-family:monospace;word-break:break-all;max-width:200px">${escHtml(p.path)}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${p.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${p.visitors.toLocaleString()}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:24px">No views recorded yet</td></tr>';
   const countryRows = data.countries.length
-    ? data.countries.map(c => `<tr><td><span style="font-size:16px;margin-right:8px">${flag(c.country)}</span>${escHtml(countryNames[c.country]||c.country||'Unknown')}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${c.views.toLocaleString()}</td></tr>`).join('')
-    : '<tr><td colspan="2" style="text-align:center;color:var(--gray);padding:24px">No data yet</td></tr>';
+    ? data.countries.map(c => `<tr><td><span style="font-size:16px;margin-right:8px">${flag(c.country)}</span>${escHtml(countryNames[c.country]||c.country||'Unknown')}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${c.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${c.visitors.toLocaleString()}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:24px">No data yet</td></tr>';
   document.getElementById('statsContent').innerHTML = `
-    <div class="stats-summary">
+    <div class="stats-summary" style="grid-template-columns:repeat(4,1fr)">
       <div class="stat-card" data-ico="👁️"><div class="stat-label">Total Views</div><div class="stat-val">${data.total.toLocaleString()}</div><div class="stat-sub">on ${data.date}</div></div>
-      <div class="stat-card" data-ico="📄"><div class="stat-label">Unique Pages</div><div class="stat-val">${data.pages.length}</div><div class="stat-sub">viewed this day</div></div>
+      <div class="stat-card" data-ico="🧑"><div class="stat-label">Unique Visitors</div><div class="stat-val">${(data.visitors||0).toLocaleString()}</div><div class="stat-sub">distinct IPs today</div></div>
+      <div class="stat-card" data-ico="📄"><div class="stat-label">Pages Viewed</div><div class="stat-val">${data.pages.length}</div><div class="stat-sub">unique pages</div></div>
       <div class="stat-card" data-ico="🌍"><div class="stat-label">Countries</div><div class="stat-val">${data.countries.length}</div><div class="stat-sub">represented</div></div>
     </div>
     <div class="stats-chart-wrap">
@@ -1170,11 +1171,11 @@ function renderStats(data) {
     <div class="stats-tables">
       <div class="stats-table-card">
         <div class="stats-table-title">Top Pages</div>
-        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Page</th><th style="text-align:right">Views</th></tr></thead><tbody>${pageRows}</tbody></table></div>
+        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Page</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th></tr></thead><tbody>${pageRows}</tbody></table></div>
       </div>
       <div class="stats-table-card">
         <div class="stats-table-title">Top Countries</div>
-        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Country</th><th style="text-align:right">Views</th></tr></thead><tbody>${countryRows}</tbody></table></div>
+        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Country</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th></tr></thead><tbody>${countryRows}</tbody></table></div>
       </div>
     </div>`;
 }

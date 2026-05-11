@@ -3,7 +3,11 @@ export default {
     const url = new URL(request.url);
 
     if (shouldTrack(url.pathname)) {
-      ctx.waitUntil(trackView(url.pathname, request.cf?.country, env));
+      const ip   = request.headers.get('CF-Connecting-IP') || '';
+      const date = new Date().toISOString().slice(0, 10);
+      ctx.waitUntil(
+        hashVisitor(ip, date).then(hash => trackView(url.pathname, request.cf?.country, hash, env))
+      );
     }
 
     if (url.pathname === '/config.js') {
@@ -75,14 +79,20 @@ function shouldTrack(pathname) {
   return false;
 }
 
-async function trackView(path, country, env) {
+async function hashVisitor(ip, date) {
+  if (!ip) return null;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + '|' + date));
+  return Array.from(new Uint8Array(buf)).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function trackView(path, country, visitorHash, env) {
   if (!env.SUPABASE_URL) return;
   const normalPath = path === '/index.html' ? '/' : path;
   try {
     await fetch(`${env.SUPABASE_URL}/rest/v1/page_views`, {
       method: 'POST',
       headers: { ...sbHeaders(env), 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ path: normalPath, country: country || null }),
+      body: JSON.stringify({ path: normalPath, country: country || null, visitor_hash: visitorHash || null }),
     });
   } catch { /* non-critical */ }
 }
@@ -484,7 +494,7 @@ async function handleStats(request, url, env) {
 
   try {
     const res = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/page_views?viewed_at=gte.${date}T00:00:00.000Z&viewed_at=lt.${nextDate}T00:00:00.000Z&select=path,country,viewed_at&limit=5000&order=viewed_at.asc`,
+      `${env.SUPABASE_URL}/rest/v1/page_views?viewed_at=gte.${date}T00:00:00.000Z&viewed_at=lt.${nextDate}T00:00:00.000Z&select=path,country,viewed_at,visitor_hash&limit=5000&order=viewed_at.asc`,
       { headers: sbHeaders(env) }
     );
     if (!res.ok) return jsonResp({ error: 'Failed to fetch stats' }, 500);
@@ -494,23 +504,31 @@ async function handleStats(request, url, env) {
     const pageMap = {};
     const countryMap = {};
     const hours = new Array(24).fill(0);
+    const allVisitors = new Set();
 
     for (const row of rows) {
-      pageMap[row.path] = (pageMap[row.path] || 0) + 1;
+      if (!pageMap[row.path]) pageMap[row.path] = { views: 0, visitors: new Set() };
+      pageMap[row.path].views++;
       const c = row.country || '--';
-      countryMap[c] = (countryMap[c] || 0) + 1;
+      if (!countryMap[c]) countryMap[c] = { views: 0, visitors: new Set() };
+      countryMap[c].views++;
+      if (row.visitor_hash) {
+        pageMap[row.path].visitors.add(row.visitor_hash);
+        countryMap[c].visitors.add(row.visitor_hash);
+        allVisitors.add(row.visitor_hash);
+      }
       if (row.viewed_at) hours[new Date(row.viewed_at).getUTCHours()]++;
     }
 
     const pages = Object.entries(pageMap)
-      .map(([path, views]) => ({ path, views }))
+      .map(([path, d]) => ({ path, views: d.views, visitors: d.visitors.size }))
       .sort((a, b) => b.views - a.views);
 
     const countries = Object.entries(countryMap)
-      .map(([country, views]) => ({ country, views }))
+      .map(([country, d]) => ({ country, views: d.views, visitors: d.visitors.size }))
       .sort((a, b) => b.views - a.views);
 
-    return jsonResp({ date, total: rows.length, pages, countries, hours });
+    return jsonResp({ date, total: rows.length, visitors: allVisitors.size, pages, countries, hours });
   } catch {
     return jsonResp({ error: 'Failed to generate stats' }, 500);
   }
