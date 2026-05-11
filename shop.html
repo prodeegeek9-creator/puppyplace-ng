@@ -189,9 +189,15 @@ img{max-width:100%;height:auto;display:block;}
 .pcard:hover .pc-wish{opacity:1;transform:scale(1);}
 .pc-actions{position:absolute;bottom:-70px;left:0;right:0;z-index:4;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;transition:bottom var(--trans);}
 .pcard:hover .pc-actions{bottom:12px;}
+.pcard:has(.cart-qty-ctrl) .pc-actions{bottom:12px;}
 .pa-btn{height:40px;background:var(--black);color:#fff;border:none;border-radius:50px;font-weight:800;padding:0 20px;cursor:pointer;}
 .pa-btn:hover{background:var(--orange);}
-.pa-icon{width:40px;height:40px;background:#fff;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.1);}
+.pa-cart-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.cart-qty-ctrl{display:flex;align-items:center;gap:2px;height:40px;background:rgba(255,255,255,.96);border-radius:50px;padding:0 4px;border:1.5px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.12);}
+.cart-qty-ctrl button{width:30px;height:30px;border-radius:50%;border:none;background:var(--black);color:#fff;cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:background .2s;flex-shrink:0;}
+.cart-qty-ctrl button:hover{background:var(--orange);}
+.cart-qty-ctrl span{font-size:14px;font-weight:800;min-width:24px;text-align:center;color:var(--black);}
+.cart-added-text{font-size:10px;font-weight:800;color:var(--orange);white-space:nowrap;}
 .pc-body{padding:16px;}
 .pc-cat{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
 .pc-name{font-size:15px;font-weight:700;color:var(--black);margin-bottom:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;transition:color var(--trans);}
@@ -936,7 +942,7 @@ function loadMore() {
         <button class="pc-wish" onclick="event.stopPropagation();addWishFromCard(this,'${escHtml(p.id)}')">♡</button>
         ${p.img ? `<img src="${escHtml(p.img)}" alt="${escHtml(p.n)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${escHtml(p.e)}</span>`}
         <div class="pc-actions">
-          <button class="pa-btn" data-pid="${escHtml(p.id)}" onclick="event.stopPropagation();addCartFromCard(this)">🛒 Add to Cart</button>
+          <div class="pa-cart-wrap" data-pid="${escHtml(p.id)}"><button class="pa-btn" onclick="event.stopPropagation();addCartFromCard(this.closest('[data-pid]'))">🛒 Add to Cart</button></div>
           <span class="pa-icon" onclick="event.stopPropagation();window.location.href='${escHtml(pUrl)}'">👁</span>
         </div>
       </div>
@@ -954,6 +960,7 @@ function loadMore() {
   displayedCount = end;
   document.getElementById('pCount').textContent = filteredProds.length;
   document.getElementById('loadMoreWrap').style.display = displayedCount < filteredProds.length ? '' : 'none';
+  renderCartBtns();
 }
 
 function setActiveCat(el, cat) {
@@ -1044,9 +1051,12 @@ function renderCartDrawer(){
   em.style.display='none'; ft.style.display='block';
   el.innerHTML=cartItems.map(i=>{
     const cid=escHtml(i.cid||i.id);
+    const prod=allProds.find(x=>x.id===i.id);
+    const thumb=prod?.img||'';
+    const thumbHtml=thumb?`<img src="${escHtml(thumb)}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--rxs);" onerror="this.style.display='none'">`:`<span style="font-size:26px">${escHtml(i.e)}</span>`;
     const varHtml=(i.varGroups&&i.varGroups.length)?`<div style="margin:6px 0;">${i.varGroups.map(g=>`<div style="margin-bottom:6px;"><div style="font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;margin-bottom:4px;">${escHtml(g.label)}</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${g.values.map(v=>`<button style="border:${v===g.selected?'1.5px solid var(--orange)':'1px solid var(--border)'};border-radius:50px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;background:${v===g.selected?'var(--orange)':'#fff'};color:${v===g.selected?'#fff':'inherit'};" onclick="changeCartVariant('${cid}','${escHtml(g.label)}','${escHtml(v)}')">${escHtml(v)}</button>`).join('')}</div></div>`).join('')}</div>`:'';
     return `<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;">
-    <div style="width:56px;height:56px;background:var(--light);border-radius:var(--rxs);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">${escHtml(i.e)}</div>
+    <div style="width:56px;height:56px;background:var(--light);border-radius:var(--rxs);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${thumbHtml}</div>
     <div style="flex:1;min-width:0;"><div style="font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;">${escHtml(i.cat)}</div>
     <div style="font-size:14px;font-weight:800;">${escHtml(i.n)}</div>
     ${varHtml}
@@ -1060,8 +1070,9 @@ function renderCartDrawer(){
   </div>`;
   }).join('');
   document.getElementById('cartTotal').textContent = fmt(cartItems.reduce((s,i)=>s+i.p*i.qty,0));
+  renderCartBtns();
 }
-function openCart(){ document.getElementById('cartDrawer').classList.add('open'); document.getElementById('cartOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
+function openCart(){ document.getElementById('cartDrawer').classList.add('open'); document.getElementById('cartOverlay').classList.add('open'); document.body.style.overflow='hidden'; const bar=document.getElementById('mobAtcBar'); if(bar) bar.classList.remove('show'); }
 function closeCart(){ document.getElementById('cartDrawer').classList.remove('open'); document.getElementById('cartOverlay').classList.remove('open'); document.body.style.overflow=''; }
 
 /* ── WISHLIST ── */
@@ -1091,8 +1102,26 @@ function addWishFromCard(btn, id) {
   if (added) { removeFromWish(id); btn.textContent = '♡'; }
   else { btn.textContent = '♥'; addWish(id, p.n, p.e, p.cat, p.p); }
 }
-function addCartFromCard(btn) {
-  const id = btn.dataset.pid;
+function renderCartBtns(){
+  document.querySelectorAll('.pa-cart-wrap[data-pid]').forEach(wrap=>{
+    const id=wrap.dataset.pid;
+    const items=cartItems.filter(i=>i.id===id);
+    const qty=items.reduce((s,i)=>s+i.qty,0);
+    if(qty>0){
+      wrap.innerHTML=`<div class="cart-qty-ctrl"><button onclick="event.stopPropagation();changeQtyCard('${id}',-1)">−</button><span>${qty}</span><button onclick="event.stopPropagation();changeQtyCard('${id}',1)">+</button></div><div class="cart-added-text">✓ Added</div>`;
+    }else{
+      wrap.innerHTML=`<button class="pa-btn" onclick="event.stopPropagation();addCartFromCard(this.closest('[data-pid]'))">🛒 Add to Cart</button>`;
+    }
+  });
+}
+function changeQtyCard(id,delta){
+  const items=cartItems.filter(i=>i.id===id);
+  if(!items.length)return;
+  if(delta>0&&(items[0].varGroups||[]).length>0){openModal(id);return;}
+  changeQty(items[0].cid||items[0].id,delta);
+}
+function addCartFromCard(wrap) {
+  const id = wrap.dataset.pid;
   const p = allProds.find(x => x.id === id);
   if (!p) return;
   const groups = p.varGroups.length ? p.varGroups : (p.vars.length ? [{values:p.vars}] : []);
@@ -1375,6 +1404,19 @@ updateBadges();
 renderCartDrawer();
 renderWishDrawer();
 loadProducts();
+(async () => {
+  try {
+    const { data } = await supabase.from('store_settings').select('key,value').in('key',['shop_hero_0','shop_hero_1','shop_hero_2']);
+    if (!data) return;
+    const map = Object.fromEntries(data.map(r => [r.key, r.value]));
+    [0,1,2].forEach(i => {
+      const url = map[`shop_hero_${i}`]?.img_url;
+      if (!url) return;
+      const bg = document.querySelector(`#slide${i} .slide-bg`);
+      if (bg) bg.style.cssText += `;background-image:url('${url.replace(/'/g,"\\'")}');background-size:cover;background-position:center;`;
+    });
+  } catch {}
+})();
 </script>
 
 <!-- MOBILE STICKY ADD TO CART BAR -->

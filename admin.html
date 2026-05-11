@@ -488,6 +488,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link" onclick="showPanel('products',this)"><span class="sb-link-ico">📦</span> Products <span class="sb-badge" id="sbProdCount">0</span></div>
         <div class="sb-link" onclick="showPanel('blog',this)"><span class="sb-link-ico">📝</span> Blog Posts <span class="sb-badge" id="sbBlogCount">0</span></div>
         <div class="sb-link" onclick="showPanel('stats',this)"><span class="sb-link-ico">📈</span> Stats</div>
+        <div class="sb-link" onclick="showPanel('pets',this)"><span class="sb-link-ico">🐾</span> Pets <span class="sb-badge" id="sbPetsCount">0</span></div>
         <div class="sb-section">Store</div>
         <div class="sb-link" onclick="showPanel('hero',this)"><span class="sb-link-ico">🖼️</span> Hero Images</div>
         <div class="sb-link" onclick="showPanel('homepage',this)"><span class="sb-link-ico">🏠</span> Homepage</div>
@@ -621,12 +622,6 @@ input,select,textarea{font-family:'Nunito',sans-serif}
             <button class="settings-save" style="margin-top:20px;" onclick="saveHomepageSettings()">💾 Save Banner Cards</button>
           </div>
 
-          <div class="settings-card" style="margin-bottom:24px;">
-            <h3>📖 Blog Post Thumbnails</h3>
-            <p>Override thumbnail images for your published blog posts. If a post already has a Featured Image set in Blog CMS, that takes priority.</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="blogImagesGrid"></div>
-            <button class="settings-save" style="margin-top:20px;" onclick="saveHomepageSettings()">💾 Save Blog Images</button>
-          </div>
         </div>
 
         <div class="panel" id="panelSettings">
@@ -687,12 +682,99 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           </div>
         </div>
 
+        <div class="panel" id="panelPets">
+          <div class="blog-toolbar">
+            <div style="font-size:15px;font-weight:800;color:var(--black)">Pets for Sale &amp; Adoption</div>
+            <button class="add-btn" onclick="openPetForm()">＋ Add Pet</button>
+          </div>
+          <div class="blog-table-wrap">
+            <table class="blog-table">
+              <thead><tr><th>Photo</th><th>Name</th><th>Type</th><th>Listing</th><th>Price</th><th>Location</th><th>Actions</th></tr></thead>
+              <tbody id="petsTableBody"><tr><td colspan="7" class="empty-table"><div class="empty-table-ico">🐾</div><div>No pets yet</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PET FORM MODAL -->
+        <div class="form-bg" id="petFormBg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;overflow-y:auto;padding:20px;align-items:flex-start;justify-content:center;">
+          <div class="form-modal" style="background:#fff;border-radius:16px;padding:32px;width:100%;max-width:580px;margin:auto;position:relative;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+              <div style="font-size:18px;font-weight:900;color:var(--black)" id="petFormTitle">Add Pet</div>
+              <button onclick="closePetForm()" style="background:var(--light);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;">✕</button>
+            </div>
+            <input type="hidden" id="petId"/>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+              <div class="form-group" style="grid-column:1/-1">
+                <label class="form-label">Pet Name *</label>
+                <input class="form-input" id="petName" type="text" placeholder="e.g. Buddy, Luna"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Type *</label>
+                <select class="form-input" id="petType">
+                  <option value="Dog">Dog</option><option value="Cat">Cat</option><option value="Bird">Bird</option>
+                  <option value="Rabbit">Rabbit</option><option value="Fish">Fish</option><option value="Guinea Pig">Guinea Pig</option><option value="Reptile">Reptile</option><option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Listing Type *</label>
+                <select class="form-input" id="petListing" onchange="togglePetPrice()">
+                  <option value="sale">For Sale</option><option value="adoption">For Adoption</option>
+                </select>
+              </div>
+              <div class="form-group" id="petPriceGroup">
+                <label class="form-label">Price (₦)</label>
+                <input class="form-input" id="petPrice" type="number" min="0" placeholder="e.g. 50000"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Age</label>
+                <input class="form-input" id="petAge" type="text" placeholder="e.g. 3 months, 2 years"/>
+              </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <label class="form-label">Specs / Description</label>
+                <textarea class="form-input" id="petSpecs" rows="3" placeholder="Breed, colour, temperament, diet…" style="resize:vertical"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Location</label>
+                <input class="form-input" id="petLocation" type="text" placeholder="e.g. Lagos Island"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">WhatsApp Number</label>
+                <input class="form-input" id="petWhatsapp" type="tel" placeholder="+2348156740438"/>
+              </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <label class="form-label">Photo URL</label>
+                <div style="display:flex;gap:10px;align-items:center;">
+                  <input class="form-input" id="petImageUrl" type="url" placeholder="Paste URL or upload below" style="flex:1"/>
+                  <label class="hero-upload-btn" style="cursor:pointer;white-space:nowrap;padding:10px 16px;flex-shrink:0">📷 Upload<input type="file" accept="image/*" style="display:none" onchange="uploadPetImage(this)"/></label>
+                </div>
+                <div id="petImgPreview" style="margin-top:8px;display:none"><img id="petImgPreviewImg" src="" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"/></div>
+              </div>
+              <div class="form-group" style="grid-column:1/-1;display:flex;gap:24px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;">
+                  <input type="checkbox" id="petDewormed" style="width:16px;height:16px;accent-color:var(--orange)"/> Dewormed
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;">
+                  <input type="checkbox" id="petVaccinated" style="width:16px;height:16px;accent-color:var(--orange)"/> Vaccinated
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;">
+                  <input type="checkbox" id="petActive" checked style="width:16px;height:16px;accent-color:var(--orange)"/> Active / Visible
+                </label>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+              <button onclick="closePetForm()" style="background:var(--light);border:1.5px solid var(--border);border-radius:50px;padding:12px 24px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">Cancel</button>
+              <button onclick="savePet()" class="add-btn">💾 Save Pet</button>
+            </div>
+          </div>
+        </div>
+
         <div class="panel" id="panelHero">
           <div style="margin-bottom:24px">
             <div style="font-size:15px;font-weight:800;color:var(--black);margin-bottom:4px">Hero Card Images</div>
             <div style="font-size:13px;color:var(--gray)">Upload or paste a URL for each hero card. Images overlay the illustrated backgrounds.</div>
           </div>
-          <div class="hero-img-grid">
+          <div style="font-size:13px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Homepage Hero</div>
+          <div class="hero-img-grid" style="margin-bottom:28px">
             <div class="hero-img-card">
               <h3>🏠 Main Hero Card</h3>
               <p>The large left card with "Everything Your Pet Loves"</p>
@@ -719,6 +801,36 @@ input,select,textarea{font-family:'Nunito',sans-serif}
               <input class="hero-url-input" id="urlHeroVet" type="url" placeholder="Or paste image URL…"/>
               <button class="hero-save-btn" onclick="saveHeroImage('hero_vet','urlHeroVet','imgHeroVet','prevHeroVet')">Save Vet Card</button>
               <button class="hero-clear-btn" onclick="clearHeroImage('hero_vet','urlHeroVet','imgHeroVet','prevHeroVet')">Remove Image</button>
+            </div>
+          </div>
+          <div style="font-size:13px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Shop Page Hero Slides</div>
+          <div class="hero-img-grid">
+            <div class="hero-img-card">
+              <h3>🛍️ Shop Slide 1</h3>
+              <p>"Everything Your Pet Needs" — dark background slide</p>
+              <div class="hero-preview" id="prevShopHero0"><span class="hero-preview-placeholder">🖼️</span><img id="imgShopHero0" src="" alt=""/></div>
+              <label class="hero-upload-btn" style="display:block;cursor:pointer">📷 Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadHeroImage(this,'shop_hero_0','imgShopHero0','prevShopHero0','urlShopHero0')"/></label>
+              <input class="hero-url-input" id="urlShopHero0" type="url" placeholder="Or paste image URL…"/>
+              <button class="hero-save-btn" onclick="saveHeroImage('shop_hero_0','urlShopHero0','imgShopHero0','prevShopHero0')">Save Slide 1</button>
+              <button class="hero-clear-btn" onclick="clearHeroImage('shop_hero_0','urlShopHero0','imgShopHero0','prevShopHero0')">Remove</button>
+            </div>
+            <div class="hero-img-card">
+              <h3>🥩 Shop Slide 2</h3>
+              <p>"Premium Food &amp; Treats" — orange background slide</p>
+              <div class="hero-preview" id="prevShopHero1"><span class="hero-preview-placeholder">🖼️</span><img id="imgShopHero1" src="" alt=""/></div>
+              <label class="hero-upload-btn" style="display:block;cursor:pointer">📷 Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadHeroImage(this,'shop_hero_1','imgShopHero1','prevShopHero1','urlShopHero1')"/></label>
+              <input class="hero-url-input" id="urlShopHero1" type="url" placeholder="Or paste image URL…"/>
+              <button class="hero-save-btn" onclick="saveHeroImage('shop_hero_1','urlShopHero1','imgShopHero1','prevShopHero1')">Save Slide 2</button>
+              <button class="hero-clear-btn" onclick="clearHeroImage('shop_hero_1','urlShopHero1','imgShopHero1','prevShopHero1')">Remove</button>
+            </div>
+            <div class="hero-img-card">
+              <h3>🧸 Shop Slide 3</h3>
+              <p>"Toys, Beds &amp; Accessories" — blue background slide</p>
+              <div class="hero-preview" id="prevShopHero2"><span class="hero-preview-placeholder">🖼️</span><img id="imgShopHero2" src="" alt=""/></div>
+              <label class="hero-upload-btn" style="display:block;cursor:pointer">📷 Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadHeroImage(this,'shop_hero_2','imgShopHero2','prevShopHero2','urlShopHero2')"/></label>
+              <input class="hero-url-input" id="urlShopHero2" type="url" placeholder="Or paste image URL…"/>
+              <button class="hero-save-btn" onclick="saveHeroImage('shop_hero_2','urlShopHero2','imgShopHero2','prevShopHero2')">Save Slide 3</button>
+              <button class="hero-clear-btn" onclick="clearHeroImage('shop_hero_2','urlShopHero2','imgShopHero2','prevShopHero2')">Remove</button>
             </div>
           </div>
         </div>
@@ -1106,7 +1218,7 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',pets:'Pets',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
   const title = titles[name]||name;
   document.getElementById('pageTitle').textContent = title;
   const mobTitle = document.getElementById('mobPageTitle');
@@ -1118,6 +1230,7 @@ function showPanel(name, el){
   if(name==='dashboard'){ updateStats(); renderDashRecent(); }
   if(name==='blog') loadBlogPosts();
   if(name==='stats') loadStats();
+  if(name==='pets') loadPets();
   if(name==='hero') loadHeroSettings();
   if(name==='homepage') renderHomepagePanel();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1178,6 +1291,116 @@ function renderStats(data) {
         <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Country</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th></tr></thead><tbody>${countryRows}</tbody></table></div>
       </div>
     </div>`;
+}
+
+/* ── PETS ── */
+let _editingPetId = null;
+function openPetForm(id) {
+  _editingPetId = id || null;
+  document.getElementById('petFormTitle').textContent = id ? 'Edit Pet' : 'Add Pet';
+  document.getElementById('petId').value = id || '';
+  if (!id) {
+    ['petName','petAge','petSpecs','petLocation','petImageUrl'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('petType').value='Dog';
+    document.getElementById('petListing').value='sale';
+    document.getElementById('petPrice').value='';
+    document.getElementById('petWhatsapp').value='+2348156740438';
+    document.getElementById('petDewormed').checked=false;
+    document.getElementById('petVaccinated').checked=false;
+    document.getElementById('petActive').checked=true;
+    document.getElementById('petImgPreview').style.display='none';
+  }
+  togglePetPrice();
+  document.getElementById('petFormBg').style.display='flex';
+}
+function closePetForm(){ document.getElementById('petFormBg').style.display='none'; }
+function togglePetPrice(){ document.getElementById('petPriceGroup').style.display = document.getElementById('petListing').value==='adoption'?'none':''; }
+async function uploadPetImage(input) {
+  const file=input.files[0]; if(!file) return;
+  if(file.size>5*1024*1024){showToast('Image too large — max 5MB','error');return;}
+  showToast('Uploading…','warning');
+  const compressed=await compressImage(file);
+  const fd=new FormData(); fd.append('file',compressed); fd.append('bucket','hero-images');
+  try {
+    const res=await fetch('/api/hero-upload',{method:'POST',body:fd});
+    const data=await res.json(); if(!res.ok) throw new Error(data.error||'Upload failed');
+    document.getElementById('petImageUrl').value=data.url;
+    document.getElementById('petImgPreviewImg').src=data.url;
+    document.getElementById('petImgPreview').style.display='block';
+    showToast('✅ Uploaded','success');
+  } catch(err){ showToast('❌ '+err.message,'error'); }
+}
+async function loadPets() {
+  const tbody=document.getElementById('petsTableBody');
+  tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray)">Loading…</td></tr>';
+  const { data, error }=await sbAdmin.from('pets').select('*').order('created_at',{ascending:false});
+  if(error){ tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--red)">${error.message}</td></tr>`; return; }
+  document.getElementById('sbPetsCount').textContent=data.length;
+  if(!data.length){ tbody.innerHTML='<tr><td colspan="7" class="empty-table"><div class="empty-table-ico">🐾</div><div>No pets yet</div></td></tr>'; return; }
+  const fmt=n=>'₦'+Number(n).toLocaleString('en-NG');
+  tbody.innerHTML=data.map(p=>`<tr>
+    <td><div style="width:48px;height:48px;border-radius:8px;overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center;">${p.image_url?`<img src="${escHtml(p.image_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>`:'🐾'}</div></td>
+    <td style="font-weight:800">${escHtml(p.name)}<small style="display:block;font-weight:500;color:var(--gray)">${escHtml(p.age||'')}</small></td>
+    <td>${escHtml(p.type)}</td>
+    <td><span class="badge ${p.listing_type==='adoption'?'badge-new':'badge-hot'}">${p.listing_type==='adoption'?'Adoption':'For Sale'}</span></td>
+    <td style="font-weight:800">${p.listing_type==='sale'&&p.price?fmt(p.price):'—'}</td>
+    <td>${escHtml(p.location||'—')}</td>
+    <td><div class="action-btns">
+      <button class="act-btn" onclick="editPet('${p.id}')">✏️</button>
+      <button class="act-btn del" onclick="deletePet('${p.id}','${(p.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">🗑️</button>
+    </div></td>
+  </tr>`).join('');
+}
+async function editPet(id) {
+  const { data }=await sbAdmin.from('pets').select('*').eq('id',id).single();
+  if(!data) return;
+  openPetForm(id);
+  document.getElementById('petName').value=data.name||'';
+  document.getElementById('petType').value=data.type||'Dog';
+  document.getElementById('petListing').value=data.listing_type||'sale';
+  document.getElementById('petPrice').value=data.price||'';
+  document.getElementById('petAge').value=data.age||'';
+  document.getElementById('petSpecs').value=data.specs||'';
+  document.getElementById('petLocation').value=data.location||'';
+  document.getElementById('petWhatsapp').value=data.whatsapp||'+2348156740438';
+  document.getElementById('petImageUrl').value=data.image_url||'';
+  document.getElementById('petDewormed').checked=!!data.dewormed;
+  document.getElementById('petVaccinated').checked=!!data.vaccinated;
+  document.getElementById('petActive').checked=data.active!==false;
+  if(data.image_url){ document.getElementById('petImgPreviewImg').src=data.image_url; document.getElementById('petImgPreview').style.display='block'; }
+  togglePetPrice();
+}
+async function savePet() {
+  const name=document.getElementById('petName').value.trim();
+  if(!name){ showToast('Pet name is required','error'); return; }
+  const payload={
+    name, type:document.getElementById('petType').value,
+    listing_type:document.getElementById('petListing').value,
+    price:document.getElementById('petPrice').value?Number(document.getElementById('petPrice').value):null,
+    age:document.getElementById('petAge').value.trim()||null,
+    specs:document.getElementById('petSpecs').value.trim()||null,
+    location:document.getElementById('petLocation').value.trim()||null,
+    whatsapp:document.getElementById('petWhatsapp').value.trim()||'+2348156740438',
+    image_url:document.getElementById('petImageUrl').value.trim()||null,
+    dewormed:document.getElementById('petDewormed').checked,
+    vaccinated:document.getElementById('petVaccinated').checked,
+    active:document.getElementById('petActive').checked,
+  };
+  const id=document.getElementById('petId').value;
+  const { error }=id
+    ? await sbAdmin.from('pets').update(payload).eq('id',id)
+    : await sbAdmin.from('pets').insert(payload);
+  if(error){ showToast('❌ '+error.message,'error'); return; }
+  showToast('✅ Pet saved','success');
+  closePetForm();
+  loadPets();
+}
+async function deletePet(id,name) {
+  if(!confirm(`Delete ${name}?`)) return;
+  const { error }=await sbAdmin.from('pets').delete().eq('id',id);
+  if(error){ showToast('❌ '+error.message,'error'); return; }
+  showToast('Deleted','success');
+  loadPets();
 }
 
 function updateStats(){
@@ -1834,7 +2057,7 @@ async function uploadBlogFeaturedImg(input) {
    HERO IMAGES
    ══════════════════════════════════════ */
 async function loadHeroSettings() {
-  const { data } = await sbAdmin.from('store_settings').select('key,value').in('key',['hero_main','hero_food','hero_vet']);
+  const { data } = await sbAdmin.from('store_settings').select('key,value').in('key',['hero_main','hero_food','hero_vet','shop_hero_0','shop_hero_1','shop_hero_2']);
   if (!data) return;
   const map = Object.fromEntries(data.map(r => [r.key, r.value]));
   ['main','food','vet'].forEach(k => {
@@ -1842,6 +2065,14 @@ async function loadHeroSettings() {
     const urlInp = document.getElementById('urlHero' + k.charAt(0).toUpperCase()+k.slice(1));
     const img    = document.getElementById('imgHero' + k.charAt(0).toUpperCase()+k.slice(1));
     const prev   = document.getElementById('prevHero' + k.charAt(0).toUpperCase()+k.slice(1));
+    if (urlInp) urlInp.value = url;
+    if (url && img && prev) { img.src = url; img.style.display = 'block'; prev.querySelector('.hero-preview-placeholder').style.display = 'none'; }
+  });
+  [0,1,2].forEach(k => {
+    const url = map[`shop_hero_${k}`]?.img_url || '';
+    const urlInp = document.getElementById(`urlShopHero${k}`);
+    const img    = document.getElementById(`imgShopHero${k}`);
+    const prev   = document.getElementById(`prevShopHero${k}`);
     if (urlInp) urlInp.value = url;
     if (url && img && prev) { img.src = url; img.style.display = 'block'; prev.querySelector('.hero-preview-placeholder').style.display = 'none'; }
   });
