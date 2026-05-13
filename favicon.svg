@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#ed6436">
+  <!-- Person head -->
+  <circle cx="38" cy="10" r="5"/>
+  <!-- Person body / torso leaning forward -->
+  <path d="M38 15 L32 30 L26 44" stroke="#ed6436" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- Person arm holding leash -->
+  <path d="M35 22 L20 28" stroke="#ed6436" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- Person legs -->
+  <path d="M32 30 L38 44" stroke="#ed6436" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- Leash line -->
+  <path d="M20 28 L14 38" stroke="#ed6436" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Dog body -->
+  <ellipse cx="10" cy="44" rx="7" ry="4" transform="rotate(-15 10 44)"/>
+  <!-- Dog head -->
+  <circle cx="6" cy="38" r="3.5"/>
+  <!-- Dog ear -->
+  <path d="M4 35 Q2 32 5 33" stroke="#ed6436" stroke-width="2" fill="#ed6436"/>
+  <!-- Dog tail -->
+  <path d="M17 42 Q22 36 20 40" stroke="#ed6436" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Dog legs -->
+  <path d="M8 48 L7 54" stroke="#ed6436" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M13 49 L13 55" stroke="#ed6436" stroke-width="3" stroke-linecap="round" fill="none"/>
+</svg>
