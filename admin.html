@@ -622,6 +622,13 @@ input,select,textarea{font-family:'Nunito',sans-serif}
             <button class="settings-save" style="margin-top:20px;" onclick="saveHomepageSettings()">💾 Save Banner Cards</button>
           </div>
 
+          <div class="settings-card" style="margin-bottom:24px;">
+            <h3>📝 Blog Post Images</h3>
+            <p>Upload featured images for your published blog posts.</p>
+            <div id="blogImagesGrid"></div>
+            <button class="settings-save" style="margin-top:20px;" onclick="saveHomepageSettings()">💾 Save Blog Images</button>
+          </div>
+
         </div>
 
         <div class="panel" id="panelSettings">
@@ -2108,7 +2115,7 @@ async function uploadHeroImage(input, settingKey, imgId, prevId, urlInputId) {
 async function saveHeroImage(settingKey, urlInputId, imgId, prevId) {
   const url = document.getElementById(urlInputId).value.trim();
   if (!url) { showToast('Enter or upload an image URL first','error'); return; }
-  const { error } = await sbAdmin.from('store_settings').upsert({ key: settingKey, value: { img_url: url }, updated_at: new Date().toISOString() });
+  const { error } = await sbAdmin.from('store_settings').upsert({ key: settingKey, value: { img_url: url }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if (error) { showToast('❌ ' + error.message, 'error'); return; }
   const img  = document.getElementById(imgId);
   const prev = document.getElementById(prevId);
@@ -2119,7 +2126,7 @@ async function saveHeroImage(settingKey, urlInputId, imgId, prevId) {
 
 async function clearHeroImage(settingKey, urlInputId, imgId, prevId) {
   if (!confirm('Remove this hero image?')) return;
-  await sbAdmin.from('store_settings').upsert({ key: settingKey, value: { img_url: '' }, updated_at: new Date().toISOString() });
+  await sbAdmin.from('store_settings').upsert({ key: settingKey, value: { img_url: '' }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   document.getElementById(urlInputId).value = '';
   const img  = document.getElementById(imgId);
   const prev = document.getElementById(prevId);
@@ -2241,7 +2248,7 @@ async function saveHomepageSettings() {
     key: HP_SUPABASE_KEY,
     value: hps,
     updated_at: new Date().toISOString(),
-  });
+  }, { onConflict: 'key' });
   if (error) { showToast('❌ ' + error.message, 'error'); return; }
   showToast('✅ Homepage settings saved', 'success');
   renderHomepagePanel();
