@@ -1430,7 +1430,7 @@ async function loadProductsFromSupabase() {
   updateBadges();
 
   renderProds(prods);
-  renderPets();
+  await renderPets();
   renderDeals();
 }
 
@@ -1439,12 +1439,6 @@ const dealData=[
   {n:'Diamond Naturals Adult 18kg',e:'🍗',p:65000,o:72000,cat:'Food',pet:'Dog',brand:'Diamond',r:4.8,rv:143,desc:"Beef as #1 ingredient. Superfoods: kale, quinoa, chia seed, coconut. Added probiotics. No artificial flavours."},
   {n:'Karl Chicken Jerky Treats',e:'🍗',p:7000,o:8500,cat:'Accessories',pet:'Dog',brand:'Karl',r:4.7,rv:134,desc:"66% real chicken breast. High crude protein. Natural ingredients, no artificial preservatives."},
   {n:'Bravecto Flea & Tick Chew',e:'💊',p:42000,o:49000,cat:'Health',pet:'Dog',brand:'Bravecto',r:4.9,rv:176,desc:"12-week protection in one chewable tablet. Kills fleas within 2 hours. Vet recommended."},
-];
-const petsData=[
-  {n:'Biscuit',breed:'Golden Retriever',cat:'Dog',e:'🐕',age:'8 wks',p:220000,loc:'Lagos',badge:'Hot',bdg:'lbl-hot',health:'Vaccinated',bg:'linear-gradient(135deg,#fdeee7,#fbd4c3)'},
-  {n:'Luna',breed:'Persian Cat',cat:'Cat',e:'🐈',age:'10 wks',p:95000,loc:'Abuja',badge:'New',bdg:'lbl-new',health:'Vet Checked',bg:'linear-gradient(135deg,#e8f5e9,#c8e6c9)'},
-  {n:'Zeus',breed:'Rottweiler',cat:'Dog',e:'🦮',age:'12 wks',p:280000,loc:'PH',badge:'Rare',bdg:'lbl-sale',health:'Microchipped',bg:'linear-gradient(135deg,#fdeee7,#fae0d8)'},
-  {n:'Koko',breed:'African Grey',cat:'Bird',e:'🦜',age:'6 mo',p:220000,loc:'Lagos',badge:'',bdg:'',health:'Dewormed',bg:'linear-gradient(135deg,#e3f2fd,#bbdefb)'}
 ];
 
 let cartItems = JSON.parse(localStorage.getItem('pp_cart') || '[]');
@@ -1762,28 +1756,63 @@ function addCartFromCard(wrap) {
   addCart(p.id, p.n, p.e, p.cat, p.p);
 }
 
-function renderPets() {
+async function renderPets() {
   const g = document.getElementById('petGrid');
-  g.innerHTML = '';
-  petsData.forEach(p => {
-    g.innerHTML += `<div class="pet-card" onclick="alert('Contact seller for ${p.n}\\n${p.breed} — ${fmt(p.p)}')">
-      <div class="pt-img" style="background:${p.bg}">
-        ${p.badge ? `<span class="pt-badge ${p.bdg}">${p.badge}</span>` : ''}
-        <button class="pt-wish" onclick="event.stopPropagation();this.textContent=this.textContent==='♡'?'♥':'♡'">♡</button>
-        <span style="font-size:58px">${p.e}</span>
-      </div>
-      <div class="pt-body">
-        <div class="pt-breed">${p.breed}</div>
-        <div class="pt-name">${p.n}</div>
-        <div class="pt-tags"><span class="pt-tag">${p.age}</span><span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">${p.health}</span></div>
-        <div class="pt-loc">📍 ${p.loc}</div>
-        <div class="pt-footer">
-          <span class="pt-price">${fmt(p.p)}</span>
-          <button class="btn-primary pt-cta" onclick="event.stopPropagation();alert('Opening WhatsApp for ${p.n}…')">Contact</button>
+  const sec = g ? g.closest('.sec') : null;
+  g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)">Loading...</div>';
+  try {
+    const { data, error } = await supabase.from('pets').select('*').eq('active', true).order('created_at', { ascending: false });
+    if (error) throw error;
+    const pets = data || [];
+    if (!pets.length) { if (sec) sec.style.display = 'none'; g.innerHTML = ''; return; }
+    if (sec) sec.style.display = '';
+    const typeMap = {
+      Dog:        { e: '🐕', bg: 'linear-gradient(135deg,#fdeee7,#fbd4c3)' },
+      Cat:        { e: '🐈', bg: 'linear-gradient(135deg,#e8f5e9,#c8e6c9)' },
+      Bird:       { e: '🦜', bg: 'linear-gradient(135deg,#e3f2fd,#bbdefb)' },
+      Rabbit:     { e: '🐰', bg: 'linear-gradient(135deg,#f3e5f5,#e1bee7)' },
+      Fish:       { e: '🐠', bg: 'linear-gradient(135deg,#e0f7fa,#b2ebf2)' },
+      'Guinea Pig':{ e: '🐹', bg: 'linear-gradient(135deg,#fff9c4,#fff59d)' },
+      Reptile:    { e: '🦎', bg: 'linear-gradient(135deg,#f1f8e9,#dcedc8)' },
+    };
+    const def = { e: '🐾', bg: 'linear-gradient(135deg,#fafafa,#f0f0f0)' };
+    g.innerHTML = pets.map(p => {
+      const { e, bg } = typeMap[p.type] || def;
+      const isAdopt = p.listing_type === 'adoption';
+      const badge = isAdopt ? 'Adopt' : 'For Sale';
+      const bdgCls = isAdopt ? 'lbl-new' : 'lbl-hot';
+      const priceHtml = isAdopt
+        ? `<span class="pt-price" style="color:#2ecc71">Free / Adoption</span>`
+        : `<span class="pt-price">${fmt(p.price)}</span>`;
+      const healthTags = [p.dewormed && 'Dewormed', p.vaccinated && 'Vaccinated'].filter(Boolean);
+      const wa = (p.whatsapp || '').replace(/\D/g, '');
+      const imgHtml = p.image_url
+        ? `<img src="${escHtml(p.image_url)}" alt="${escHtml(p.name)}" style="width:100%;height:100%;object-fit:cover;"/>`
+        : `<span style="font-size:58px">${e}</span>`;
+      return `<div class="pet-card">
+        <div class="pt-img" style="${p.image_url ? 'background:#f5f5f5' : `background:${bg}`}">
+          <span class="pt-badge ${bdgCls}">${badge}</span>
+          ${imgHtml}
         </div>
-      </div>
-    </div>`;
-  });
+        <div class="pt-body">
+          <div class="pt-breed">${escHtml(p.type)}</div>
+          <div class="pt-name">${escHtml(p.name)}</div>
+          <div class="pt-tags">
+            ${p.age ? `<span class="pt-tag">${escHtml(p.age)}</span>` : ''}
+            ${healthTags.map(t => `<span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">${t}</span>`).join('')}
+          </div>
+          <div class="pt-loc">📍 ${escHtml(p.location || '')}</div>
+          <div class="pt-footer">
+            ${priceHtml}
+            ${wa ? `<a href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer" class="btn-primary pt-cta" onclick="event.stopPropagation()">Contact</a>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.warn('Pets load failed:', err.message);
+    g.innerHTML = '';
+  }
 }
 
 let _mImgs=[], _mImgIdx=0, _mEmoji='📦';
