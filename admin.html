@@ -758,12 +758,9 @@ input,select,textarea{font-family:'Nunito',sans-serif}
                 <input class="form-input" id="petWhatsapp" type="tel" placeholder="+2348156740438"/>
               </div>
               <div class="form-group" style="grid-column:1/-1">
-                <label class="form-label">Photo URL</label>
-                <div style="display:flex;gap:10px;align-items:center;">
-                  <input class="form-input" id="petImageUrl" type="url" placeholder="Paste URL or upload below" style="flex:1"/>
-                  <label class="hero-upload-btn" style="cursor:pointer;white-space:nowrap;padding:10px 16px;flex-shrink:0">📷 Upload<input type="file" accept="image/*" style="display:none" onchange="uploadPetImage(this)"/></label>
-                </div>
-                <div id="petImgPreview" style="margin-top:8px;display:none"><img id="petImgPreviewImg" src="" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"/></div>
+                <label class="form-label">Photos</label>
+                <div id="petImgList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;min-height:0"></div>
+                <label class="hero-upload-btn" style="cursor:pointer;padding:10px 16px;display:inline-flex;align-items:center;gap:6px;">📷 Add Photo(s)<input type="file" accept="image/*" multiple style="display:none" onchange="uploadPetImages(this)"/></label>
               </div>
               <div class="form-group" style="grid-column:1/-1;display:flex;gap:24px;">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;">
@@ -1316,7 +1313,8 @@ function openPetForm(id) {
   document.getElementById('petFormTitle').textContent = id ? 'Edit Pet' : 'Add Pet';
   document.getElementById('petId').value = id || '';
   if (!id) {
-    ['petBreed','petName','petBreeder','petAge','petSpecs','petLocation','petImageUrl'].forEach(x=>document.getElementById(x).value='');
+    ['petBreed','petName','petBreeder','petAge','petSpecs','petLocation'].forEach(x=>document.getElementById(x).value='');
+    petImgUrls=[]; renderPetImgList();
     document.getElementById('petType').value='Dog';
     document.getElementById('petListing').value='sale';
     document.getElementById('petPedigree').value='';
@@ -1332,20 +1330,31 @@ function openPetForm(id) {
 }
 function closePetForm(){ document.getElementById('petFormBg').style.display='none'; }
 function togglePetPrice(){ document.getElementById('petPriceGroup').style.display = document.getElementById('petListing').value==='adoption'?'none':''; }
-async function uploadPetImage(input) {
-  const file=input.files[0]; if(!file) return;
-  if(file.size>5*1024*1024){showToast('Image too large — max 5MB','error');return;}
-  showToast('Uploading…','warning');
-  const compressed=await compressImage(file);
-  const fd=new FormData(); fd.append('file',compressed); fd.append('bucket','hero-images');
-  try {
-    const res=await fetch('/api/hero-upload',{method:'POST',body:fd});
-    const data=await res.json(); if(!res.ok) throw new Error(data.error||'Upload failed');
-    document.getElementById('petImageUrl').value=data.url;
-    document.getElementById('petImgPreviewImg').src=data.url;
-    document.getElementById('petImgPreview').style.display='block';
-    showToast('✅ Uploaded','success');
-  } catch(err){ showToast('❌ '+err.message,'error'); }
+let petImgUrls=[];
+function renderPetImgList(){
+  const el=document.getElementById('petImgList');
+  if(!el) return;
+  el.innerHTML=petImgUrls.map((url,i)=>`<div style="position:relative;width:72px;height:72px;flex-shrink:0">
+    <img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"/>
+    <button type="button" onclick="petImgUrls.splice(${i},1);renderPetImgList()" style="position:absolute;top:-6px;right:-6px;background:#e74c3c;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button>
+    ${i===0?'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:9px;text-align:center;border-radius:0 0 8px 8px">Main</div>':''}
+  </div>`).join('');
+}
+async function uploadPetImages(input) {
+  const files=Array.from(input.files); if(!files.length) return;
+  showToast(`Uploading ${files.length} photo${files.length>1?'s':''}…`,'warning');
+  for(const file of files){
+    if(file.size>5*1024*1024){showToast(`${file.name} too large — max 5MB`,'error');continue;}
+    const compressed=await compressImage(file);
+    const fd=new FormData(); fd.append('file',compressed); fd.append('bucket','hero-images');
+    try{
+      const res=await fetch('/api/hero-upload',{method:'POST',body:fd});
+      const data=await res.json(); if(!res.ok) throw new Error(data.error||'Upload failed');
+      petImgUrls.push(data.url); renderPetImgList();
+    }catch(err){showToast('❌ '+err.message,'error');}
+  }
+  input.value='';
+  showToast('✅ Photos uploaded','success');
 }
 async function loadPets() {
   const tbody=document.getElementById('petsTableBody');
@@ -1383,11 +1392,10 @@ async function editPet(id) {
   document.getElementById('petSpecs').value=data.specs||'';
   document.getElementById('petLocation').value=data.location||'';
   document.getElementById('petWhatsapp').value=data.whatsapp||'+2348156740438';
-  document.getElementById('petImageUrl').value=data.image_url||'';
+  petImgUrls=data.image_urls||( data.image_url?[data.image_url]:[]); renderPetImgList();
   document.getElementById('petDewormed').checked=!!data.dewormed;
   document.getElementById('petVaccinated').checked=!!data.vaccinated;
   document.getElementById('petActive').checked=data.active!==false;
-  if(data.image_url){ document.getElementById('petImgPreviewImg').src=data.image_url; document.getElementById('petImgPreview').style.display='block'; }
   togglePetPrice();
 }
 async function savePet() {
@@ -1405,7 +1413,8 @@ async function savePet() {
     specs:document.getElementById('petSpecs').value.trim()||null,
     location:document.getElementById('petLocation').value.trim()||null,
     whatsapp:document.getElementById('petWhatsapp').value.trim()||'+2348156740438',
-    image_url:document.getElementById('petImageUrl').value.trim()||null,
+    image_urls:petImgUrls,
+    image_url:petImgUrls[0]||null,
     dewormed:document.getElementById('petDewormed').checked,
     vaccinated:document.getElementById('petVaccinated').checked,
     active:document.getElementById('petActive').checked,

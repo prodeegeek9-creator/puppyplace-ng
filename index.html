@@ -1363,6 +1363,36 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   </div>
 </div>
 
+<!-- Pet Detail Modal -->
+<div class="modal-bg" id="petModal" onclick="if(event.target===this)closePetModal()" style="display:none;z-index:810;">
+  <div class="modal" style="background:#fff;border-radius:var(--r);max-width:560px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow2);animation:popUp .25s ease;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px 0;">
+      <h3 style="font-size:18px;font-weight:900;" id="pmTitle">Pet</h3>
+      <button onclick="closePetModal()" style="background:var(--light);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <!-- image carousel -->
+    <div id="pmImgWrap" style="margin:16px 24px;border-radius:var(--r);overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center;min-height:200px;position:relative;">
+      <img id="pmImg" src="" alt="" loading="lazy" style="width:100%;max-height:280px;object-fit:cover;display:none;"/>
+      <span id="pmEmoji" style="font-size:72px;padding:24px;">🐾</span>
+      <button id="pmPrev" onclick="changePetImg(-1)" style="display:none;position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.85);border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;">‹</button>
+      <button id="pmNext" onclick="changePetImg(1)" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.85);border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;">›</button>
+      <div id="pmDots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;"></div>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <div id="pmMeta" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-bottom:6px;"></div>
+      <div id="pmBreed" style="font-size:22px;font-weight:900;color:var(--black);margin-bottom:4px;"></div>
+      <div id="pmSub" style="font-size:13px;color:var(--gray);margin-bottom:12px;"></div>
+      <div id="pmTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+      <div id="pmSpecs" style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px;white-space:pre-line;display:none;"></div>
+      <div id="pmLoc" style="font-size:13px;color:var(--gray);margin-bottom:16px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div id="pmPrice" style="font-size:22px;font-weight:900;color:var(--orange);"></div>
+        <a id="pmWa" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding:12px 24px;text-decoration:none;">💬 Contact on WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
@@ -1756,6 +1786,42 @@ function addCartFromCard(wrap) {
   addCart(p.id, p.n, p.e, p.cat, p.p);
 }
 
+let _pets = [];
+let _pmIdx = 0, _pmImgs = [], _pmEmoji = '🐾';
+function _renderPetImg() {
+  const img=document.getElementById('pmImg'), emo=document.getElementById('pmEmoji');
+  const prev=document.getElementById('pmPrev'), next=document.getElementById('pmNext');
+  const dots=document.getElementById('pmDots');
+  if(_pmImgs.length){ img.src=_pmImgs[_pmIdx]; img.style.display='block'; emo.style.display='none'; }
+  else { img.style.display='none'; emo.style.display='block'; emo.textContent=_pmEmoji; }
+  const multi=_pmImgs.length>1;
+  prev.style.display=next.style.display=multi?'flex':'none';
+  dots.innerHTML=multi?_pmImgs.map((_,i)=>`<span onclick="_pmIdx=${i};_renderPetImg()" style="width:7px;height:7px;border-radius:50%;cursor:pointer;display:inline-block;transition:.2s;background:${i===_pmIdx?'var(--orange)':'rgba(255,255,255,.65)'}"></span>`).join(''):'';
+}
+function changePetImg(d){ _pmIdx=(_pmIdx+d+_pmImgs.length)%_pmImgs.length; _renderPetImg(); }
+function openPetModal(id) {
+  const p=_pets.find(x=>x.id===id); if(!p) return;
+  const typeMap={ Dog:'🐕',Cat:'🐈',Bird:'🦜',Rabbit:'🐰',Fish:'🐠','Guinea Pig':'🐹',Reptile:'🦎' };
+  _pmImgs=p.image_urls&&p.image_urls.length?p.image_urls:(p.image_url?[p.image_url]:[]);
+  _pmIdx=0; _pmEmoji=typeMap[p.type]||'🐾'; _renderPetImg();
+  const isAdopt=p.listing_type==='adoption';
+  document.getElementById('pmTitle').textContent=p.breed||p.type;
+  document.getElementById('pmMeta').textContent=p.type+(p.pedigree?` · ${p.pedigree==='pedigree'?'Pedigree':'Non-Pedigree'}`:'')+(isAdopt?' · For Adoption':' · For Sale');
+  document.getElementById('pmBreed').textContent=p.breed||p.type;
+  const sub=[p.name,p.breeder?'🏠 '+p.breeder:null].filter(Boolean).join(' · ');
+  const subEl=document.getElementById('pmSub'); subEl.textContent=sub; subEl.style.display=sub?'':'none';
+  const tags=[p.age&&`<span class="pt-tag">${escHtml(p.age)}</span>`,p.dewormed&&`<span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">Dewormed</span>`,p.vaccinated&&`<span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">Vaccinated</span>`].filter(Boolean);
+  document.getElementById('pmTags').innerHTML=tags.join('');
+  const specsEl=document.getElementById('pmSpecs'); specsEl.textContent=p.specs||''; specsEl.style.display=p.specs?'':'none';
+  document.getElementById('pmLoc').textContent=p.location?'📍 '+p.location:'';
+  document.getElementById('pmPrice').innerHTML=isAdopt?'<span style="color:#2ecc71">Free / Adoption</span>':`₦${(p.price||0).toLocaleString('en-NG')}`;
+  const wa=(p.whatsapp||'').replace(/\D/g,'');
+  const waEl=document.getElementById('pmWa'); waEl.href=wa?`https://wa.me/${wa}`:'#'; waEl.style.display=wa?'':'none';
+  document.getElementById('petModal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closePetModal(){ document.getElementById('petModal').style.display='none'; document.body.style.overflow=''; }
+
 async function renderPets() {
   const g = document.getElementById('petGrid');
   const sec = g ? g.closest('.sec') : null;
@@ -1763,7 +1829,8 @@ async function renderPets() {
   try {
     const { data, error } = await supabase.from('pets').select('*').eq('active', true).order('created_at', { ascending: false });
     if (error) throw error;
-    const pets = data || [];
+    _pets = data || [];
+    const pets = _pets;
     if (!pets.length) { if (sec) sec.style.display = 'none'; g.innerHTML = ''; return; }
     if (sec) sec.style.display = '';
     const typeMap = {
@@ -1789,7 +1856,7 @@ async function renderPets() {
       const imgHtml = p.image_url
         ? `<img src="${escHtml(p.image_url)}" alt="${escHtml(p.breed || p.type)}" style="width:100%;height:100%;object-fit:cover;"/>`
         : `<span style="font-size:58px">${e}</span>`;
-      return `<div class="pet-card">
+      return `<div class="pet-card" onclick="openPetModal('${escHtml(p.id)}')" style="cursor:pointer;">
         <div class="pt-img" style="${p.image_url ? 'background:#f5f5f5' : `background:${bg}`}">
           <span class="pt-badge ${bdgCls}">${badge}</span>
           ${imgHtml}
