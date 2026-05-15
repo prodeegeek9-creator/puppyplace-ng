@@ -704,9 +704,13 @@ input,select,textarea{font-family:'Nunito',sans-serif}
             </div>
             <input type="hidden" id="petId"/>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-              <div class="form-group" style="grid-column:1/-1">
-                <label class="form-label">Pet Name *</label>
-                <input class="form-input" id="petName" type="text" placeholder="e.g. Buddy, Luna"/>
+              <div class="form-group">
+                <label class="form-label">Pet Name</label>
+                <input class="form-input" id="petName" type="text" placeholder="e.g. Buddy, Luna (optional)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Breeder / Kennel Name</label>
+                <input class="form-input" id="petBreeder" type="text" placeholder="e.g. Royal Paws Kennel"/>
               </div>
               <div class="form-group">
                 <label class="form-label">Type *</label>
@@ -719,6 +723,14 @@ input,select,textarea{font-family:'Nunito',sans-serif}
                 <label class="form-label">Listing Type *</label>
                 <select class="form-input" id="petListing" onchange="togglePetPrice()">
                   <option value="sale">For Sale</option><option value="adoption">For Adoption</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Pedigree</label>
+                <select class="form-input" id="petPedigree">
+                  <option value="">— Not Specified —</option>
+                  <option value="pedigree">Pedigree</option>
+                  <option value="non-pedigree">Non-Pedigree</option>
                 </select>
               </div>
               <div class="form-group" id="petPriceGroup">
@@ -1300,9 +1312,10 @@ function openPetForm(id) {
   document.getElementById('petFormTitle').textContent = id ? 'Edit Pet' : 'Add Pet';
   document.getElementById('petId').value = id || '';
   if (!id) {
-    ['petName','petAge','petSpecs','petLocation','petImageUrl'].forEach(x=>document.getElementById(x).value='');
+    ['petName','petBreeder','petAge','petSpecs','petLocation','petImageUrl'].forEach(x=>document.getElementById(x).value='');
     document.getElementById('petType').value='Dog';
     document.getElementById('petListing').value='sale';
+    document.getElementById('petPedigree').value='';
     document.getElementById('petPrice').value='';
     document.getElementById('petWhatsapp').value='+2348156740438';
     document.getElementById('petDewormed').checked=false;
@@ -1356,8 +1369,10 @@ async function editPet(id) {
   if(!data) return;
   openPetForm(id);
   document.getElementById('petName').value=data.name||'';
+  document.getElementById('petBreeder').value=data.breeder||'';
   document.getElementById('petType').value=data.type||'Dog';
   document.getElementById('petListing').value=data.listing_type||'sale';
+  document.getElementById('petPedigree').value=data.pedigree||'';
   document.getElementById('petPrice').value=data.price||'';
   document.getElementById('petAge').value=data.age||'';
   document.getElementById('petSpecs').value=data.specs||'';
@@ -1371,11 +1386,12 @@ async function editPet(id) {
   togglePetPrice();
 }
 async function savePet() {
-  const name=document.getElementById('petName').value.trim();
-  if(!name){ showToast('Pet name is required','error'); return; }
   const payload={
-    name, type:document.getElementById('petType').value,
+    name:document.getElementById('petName').value.trim()||null,
+    breeder:document.getElementById('petBreeder').value.trim()||null,
+    type:document.getElementById('petType').value,
     listing_type:document.getElementById('petListing').value,
+    pedigree:document.getElementById('petPedigree').value||null,
     price:document.getElementById('petPrice').value?Number(document.getElementById('petPrice').value):null,
     age:document.getElementById('petAge').value.trim()||null,
     specs:document.getElementById('petSpecs').value.trim()||null,
