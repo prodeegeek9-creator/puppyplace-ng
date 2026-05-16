@@ -1383,11 +1383,13 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       <div id="pmBreed" style="font-size:22px;font-weight:900;color:var(--black);margin-bottom:4px;"></div>
       <div id="pmSub" style="font-size:13px;color:var(--gray);margin-bottom:12px;"></div>
       <div id="pmTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
-      <div id="pmSpecs" style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px;white-space:pre-line;display:none;"></div>
       <div id="pmLoc" style="font-size:13px;color:var(--gray);margin-bottom:16px;"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div id="pmPrice" style="font-size:22px;font-weight:900;color:var(--orange);"></div>
-        <a id="pmWa" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding:12px 24px;text-decoration:none;">💬 Contact on WhatsApp</a>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <a id="pmProfile" href="#" class="btn-dark" style="padding:12px 20px;text-decoration:none;border-radius:50px;background:#1a1a18;color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;">See Full Profile →</a>
+          <a id="pmWa" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding:12px 20px;text-decoration:none;">💬 WhatsApp</a>
+        </div>
       </div>
     </div>
   </div>
@@ -1812,11 +1814,11 @@ function openPetModal(id) {
   const subEl=document.getElementById('pmSub'); subEl.textContent=sub; subEl.style.display=sub?'':'none';
   const tags=[p.age&&`<span class="pt-tag">${escHtml(p.age)}</span>`,p.dewormed&&`<span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">Dewormed</span>`,p.vaccinated&&`<span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">Vaccinated</span>`].filter(Boolean);
   document.getElementById('pmTags').innerHTML=tags.join('');
-  const specsEl=document.getElementById('pmSpecs'); specsEl.textContent=p.specs||''; specsEl.style.display=p.specs?'':'none';
   document.getElementById('pmLoc').textContent=p.location?'📍 '+p.location:'';
   document.getElementById('pmPrice').innerHTML=isAdopt?'<span style="color:#2ecc71">Free / Adoption</span>':`₦${(p.price||0).toLocaleString('en-NG')}`;
   const wa=(p.whatsapp||'').replace(/\D/g,'');
   const waEl=document.getElementById('pmWa'); waEl.href=wa?`https://wa.me/${wa}`:'#'; waEl.style.display=wa?'':'none';
+  const profileEl=document.getElementById('pmProfile'); profileEl.href=p.slug?'/pets/'+p.slug:'#'; profileEl.style.display=p.slug?'':'none';
   document.getElementById('petModal').style.display='flex';
   document.body.style.overflow='hidden';
 }

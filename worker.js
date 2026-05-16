@@ -645,6 +645,7 @@ async function serveSitemap(env) {
     { loc: 'https://puppyplace.ng/about.html', lastmod: today },
     { loc: 'https://puppyplace.ng/contact.html', lastmod: today },
     { loc: 'https://puppyplace.ng/blog.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/pets.html', lastmod: today },
     { loc: 'https://puppyplace.ng/privacy.html', lastmod: today },
   ];
 
