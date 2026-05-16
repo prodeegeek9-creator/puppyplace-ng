@@ -1426,5 +1426,6 @@ loadProducts();
   <button id="mobAtcBtn" class="btn-primary" style="flex:1;height:54px;font-size:15px;justify-content:center;border-radius:12px;">🛒 Add to Cart</button>
 </div>
 
+<script>(function(){var s=Date.now(),p=location.pathname;function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>

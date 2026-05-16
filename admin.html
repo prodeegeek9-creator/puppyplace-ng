@@ -1267,6 +1267,11 @@ async function loadStats() {
   }
 }
 
+function fmtDur(secs) {
+  if (!secs) return '—';
+  if (secs < 60) return secs + 's';
+  return Math.floor(secs/60) + 'm ' + (secs%60) + 's';
+}
 function refIcon(src) {
   if (!src || src === 'direct') return '🔗';
   if (/google\./.test(src)) return '🔍';
@@ -1290,8 +1295,8 @@ function renderStats(data) {
       <div class="stat-hour-label">${h%6===0?h+'h':''}</div>
     </div>`).join('');
   const pageRows = data.pages.length
-    ? data.pages.map(p => `<tr><td style="font-size:12px;font-family:monospace;word-break:break-all;max-width:200px">${escHtml(p.path)}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${p.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${p.visitors.toLocaleString()}</td></tr>`).join('')
-    : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:24px">No views recorded yet</td></tr>';
+    ? data.pages.map(p => `<tr><td style="font-size:12px;font-family:monospace;word-break:break-all;max-width:180px">${escHtml(p.path)}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${p.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${p.visitors.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--orange);font-weight:700">${fmtDur(p.avgSecs)}</td></tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:24px">No views recorded yet</td></tr>';
   const countryRows = data.countries.length
     ? data.countries.map(c => `<tr><td><span style="font-size:16px;margin-right:8px">${flag(c.country)}</span>${escHtml(countryNames[c.country]||c.country||'Unknown')}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${c.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${c.visitors.toLocaleString()}</td></tr>`).join('')
     : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:24px">No data yet</td></tr>';
@@ -1312,7 +1317,7 @@ function renderStats(data) {
     <div class="stats-tables">
       <div class="stats-table-card">
         <div class="stats-table-title">Top Pages</div>
-        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Page</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th></tr></thead><tbody>${pageRows}</tbody></table></div>
+        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Page</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th><th style="text-align:right">Avg. Time</th></tr></thead><tbody>${pageRows}</tbody></table></div>
       </div>
       <div class="stats-table-card">
         <div class="stats-table-title">Top Countries</div>

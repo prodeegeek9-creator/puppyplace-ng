@@ -266,5 +266,6 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;marg
   <div class="footer-bottom">&copy; 2025 PuppyPlace.ng — All rights reserved.</div>
 </footer>
 
+<script>(function(){var s=Date.now(),p=location.pathname;function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>

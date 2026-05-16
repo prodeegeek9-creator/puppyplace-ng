@@ -44,6 +44,10 @@ export default {
       return handleStats(request, url, env);
     }
 
+    if (url.pathname === '/api/track-time' && request.method === 'POST') {
+      return handleTrackTime(request, env);
+    }
+
     if (url.pathname === '/sitemap.xml') {
       return serveSitemap(env);
     }
@@ -109,6 +113,26 @@ async function trackView(path, country, visitorHash, referrer, env) {
       body: JSON.stringify({ path: normalPath, country: country || null, visitor_hash: visitorHash || null, referrer: referrer || null }),
     });
   } catch { /* non-critical */ }
+}
+
+async function handleTrackTime(request, env) {
+  // Always respond immediately — this is fire-and-forget from the browser
+  const ok = new Response('ok', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+  if (!env.SUPABASE_URL) return ok;
+  try {
+    const { path, secs } = await request.json();
+    if (!path || typeof secs !== 'number' || secs < 2 || secs > 86400) return ok;
+    const ip   = request.headers.get('CF-Connecting-IP') || '';
+    const date = new Date().toISOString().slice(0, 10);
+    const hash = await hashVisitor(ip, date);
+    if (!hash) return ok;
+    // PATCH the most recent matching row for this visitor + path today
+    await fetch(
+      `${env.SUPABASE_URL}/rest/v1/page_views?visitor_hash=eq.${hash}&path=eq.${encodeURIComponent(path)}&viewed_at=gte.${date}T00:00:00.000Z&order=viewed_at.desc&limit=1`,
+      { method: 'PATCH', headers: { ...sbHeaders(env), 'Prefer': 'return=minimal' }, body: JSON.stringify({ duration_seconds: secs }) }
+    );
+  } catch { /* non-critical */ }
+  return ok;
 }
 
 // Returns headers using the service key when available, anon key as fallback
@@ -508,7 +532,7 @@ async function handleStats(request, url, env) {
 
   try {
     const res = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/page_views?viewed_at=gte.${date}T00:00:00.000Z&viewed_at=lt.${nextDate}T00:00:00.000Z&select=path,country,viewed_at,visitor_hash,referrer&limit=5000&order=viewed_at.asc`,
+      `${env.SUPABASE_URL}/rest/v1/page_views?viewed_at=gte.${date}T00:00:00.000Z&viewed_at=lt.${nextDate}T00:00:00.000Z&select=path,country,viewed_at,visitor_hash,referrer,duration_seconds&limit=5000&order=viewed_at.asc`,
       { headers: sbHeaders(env) }
     );
     if (!res.ok) return jsonResp({ error: 'Failed to fetch stats' }, 500);
@@ -522,8 +546,9 @@ async function handleStats(request, url, env) {
     const allVisitors = new Set();
 
     for (const row of rows) {
-      if (!pageMap[row.path]) pageMap[row.path] = { views: 0, visitors: new Set() };
+      if (!pageMap[row.path]) pageMap[row.path] = { views: 0, visitors: new Set(), totalSecs: 0, timedViews: 0 };
       pageMap[row.path].views++;
+      if (row.duration_seconds > 0) { pageMap[row.path].totalSecs += row.duration_seconds; pageMap[row.path].timedViews++; }
       const c = row.country || '--';
       if (!countryMap[c]) countryMap[c] = { views: 0, visitors: new Set() };
       countryMap[c].views++;
@@ -540,7 +565,7 @@ async function handleStats(request, url, env) {
     }
 
     const pages = Object.entries(pageMap)
-      .map(([path, d]) => ({ path, views: d.views, visitors: d.visitors.size }))
+      .map(([path, d]) => ({ path, views: d.views, visitors: d.visitors.size, avgSecs: d.timedViews ? Math.round(d.totalSecs / d.timedViews) : null }))
       .sort((a, b) => b.views - a.views);
 
     const countries = Object.entries(countryMap)
