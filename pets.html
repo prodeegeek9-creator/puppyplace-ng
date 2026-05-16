@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Pets for Sale &amp; Adoption in Nigeria | PuppyPlace.ng</title>
+<meta name="description" content="Browse dogs, cats, birds, rabbits and more pets for sale and adoption in Nigeria. Find your perfect companion on PuppyPlace.ng."/>
+<link rel="canonical" href="https://puppyplace.ng/pets.html"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="PuppyPlace.ng"/>
+<meta property="og:title" content="Pets for Sale &amp; Adoption in Nigeria | PuppyPlace.ng"/>
+<meta property="og:description" content="Browse dogs, cats, birds, rabbits and more pets for sale and adoption in Nigeria."/>
+<meta property="og:url" content="https://puppyplace.ng/pets.html"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333;min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+:root{--orange:#ed6436;--black:#0e0e0c;--gray:#868686;--light:#f1f3f5;--border:#e9ecef;--white:#fff;--r:12px;--shadow:0 4px 20px rgba(0,0,0,.06);--shadow2:0 8px 40px rgba(0,0,0,.12);--trans:.3s ease}
+
+/* ── NAV ── */
+.nav{background:#1a1a18;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-logo{color:#fff;font-size:22px;font-weight:900;display:flex;align-items:center;gap:8px}
+.nav-logo span{color:var(--orange)}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-link{color:rgba(255,255,255,.7);font-size:13px;font-weight:700;padding:8px 16px;border-radius:50px;transition:all .3s}
+.nav-link:hover,.nav-link.on{background:rgba(255,255,255,.1);color:#fff}
+
+/* ── HERO STRIP ── */
+.page-hero{background:#1a1a18;padding:48px 40px 40px;text-align:center}
+.page-hero h1{font-size:36px;font-weight:900;color:#fff;margin-bottom:10px}
+.page-hero h1 span{color:var(--orange)}
+.page-hero p{font-size:15px;color:rgba(255,255,255,.55);max-width:480px;margin:0 auto}
+
+/* ── FILTERS ── */
+.filter-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;overflow-x:auto;white-space:nowrap}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-inner{display:inline-flex;gap:0;height:48px;align-items:center}
+.filt-tab{font-size:13px;font-weight:700;padding:0 20px;height:48px;display:inline-flex;align-items:center;gap:6px;border-bottom:3px solid transparent;color:var(--gray);cursor:pointer;transition:all .3s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'Nunito',sans-serif}
+.filt-tab:hover{color:var(--orange)}
+.filt-tab.on{color:var(--orange);border-bottom-color:var(--orange)}
+
+/* ── GRID ── */
+.wrap{max-width:1400px;margin:0 auto;width:100%;padding:0 40px}
+.grid-section{padding:40px 0 80px}
+.pet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px}
+.pet-grid-empty{grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--gray);font-size:15px}
+.pet-grid-empty .ico{font-size:56px;margin-bottom:16px}
+
+/* ── PET CARD ── */
+.pet-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:all var(--trans);box-shadow:var(--shadow);display:block}
+.pet-card:hover{border-color:var(--orange);transform:translateY(-5px);box-shadow:var(--shadow2)}
+.pt-img{aspect-ratio:1.1;display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;overflow:hidden}
+.pt-img img{width:100%;height:100%;object-fit:cover}
+.pt-badge{position:absolute;top:12px;left:12px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:50px;color:#fff;text-transform:uppercase}
+.pt-body{padding:20px}
+.pt-breed{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-bottom:6px}
+.pt-name{font-size:20px;font-weight:900;color:var(--black);margin-bottom:10px}
+.pt-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.pt-tag{font-size:12px;padding:4px 12px;border-radius:50px;background:var(--light);color:var(--gray);font-weight:700;border:1px solid var(--border)}
+.pt-loc{font-size:13px;color:var(--gray);margin-bottom:18px}
+.pt-footer{display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid var(--border)}
+.pt-price{font-size:20px;font-weight:900;color:var(--black)}
+.pt-price-adopt{font-size:16px;font-weight:900;color:#2ecc71}
+
+/* ── FOOTER ── */
+.footer{background:#1a1a18;color:rgba(255,255,255,.4);text-align:center;padding:28px 24px;font-size:13px;margin-top:auto}
+.footer a{color:rgba(255,255,255,.6);font-weight:700}.footer a:hover{color:var(--orange)}
+
+@media(max-width:900px){.nav{padding:0 20px}.filter-bar{padding:0 20px}.wrap{padding:0 20px}.page-hero{padding:36px 20px 32px}.page-hero h1{font-size:28px}}
+@media(max-width:600px){.pt-img{font-size:56px}.pt-body{padding:12px 14px}.nav-links{display:none}.page-hero h1{font-size:22px}.pet-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/">🐾 Puppy<span>Place</span></a>
+  <div class="nav-links">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/shop.html">Shop</a>
+    <a class="nav-link on" href="/pets.html">Pets</a>
+    <a class="nav-link" href="/blog.html">Blog</a>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <h1>Pets for <span>Sale &amp; Adoption</span> in Nigeria</h1>
+  <p>Find dogs, cats, birds, rabbits and more from trusted breeders across Nigeria.</p>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-inner">
+    <button class="filt-tab on" data-filter="all" onclick="filterPets('all',this)">🐾 All</button>
+    <button class="filt-tab" data-filter="Dog" onclick="filterPets('Dog',this)">🐕 Dogs</button>
+    <button class="filt-tab" data-filter="Cat" onclick="filterPets('Cat',this)">🐈 Cats</button>
+    <button class="filt-tab" data-filter="Bird" onclick="filterPets('Bird',this)">🦜 Birds</button>
+    <button class="filt-tab" data-filter="Rabbit" onclick="filterPets('Rabbit',this)">🐰 Rabbits</button>
+    <button class="filt-tab" data-filter="Fish" onclick="filterPets('Fish',this)">🐠 Fish</button>
+    <button class="filt-tab" data-filter="other" onclick="filterPets('other',this)">🐹 Others</button>
+  </div>
+</div>
+
+<section class="grid-section">
+  <div class="wrap">
+    <div class="pet-grid" id="petGrid">
+      <div class="pet-grid-empty"><div class="ico">🐾</div><div>Loading pets…</div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace · <a href="/privacy.html">Privacy</a>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="/config.js"></script>
+<script>
+const supabase = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
+
+const typeEmoji = {Dog:'🐕',Cat:'🐈',Bird:'🦜',Rabbit:'🐰',Fish:'🐠','Guinea Pig':'🐹',Reptile:'🦎'};
+const typeBg    = {Dog:'linear-gradient(135deg,#fdeee7,#fbd4c3)',Cat:'linear-gradient(135deg,#e8f5e9,#c8e6c9)',Bird:'linear-gradient(135deg,#e3f2fd,#bbdefb)',Rabbit:'linear-gradient(135deg,#f3e5f5,#e1bee7)',Fish:'linear-gradient(135deg,#e0f7fa,#b2ebf2)','Guinea Pig':'linear-gradient(135deg,#fff9c4,#fff59d)',Reptile:'linear-gradient(135deg,#f1f8e9,#dcedc8)'};
+const knownTypes = ['Dog','Cat','Bird','Rabbit','Fish','Guinea Pig','Reptile'];
+
+let _allPets = [];
+let _activeFilter = 'all';
+
+function esc(s){
+  if(!s && s!==0) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function fmt(n){return '₦'+Number(n).toLocaleString('en-NG');}
+
+function renderCard(p) {
+  const isAdopt = p.listing_type === 'adoption';
+  const e = typeEmoji[p.type] || '🐾';
+  const bg = typeBg[p.type] || 'linear-gradient(135deg,#fafafa,#f0f0f0)';
+  const img = p.image_url || (p.image_urls && p.image_urls[0]);
+  const imgHtml = img
+    ? `<img src="${esc(img)}" alt="${esc(p.breed||p.type)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;"/>`
+    : `<span style="font-size:58px">${e}</span>`;
+  const badgeCls = isAdopt ? 'pt-badge' : 'pt-badge';
+  const badgeStyle = isAdopt ? 'background:#2ecc71' : 'background:#ed6436';
+  const badge = isAdopt ? 'Adopt' : 'For Sale';
+  const priceHtml = isAdopt
+    ? `<span class="pt-price-adopt">Free / Adopt</span>`
+    : (p.price ? `<span class="pt-price">${fmt(p.price)}</span>` : '');
+  const healthTags = [p.dewormed && 'Dewormed', p.vaccinated && 'Vaccinated'].filter(Boolean);
+  const href = p.slug ? `/pets/${p.slug}` : '#';
+
+  return `<a class="pet-card" href="${esc(href)}" data-type="${esc(p.type)}">
+    <div class="pt-img" style="${img ? 'background:#f5f5f5' : 'background:'+bg}">
+      <span class="${badgeCls}" style="${badgeStyle}">${badge}</span>
+      ${imgHtml}
+    </div>
+    <div class="pt-body">
+      <div class="pt-breed">${esc(p.type)}${p.pedigree ? ' · '+(p.pedigree==='pedigree'?'Pedigree':'Non-Pedigree') : ''}</div>
+      <div class="pt-name">${esc(p.breed||p.type)}</div>
+      ${(p.name||p.breeder) ? `<div style="font-size:12px;color:var(--gray);margin-bottom:6px">${p.name?esc(p.name):''}${p.name&&p.breeder?' · ':''}${p.breeder?'🏠 '+esc(p.breeder):''}</div>` : ''}
+      <div class="pt-tags">
+        ${p.age ? `<span class="pt-tag">${esc(p.age)}</span>` : ''}
+        ${healthTags.map(t=>`<span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">${t}</span>`).join('')}
+      </div>
+      ${p.location ? `<div class="pt-loc">📍 ${esc(p.location)}</div>` : ''}
+      <div class="pt-footer">
+        ${priceHtml}
+        ${p.slug ? `<span style="font-size:12px;font-weight:800;color:var(--orange)">View →</span>` : ''}
+      </div>
+    </div>
+  </a>`;
+}
+
+function filterPets(type, btn) {
+  _activeFilter = type;
+  document.querySelectorAll('.filt-tab').forEach(t => t.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+
+  const grid = document.getElementById('petGrid');
+  let pets = _allPets;
+  if (type !== 'all') {
+    if (type === 'other') {
+      pets = _allPets.filter(p => !knownTypes.slice(0,5).includes(p.type));
+    } else {
+      pets = _allPets.filter(p => p.type === type);
+    }
+  }
+  if (!pets.length) {
+    grid.innerHTML = `<div class="pet-grid-empty"><div class="ico">${typeEmoji[type]||'🐾'}</div><div>No ${type==='all'?'':type+' '}pets listed yet.</div></div>`;
+    return;
+  }
+  grid.innerHTML = pets.map(renderCard).join('');
+}
+
+async function loadPets() {
+  const grid = document.getElementById('petGrid');
+  try {
+    const { data, error } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    _allPets = data || [];
+
+    if (!_allPets.length) {
+      grid.innerHTML = '<div class="pet-grid-empty"><div class="ico">🐾</div><div>No pets listed yet. Check back soon!</div></div>';
+      return;
+    }
+
+    filterPets(_activeFilter, document.querySelector('.filt-tab.on'));
+  } catch (err) {
+    grid.innerHTML = `<div class="pet-grid-empty"><div class="ico">⚠️</div><div>Failed to load pets. Please refresh.</div></div>`;
+    console.error('Pets load error:', err.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadPets);
+</script>
+<script>(function(){var s=Date.now(),p=location.pathname;function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+</body>
+</html>

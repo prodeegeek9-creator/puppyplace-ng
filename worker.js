@@ -58,6 +58,11 @@ export default {
       return handleOgImageProxy(request, url, env);
     }
 
+    const petMatch = url.pathname.match(/^\/pets\/([^/]+?)(?:\.html)?$/);
+    if (petMatch) {
+      return servePetPage(decodeURIComponent(petMatch[1]), env);
+    }
+
     const postMatch = url.pathname.match(/^\/posts\/([^/]+?)(?:\.html)?$/);
     if (postMatch) {
       return servePost(decodeURIComponent(postMatch[1]), env);
@@ -246,6 +251,164 @@ async function handleOgImageProxy(request, url, env) {
       'X-Content-Type-Options':      'nosniff',
     },
   });
+}
+
+async function servePetPage(slug, env) {
+  if (!env.SUPABASE_URL) return html(petErrorPage('Server not configured.'), 503);
+  try {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/pets?slug=eq.${encodeURIComponent(slug)}&active=eq.true&select=*`,
+      { headers: sbHeaders(env) }
+    );
+    const rows = await res.json();
+    if (!rows || !rows.length) return html(petNotFoundPage(), 404);
+    return html(renderPetPage(rows[0]), 200);
+  } catch (e) {
+    return html(petErrorPage('Failed to load pet.'), 500);
+  }
+}
+
+function petNotFoundPage() {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Pet Not Found | PuppyPlace</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet"/><style>body{font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;text-align:center;padding:24px}h1{font-size:28px;font-weight:900;margin-bottom:12px}a{color:#ed6436;font-weight:800}</style></head><body><div><div style="font-size:72px;margin-bottom:20px">🐾</div><h1>Pet Not Found</h1><p style="color:#868686;margin-bottom:24px">This listing doesn't exist or may have been removed.</p><a href="/pets.html">← Browse All Pets</a></div></body></html>`;
+}
+
+function petErrorPage(msg) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Error | PuppyPlace</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet"/><style>body{font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;text-align:center;padding:24px}a{color:#ed6436;font-weight:800}</style></head><body><div><h1>⚠️ ${esc(msg)}</h1><p style="color:#868686;margin-bottom:24px">Please try again later.</p><a href="/pets.html">← All Pets</a></div></body></html>`;
+}
+
+function renderPetPage(p) {
+  const typeEmoji = {Dog:'🐕',Cat:'🐈',Bird:'🦜',Rabbit:'🐰',Fish:'🐠','Guinea Pig':'🐹',Reptile:'🦎'};
+  const typeBg   = {Dog:'linear-gradient(135deg,#fdeee7,#fbd4c3)',Cat:'linear-gradient(135deg,#e8f5e9,#c8e6c9)',Bird:'linear-gradient(135deg,#e3f2fd,#bbdefb)',Rabbit:'linear-gradient(135deg,#f3e5f5,#e1bee7)',Fish:'linear-gradient(135deg,#e0f7fa,#b2ebf2)','Guinea Pig':'linear-gradient(135deg,#fff9c4,#fff59d)',Reptile:'linear-gradient(135deg,#f1f8e9,#dcedc8)'};
+  const emoji = typeEmoji[p.type] || '🐾';
+  const bg    = typeBg[p.type]   || 'linear-gradient(135deg,#fafafa,#f0f0f0)';
+  const isAdopt = p.listing_type === 'adoption';
+  const imgs = (p.image_urls && p.image_urls.length) ? p.image_urls : (p.image_url ? [p.image_url] : []);
+  const wa = (p.whatsapp || '').replace(/\D/g, '');
+  const pageTitle = [p.breed || p.type, isAdopt ? 'for Adoption' : 'for Sale', p.location ? 'in ' + p.location : '', '| PuppyPlace.ng'].filter(Boolean).join(' ');
+  const metaDesc = plainText(p.specs || [p.breed, p.type, p.age, p.location].filter(Boolean).join(', '), 160);
+  const petUrl   = `https://puppyplace.ng/pets/${escUrl(p.slug)}`;
+  const mainImg  = imgs[0] ? escUrl(imgs[0]) : '';
+  const ogImg    = mainImg ? `https://puppyplace.ng/api/og-img?url=${encodeURIComponent(imgs[0])}` : '';
+
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.breed || p.type,
+    description: p.specs || '',
+    image: imgs,
+    url: petUrl,
+    offers: {
+      '@type': 'Offer',
+      price: isAdopt ? 0 : (p.price || 0),
+      priceCurrency: 'NGN',
+      availability: 'https://schema.org/InStock',
+      seller: { '@type': 'Organization', name: p.breeder || 'PuppyPlace.ng' },
+    },
+  }).replace(/<\//g, '<\\/');
+
+  const galleryScript = imgs.length > 1 ? `<script>
+var _imgs=${JSON.stringify(imgs)},_idx=0;
+function _show(){var img=document.getElementById('pgImg');img.src=_imgs[_idx];document.querySelectorAll('.pg-dot').forEach(function(d,i){d.style.background=i===_idx?'#ed6436':'rgba(255,255,255,.6)';});}
+function pgNav(d){_idx=(_idx+d+_imgs.length)%_imgs.length;_show();}
+document.addEventListener('DOMContentLoaded',function(){_show();});
+</script>` : '';
+
+  const galleryHtml = imgs.length
+    ? `<div class="pg-gallery">
+        <img id="pgImg" src="${esc(imgs[0])}" alt="${esc(p.breed||p.type)}" style="width:100%;max-height:520px;object-fit:contain;border-radius:12px;background:#f5f5f5;display:block;"/>
+        ${imgs.length > 1 ? `<button class="pg-nav pg-nav-l" onclick="pgNav(-1)">‹</button><button class="pg-nav pg-nav-r" onclick="pgNav(1)">›</button>
+        <div class="pg-dots">${imgs.map((_,i)=>`<span class="pg-dot" onclick="_idx=${i};_show()"></span>`).join('')}</div>` : ''}
+      </div>`
+    : `<div class="pg-gallery pg-emoji" style="background:${bg}">${emoji}</div>`;
+
+  const healthTags = [p.dewormed && 'Dewormed', p.vaccinated && 'Vaccinated'].filter(Boolean);
+  const tagHtml = [
+    p.age       ? `<span class="pg-tag">${esc(p.age)}</span>` : '',
+    p.pedigree  ? `<span class="pg-tag" style="background:#fff3e0;color:#e65100;border-color:#ffe0b2">${esc(p.pedigree==='pedigree'?'Pedigree':'Non-Pedigree')}</span>` : '',
+    ...healthTags.map(t => `<span class="pg-tag" style="background:#eafaf1;color:#2ecc71;border-color:#a9dfbf">${t}</span>`),
+  ].join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>${esc(pageTitle)}</title>
+<meta name="description" content="${esc(metaDesc)}"/>
+<link rel="canonical" href="${petUrl}"/>
+<meta property="og:type" content="product"/>
+<meta property="og:site_name" content="PuppyPlace.ng"/>
+<meta property="og:title" content="${esc(pageTitle)}"/>
+<meta property="og:description" content="${esc(metaDesc)}"/>
+<meta property="og:url" content="${petUrl}"/>
+${ogImg ? `<meta property="og:image" content="${escUrl(ogImg)}"/>` : ''}
+<meta name="twitter:card" content="summary_large_image"/>
+<script type="application/ld+json">${jsonLd}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333;min-height:100%;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+:root{--orange:#ed6436;--black:#0e0e0c;--gray:#868686;--light:#f1f3f5;--border:#e9ecef;--r:12px;--shadow:0 4px 20px rgba(0,0,0,.06)}
+.nav{background:#1a1a18;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-logo{color:#fff;font-size:22px;font-weight:900}.nav-logo span{color:var(--orange)}
+.nav-back{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-radius:50px;padding:9px 20px;font-size:13px;font-weight:800;transition:all .3s}
+.nav-back:hover{background:var(--orange);border-color:var(--orange);color:#fff}
+.pg-wrap{max-width:900px;margin:0 auto;width:100%;padding:40px 24px 80px;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.pg-gallery{position:relative;border-radius:12px;overflow:hidden;background:#f5f5f5}
+.pg-emoji{height:320px;display:flex;align-items:center;justify-content:center;font-size:96px}
+.pg-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.85);border:none;border-radius:50%;width:38px;height:38px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
+.pg-nav-l{left:10px}.pg-nav-r{right:10px}
+.pg-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px}
+.pg-dot{width:8px;height:8px;border-radius:50%;cursor:pointer;display:inline-block;transition:.2s;background:rgba(255,255,255,.6)}
+.pg-detail{display:flex;flex-direction:column;gap:16px}
+.pg-badge{display:inline-block;padding:5px 14px;border-radius:50px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff;background:${isAdopt?'#2ecc71':'#ed6436'};margin-bottom:4px}
+.pg-meta{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray)}
+.pg-breed{font-size:32px;font-weight:900;color:var(--black);line-height:1.2}
+.pg-sub{font-size:14px;color:var(--gray)}
+.pg-tags{display:flex;flex-wrap:wrap;gap:6px}
+.pg-tag{border:1.5px solid var(--border);border-radius:50px;padding:4px 12px;font-size:12px;font-weight:700;color:#555;background:#fff}
+.pg-specs{font-size:15px;color:#444;line-height:1.8;white-space:pre-line;background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:16px}
+.pg-loc{font-size:14px;color:var(--gray);display:flex;align-items:center;gap:6px}
+.pg-price{font-size:30px;font-weight:900;color:var(--orange)}
+.pg-price-adopt{font-size:22px;font-weight:900;color:#2ecc71}
+.pg-cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn-wa{background:#25d366;color:#fff;border:none;border-radius:50px;padding:14px 28px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .3s}
+.btn-wa:hover{background:#1ebe5d}
+.footer{background:#1a1a18;color:rgba(255,255,255,.4);text-align:center;padding:28px 24px;font-size:13px;margin-top:auto}
+.footer a{color:rgba(255,255,255,.6);font-weight:700}.footer a:hover{color:var(--orange)}
+@media(max-width:700px){.pg-wrap{grid-template-columns:1fr;padding:24px 16px 60px;gap:24px}.pg-breed{font-size:26px}.nav{padding:0 20px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-logo" href="/">Puppy<span>Place</span></a>
+  <a class="nav-back" href="/pets.html">← All Pets</a>
+</nav>
+<div class="pg-wrap">
+  ${galleryHtml}
+  <div class="pg-detail">
+    <div>
+      <span class="pg-badge">${isAdopt ? 'For Adoption' : 'For Sale'}</span>
+      <div class="pg-meta">${esc(p.type)}${p.pedigree ? ' · ' + (p.pedigree === 'pedigree' ? 'Pedigree' : 'Non-Pedigree') : ''}</div>
+      <div class="pg-breed">${esc(p.breed || p.type)}</div>
+      ${(p.name || p.breeder) ? `<div class="pg-sub">${[p.name, p.breeder ? '🏠 ' + p.breeder : ''].filter(Boolean).join(' · ')}</div>` : ''}
+    </div>
+    ${tagHtml ? `<div class="pg-tags">${tagHtml}</div>` : ''}
+    ${p.specs ? `<div class="pg-specs">${esc(p.specs)}</div>` : ''}
+    ${p.location ? `<div class="pg-loc">📍 ${esc(p.location)}</div>` : ''}
+    <div>
+      ${isAdopt ? `<div class="pg-price-adopt">Free / Adoption</div>` : `<div class="pg-price">₦${(p.price||0).toLocaleString('en-NG')}</div>`}
+    </div>
+    ${wa ? `<div class="pg-cta"><a href="https://wa.me/${wa}?text=${encodeURIComponent('Hi, I\'m interested in the ' + (p.breed||p.type) + (p.name?' ('+p.name+')':'') + ' listed on PuppyPlace.ng')}" target="_blank" rel="noopener noreferrer" class="btn-wa">💬 Contact on WhatsApp</a></div>` : ''}
+  </div>
+</div>
+<footer class="footer"><a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace · <a href="/privacy.html">Privacy</a></footer>
+${galleryScript}
+<script>(function(){var s=Date.now(),p=location.pathname;function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+</body>
+</html>`;
 }
 
 async function servePost(slug, env) {
@@ -482,20 +645,25 @@ async function serveSitemap(env) {
     { loc: 'https://puppyplace.ng/about.html', lastmod: today },
     { loc: 'https://puppyplace.ng/contact.html', lastmod: today },
     { loc: 'https://puppyplace.ng/blog.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/pets.html', lastmod: today },
     { loc: 'https://puppyplace.ng/privacy.html', lastmod: today },
   ];
 
   let posts = [];
   let products = [];
+  let pets = [];
   try {
     const h = sbHeaders(env);
     const base = env.SUPABASE_URL;
-    const [postsRes, productsRes] = await Promise.all([
+    const [postsRes, productsRes, petsRes] = await Promise.all([
       fetch(`${base}/rest/v1/blog_posts?status=eq.published&select=slug,published_at&order=published_at.desc`, { headers: h }),
       fetch(`${base}/rest/v1/shop_products?active=eq.true&select=slug,updated_at`, { headers: h }),
+      fetch(`${base}/rest/v1/pets?active=eq.true&select=slug,updated_at&order=created_at.desc`, { headers: h }),
     ]);
     if (postsRes.ok) { const d = await postsRes.json(); if (Array.isArray(d)) posts = d; }
     if (productsRes.ok) { const d = await productsRes.json(); if (Array.isArray(d)) products = d; }
+    const petRows = await petsRes.json().catch(() => []);
+    (petRows || []).filter(p => p.slug).forEach(p => pets.push({ loc: `https://puppyplace.ng/pets/${p.slug}`, lastmod: (p.updated_at||today).slice(0,10) }));
   } catch {
     return new Response('Failed to generate sitemap', { status: 500 });
   }
@@ -506,8 +674,9 @@ async function serveSitemap(env) {
   const staticUrls = staticPages.map(p => toUrl(p.loc, p.lastmod));
   const postUrls = posts.map(p => toUrl(`https://puppyplace.ng/posts/${encodeURIComponent(p.slug)}.html`, p.published_at ? p.published_at.slice(0, 10) : ''));
   const productUrls = products.map(p => toUrl(`https://puppyplace.ng/product/${encodeURIComponent(p.slug)}.html`, p.updated_at ? p.updated_at.slice(0, 10) : ''));
+  const petUrls = pets.map(p => toUrl(p.loc, p.lastmod));
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...postUrls, ...productUrls].join('\n')}\n</urlset>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...postUrls, ...productUrls, ...petUrls].join('\n')}\n</urlset>`;
 
   return new Response(xml, {
     status: 200,
