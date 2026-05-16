@@ -5,8 +5,9 @@ export default {
     if (shouldTrack(url.pathname)) {
       const ip   = request.headers.get('CF-Connecting-IP') || '';
       const date = new Date().toISOString().slice(0, 10);
+      const ref  = extractReferrer(request.headers.get('Referer') || '', url.hostname);
       ctx.waitUntil(
-        hashVisitor(ip, date).then(hash => trackView(url.pathname, request.cf?.country, hash, env))
+        hashVisitor(ip, date).then(hash => trackView(url.pathname, request.cf?.country, hash, ref, env))
       );
     }
 
@@ -74,9 +75,22 @@ export default {
 function shouldTrack(pathname) {
   if (pathname.startsWith('/api/')) return false;
   if (['/config.js', '/sitemap.xml', '/favicon.ico'].includes(pathname)) return false;
+  // Drop known bot probe paths (scanners, security tools, CMS probes)
+  const botPrefixes = ['/swagger', '/actuator', '/wp-', '/phpmyadmin', '/.env', '/.git', '/webjars', '/v2/', '/v3/', '/xmlrpc', '/admin.php', '/console'];
+  if (botPrefixes.some(b => pathname.startsWith(b))) return false;
   if (pathname === '/') return true;
   if (pathname.endsWith('.html')) return true;
   return false;
+}
+
+function extractReferrer(refHeader, ownHost) {
+  if (!refHeader) return null;
+  try {
+    const { hostname } = new URL(refHeader);
+    const clean = hostname.replace(/^www\./, '');
+    if (clean === ownHost || clean === 'puppyplace.ng') return null; // self-referral
+    return clean;
+  } catch { return null; }
 }
 
 async function hashVisitor(ip, date) {
@@ -85,14 +99,14 @@ async function hashVisitor(ip, date) {
   return Array.from(new Uint8Array(buf)).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function trackView(path, country, visitorHash, env) {
+async function trackView(path, country, visitorHash, referrer, env) {
   if (!env.SUPABASE_URL) return;
   const normalPath = path === '/index.html' ? '/' : path;
   try {
     await fetch(`${env.SUPABASE_URL}/rest/v1/page_views`, {
       method: 'POST',
       headers: { ...sbHeaders(env), 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ path: normalPath, country: country || null, visitor_hash: visitorHash || null }),
+      body: JSON.stringify({ path: normalPath, country: country || null, visitor_hash: visitorHash || null, referrer: referrer || null }),
     });
   } catch { /* non-critical */ }
 }
@@ -494,7 +508,7 @@ async function handleStats(request, url, env) {
 
   try {
     const res = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/page_views?viewed_at=gte.${date}T00:00:00.000Z&viewed_at=lt.${nextDate}T00:00:00.000Z&select=path,country,viewed_at,visitor_hash&limit=5000&order=viewed_at.asc`,
+      `${env.SUPABASE_URL}/rest/v1/page_views?viewed_at=gte.${date}T00:00:00.000Z&viewed_at=lt.${nextDate}T00:00:00.000Z&select=path,country,viewed_at,visitor_hash,referrer&limit=5000&order=viewed_at.asc`,
       { headers: sbHeaders(env) }
     );
     if (!res.ok) return jsonResp({ error: 'Failed to fetch stats' }, 500);
@@ -503,6 +517,7 @@ async function handleStats(request, url, env) {
 
     const pageMap = {};
     const countryMap = {};
+    const referrerMap = {};
     const hours = new Array(24).fill(0);
     const allVisitors = new Set();
 
@@ -512,9 +527,13 @@ async function handleStats(request, url, env) {
       const c = row.country || '--';
       if (!countryMap[c]) countryMap[c] = { views: 0, visitors: new Set() };
       countryMap[c].views++;
+      const ref = row.referrer || 'direct';
+      if (!referrerMap[ref]) referrerMap[ref] = { views: 0, visitors: new Set() };
+      referrerMap[ref].views++;
       if (row.visitor_hash) {
         pageMap[row.path].visitors.add(row.visitor_hash);
         countryMap[c].visitors.add(row.visitor_hash);
+        referrerMap[ref].visitors.add(row.visitor_hash);
         allVisitors.add(row.visitor_hash);
       }
       if (row.viewed_at) hours[new Date(row.viewed_at).getUTCHours()]++;
@@ -528,7 +547,11 @@ async function handleStats(request, url, env) {
       .map(([country, d]) => ({ country, views: d.views, visitors: d.visitors.size }))
       .sort((a, b) => b.views - a.views);
 
-    return jsonResp({ date, total: rows.length, visitors: allVisitors.size, pages, countries, hours });
+    const referrers = Object.entries(referrerMap)
+      .map(([source, d]) => ({ source, views: d.views, visitors: d.visitors.size }))
+      .sort((a, b) => b.views - a.views);
+
+    return jsonResp({ date, total: rows.length, visitors: allVisitors.size, pages, countries, hours, referrers });
   } catch {
     return jsonResp({ error: 'Failed to generate stats' }, 500);
   }
