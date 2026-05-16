@@ -290,5 +290,6 @@ function submitContact() {
 }
 </script>
 <script src="config.js" onerror="void 0"></script>
+<script>(function(){var s=Date.now(),p=location.pathname;function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>

@@ -1267,6 +1267,23 @@ async function loadStats() {
   }
 }
 
+function fmtDur(secs) {
+  if (!secs) return '—';
+  if (secs < 60) return secs + 's';
+  return Math.floor(secs/60) + 'm ' + (secs%60) + 's';
+}
+function refIcon(src) {
+  if (!src || src === 'direct') return '🔗';
+  if (/google\./.test(src)) return '🔍';
+  if (/facebook|fb\./.test(src)) return '📘';
+  if (/twitter|t\.co|x\.com/.test(src)) return '𝕏';
+  if (/instagram/.test(src)) return '📸';
+  if (/linkedin/.test(src)) return '💼';
+  if (/whatsapp/.test(src)) return '💬';
+  if (/tiktok/.test(src)) return '🎵';
+  if (/youtube/.test(src)) return '▶️';
+  return '🌐';
+}
 function renderStats(data) {
   const flag = code => (!code || code === '--') ? '🌍' :
     code.toUpperCase().split('').map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join('');
@@ -1278,11 +1295,14 @@ function renderStats(data) {
       <div class="stat-hour-label">${h%6===0?h+'h':''}</div>
     </div>`).join('');
   const pageRows = data.pages.length
-    ? data.pages.map(p => `<tr><td style="font-size:12px;font-family:monospace;word-break:break-all;max-width:200px">${escHtml(p.path)}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${p.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${p.visitors.toLocaleString()}</td></tr>`).join('')
-    : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:24px">No views recorded yet</td></tr>';
+    ? data.pages.map(p => `<tr><td style="font-size:12px;font-family:monospace;word-break:break-all;max-width:180px">${escHtml(p.path)}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${p.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${p.visitors.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--orange);font-weight:700">${fmtDur(p.avgSecs)}</td></tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:24px">No views recorded yet</td></tr>';
   const countryRows = data.countries.length
     ? data.countries.map(c => `<tr><td><span style="font-size:16px;margin-right:8px">${flag(c.country)}</span>${escHtml(countryNames[c.country]||c.country||'Unknown')}</td><td style="font-weight:800;white-space:nowrap;text-align:right">${c.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${c.visitors.toLocaleString()}</td></tr>`).join('')
     : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:24px">No data yet</td></tr>';
+  const refRows = (data.referrers||[]).length
+    ? data.referrers.map(r => `<tr><td>${refIcon(r.source)} <span style="font-family:monospace;font-size:13px">${escHtml(r.source==='direct'?'Direct / No Referrer':r.source)}</span></td><td style="font-weight:800;white-space:nowrap;text-align:right">${r.views.toLocaleString()}</td><td style="white-space:nowrap;text-align:right;color:var(--gray)">${r.visitors.toLocaleString()}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:24px">No referrer data yet</td></tr>';
   document.getElementById('statsContent').innerHTML = `
     <div class="stats-summary" style="grid-template-columns:repeat(4,1fr)">
       <div class="stat-card" data-ico="👁️"><div class="stat-label">Total Views</div><div class="stat-val">${data.total.toLocaleString()}</div><div class="stat-sub">on ${data.date}</div></div>
@@ -1297,11 +1317,15 @@ function renderStats(data) {
     <div class="stats-tables">
       <div class="stats-table-card">
         <div class="stats-table-title">Top Pages</div>
-        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Page</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th></tr></thead><tbody>${pageRows}</tbody></table></div>
+        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Page</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th><th style="text-align:right">Avg. Time</th></tr></thead><tbody>${pageRows}</tbody></table></div>
       </div>
       <div class="stats-table-card">
         <div class="stats-table-title">Top Countries</div>
         <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Country</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th></tr></thead><tbody>${countryRows}</tbody></table></div>
+      </div>
+      <div class="stats-table-card" style="grid-column:1/-1">
+        <div class="stats-table-title">Traffic Sources</div>
+        <div style="overflow-x:auto"><table class="prod-table" style="min-width:0"><thead><tr><th>Source / Referrer</th><th style="text-align:right">Views</th><th style="text-align:right">Visitors</th></tr></thead><tbody>${refRows}</tbody></table></div>
       </div>
     </div>`;
 }
