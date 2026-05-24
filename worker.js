@@ -586,6 +586,7 @@ a{text-decoration:none;color:inherit}
 .art-body li{margin-bottom:10px;font-size:17px;color:#444;line-height:1.75}
 .art-body strong{font-weight:800;color:var(--black)}
 .art-body em{font-style:italic}
+.art-body a{color:#FF6B00;font-weight:600;text-decoration:underline}.art-body a:hover{color:#e05a00;text-decoration:none}
 .art-divider{width:60px;height:4px;background:var(--orange);border-radius:2px;margin:48px 24px}
 .related{border-top:1px solid var(--border);padding:48px 24px 80px}
 .rel-label{font-size:22px;font-weight:900;margin-bottom:24px;color:var(--black)}
