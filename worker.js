@@ -471,6 +471,35 @@ function plainText(s, maxLen = 160) {
   return t.length > maxLen ? t.slice(0, maxLen - 1) + '…' : t;
 }
 
+function injectAlsoRead(content) {
+  const linkRe = /<a\s[^>]*href="(\/posts\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+  const links = [];
+  let m;
+  while ((m = linkRe.exec(content)) !== null) {
+    const text = m[2].replace(/<[^>]+>/g, '').trim();
+    if (text) links.push({ href: m[1], text });
+  }
+  if (!links.length) return content;
+
+  const slots = [2, 4, 6];
+  const boxes = links.slice(0, slots.length);
+  const parts = content.split('</p>');
+  let pCount = 0, boxIdx = 0;
+  const out = [];
+  for (let i = 0; i < parts.length; i++) {
+    out.push(parts[i]);
+    if (i < parts.length - 1) {
+      out.push('</p>');
+      pCount++;
+      if (slots.indexOf(pCount) !== -1 && boxIdx < boxes.length) {
+        const b = boxes[boxIdx++];
+        out.push(`<div class="also-read"><strong>Also Read:</strong> <a href="${b.href}">${b.text}</a></div>`);
+      }
+    }
+  }
+  return out.join('');
+}
+
 function renderPost(post, related) {
   const date = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -587,6 +616,7 @@ a{text-decoration:none;color:inherit}
 .art-body strong{font-weight:800;color:var(--black)}
 .art-body em{font-style:italic}
 .art-body a{color:#FF6B00;font-weight:600;text-decoration:underline}.art-body a:hover{color:#e05a00;text-decoration:none}
+.also-read{background:#FFF3E8;border-left:4px solid #FF6B00;padding:12px 16px;margin:0 0 20px;font-size:14px}.also-read strong{color:#FF6B00}.art-body .also-read a{color:#1a1a18;font-weight:600;text-decoration:none}.art-body .also-read a:hover{color:#FF6B00;text-decoration:underline}
 .art-divider{width:60px;height:4px;background:var(--orange);border-radius:2px;margin:48px 24px}
 .related{border-top:1px solid var(--border);padding:48px 24px 80px}
 .rel-label{font-size:22px;font-weight:900;margin-bottom:24px;color:var(--black)}
@@ -610,7 +640,7 @@ a{text-decoration:none;color:inherit}
 </nav>
 ${heroHtml}
 <div class="art-wrap">
-  <div class="art-body">${post.content || ''}</div>
+  <div class="art-body">${injectAlsoRead(post.content || '')}</div>
   ${related.length ? `<div class="art-divider"></div><div class="related"><div class="rel-label">More from the Blog</div><div class="rel-grid">${relCards}</div></div>` : '<div style="padding-bottom:80px"></div>'}
 </div>
 <footer class="footer">
