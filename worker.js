@@ -616,7 +616,7 @@ a{text-decoration:none;color:inherit}
 .art-body strong{font-weight:800;color:var(--black)}
 .art-body em{font-style:italic}
 .art-body a{color:#FF6B00;font-weight:600;text-decoration:underline}.art-body a:hover{color:#e05a00;text-decoration:none}
-.also-read{background:#FFF3E8;border-left:4px solid #FF6B00;padding:12px 16px;margin:0 0 20px;font-size:14px}.also-read strong{color:#FF6B00}.art-body .also-read a{color:#1a1a18;font-weight:600;text-decoration:none}.art-body .also-read a:hover{color:#FF6B00;text-decoration:underline}
+.also-read{background:#FFF3E8;border-left:4px solid #FF6B00;padding:12px 16px;margin:0 0 20px;font-size:14px}.also-read strong{color:#FF6B00}.art-body .also-read a{color:#1a1a18;font-weight:800;text-decoration:none;text-transform:uppercase}.art-body .also-read a:hover{color:#FF6B00;text-decoration:underline}
 .art-divider{width:60px;height:4px;background:var(--orange);border-radius:2px;margin:48px 24px}
 .related{border-top:1px solid var(--border);padding:48px 24px 80px}
 .rel-label{font-size:22px;font-weight:900;margin-bottom:24px;color:var(--black)}
