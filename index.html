@@ -2427,14 +2427,17 @@ function renderDeals() {
   const grid = document.getElementById('dealsGrid');
   const section = document.getElementById('deals');
   if (!grid) return;
-  const dealProds = prods.filter(d => d.o && d.o > d.p).slice(0, 6);
+  // Prefer products with a real discount; fall back to 4 newest products
+  let dealProds = prods.filter(d => d.o && d.o > d.p).slice(0, 6);
+  if (!dealProds.length) dealProds = prods.slice(0, 4);
   if (!dealProds.length) {
     if (section) section.style.display = 'none';
     return;
   }
   if (section) section.style.display = '';
   grid.innerHTML = dealProds.map(d => {
-    const disc = Math.round((1 - d.p / d.o) * 100);
+    const hasDiscount = d.o && d.o > d.p;
+    const disc = hasDiscount ? Math.round((1 - d.p / d.o) * 100) : 0;
     const imgHtml = d.img
       ? `<img src="${escHtml(d.img)}" alt="${escHtml(d.n)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"/>`
       : '';
@@ -2444,8 +2447,7 @@ function renderDeals() {
         <div class="di-name">${escHtml(d.n)}</div>
         <div class="di-prices">
           <span class="di-now">${fmt(d.p)}</span>
-          <span class="di-was">${fmt(d.o)}</span>
-          <span class="di-save">-${disc}%</span>
+          ${hasDiscount ? `<span class="di-was">${fmt(d.o)}</span><span class="di-save">-${disc}%</span>` : ''}
         </div>
       </div>
     </div>`;
