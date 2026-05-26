@@ -1466,12 +1466,6 @@ async function loadProductsFromSupabase() {
   renderDeals();
 }
 
-const dealData=[
-  {n:'Booster Puppy Dry Food 10kg',e:'🐶',p:34000,o:44000,cat:'Food',pet:'Dog',brand:'Booster',r:4.8,rv:188,desc:"Specially created recipe for highly active puppies. Balanced nutrition from peas, carrot and spinach."},
-  {n:'Diamond Naturals Adult 18kg',e:'🍗',p:65000,o:72000,cat:'Food',pet:'Dog',brand:'Diamond',r:4.8,rv:143,desc:"Beef as #1 ingredient. Superfoods: kale, quinoa, chia seed, coconut. Added probiotics. No artificial flavours."},
-  {n:'Karl Chicken Jerky Treats',e:'🍗',p:7000,o:8500,cat:'Accessories',pet:'Dog',brand:'Karl',r:4.7,rv:134,desc:"66% real chicken breast. High crude protein. Natural ingredients, no artificial preservatives."},
-  {n:'Bravecto Flea & Tick Chew',e:'💊',p:42000,o:49000,cat:'Health',pet:'Dog',brand:'Bravecto',r:4.9,rv:176,desc:"12-week protection in one chewable tablet. Kills fleas within 2 hours. Vet recommended."},
-];
 
 let cartItems = JSON.parse(localStorage.getItem('pp_cart') || '[]');
 let wishItems = JSON.parse(localStorage.getItem('pp_wish') || '[]');
@@ -1905,13 +1899,11 @@ function updateModalPrice(basePrice){
 }
 
 function openModal(id) {
-  let p = null;
-  if (id.startsWith('d')) { p = dealData[parseInt(id.slice(1))]; }
-  else { p = prods.find(x => x.id === id); }
+  let p = prods.find(x => x.id === id);
   if (!p) return;
 
   // Store current product id for reviews
-  openModal._pid = p.id || ('d' + id.slice(1));
+  openModal._pid = p.id;
 
   document.getElementById('mT').textContent = p.n || p.name;
   document.getElementById('mP').textContent = fmt(p.p || p.price);
@@ -2429,26 +2421,33 @@ loadBlogPosts().then(() => applyHomepageSettings());
 loadHeroImages();
 
 /* ══════════════════════════════════════════
-   FLASH DEALS — JS RENDER (supports product images)
+   FLASH DEALS — JS RENDER (real discounted products)
    ══════════════════════════════════════════ */
 function renderDeals() {
   const grid = document.getElementById('dealsGrid');
+  const section = document.getElementById('deals');
   if (!grid) return;
-  grid.innerHTML = dealData.map((d, i) => {
-    const disc = Math.round((1 - d.p / d.o) * 100);
-    // Try to match a product from prods array for its image
-    const match = prods.find(p => p.n.toLowerCase().includes(d.n.toLowerCase().split(' ').slice(0,2).join(' ').toLowerCase()) || d.n.toLowerCase().includes(p.n.toLowerCase().split(' ').slice(0,2).join(' ').toLowerCase()));
-    const imgHtml = (match && match.img)
-      ? `<img src="${match.img}" alt="${d.n}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"/>`
+  // Prefer products with a real discount; fall back to 4 newest products
+  let dealProds = prods.filter(d => d.o && d.o > d.p).slice(0, 6);
+  if (!dealProds.length) dealProds = prods.slice(0, 4);
+  if (!dealProds.length) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+  if (section) section.style.display = '';
+  grid.innerHTML = dealProds.map(d => {
+    const hasDiscount = d.o && d.o > d.p;
+    const disc = hasDiscount ? Math.round((1 - d.p / d.o) * 100) : 0;
+    const imgHtml = d.img
+      ? `<img src="${escHtml(d.img)}" alt="${escHtml(d.n)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"/>`
       : '';
-    return `<div class="deal-item" onclick="openModal('d${i}')">
-      <div class="di-img" style="position:relative;">${imgHtml}<span style="${imgHtml?'opacity:0;':''}font-size:70px;position:relative;z-index:1;">${d.e}</span></div>
+    return `<div class="deal-item" onclick="openModal(${JSON.stringify(d.id)})">
+      <div class="di-img" style="position:relative;">${imgHtml}<span style="${imgHtml?'opacity:0;':''}font-size:70px;position:relative;z-index:1;">${escHtml(d.e)}</span></div>
       <div class="di-body">
-        <div class="di-name">${d.n}</div>
+        <div class="di-name">${escHtml(d.n)}</div>
         <div class="di-prices">
           <span class="di-now">${fmt(d.p)}</span>
-          <span class="di-was">${fmt(d.o)}</span>
-          <span class="di-save">-${disc}%</span>
+          ${hasDiscount ? `<span class="di-was">${fmt(d.o)}</span><span class="di-save">-${disc}%</span>` : ''}
         </div>
       </div>
     </div>`;
