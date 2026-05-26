@@ -2799,5 +2799,329 @@ function toggleFc(h) {
 </div>
 
 <script>(function(){var s=Date.now(),p=location.pathname;function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+
+<!-- ============================================================
+     PuppyPlace Chat Widget
+     ============================================================ -->
+<style>
+  #pp-chat-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #ff6b2b;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255,107,43,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    transition: transform 0.2s, box-shadow 0.2s, bottom 0.2s;
+  }
+  #pp-chat-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(255,107,43,0.55); }
+  #pp-chat-btn svg { pointer-events: none; }
+
+  #pp-chat-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    background: #22c55e;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+  }
+
+  #pp-chat-window {
+    position: fixed;
+    bottom: 96px;
+    right: 28px;
+    width: 360px;
+    max-width: calc(100vw - 40px);
+    height: 500px;
+    max-height: calc(100vh - 120px);
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    display: none;
+    flex-direction: column;
+    z-index: 9999;
+    overflow: hidden;
+    font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+    border: 1px solid rgba(0,0,0,0.08);
+    animation: pp-slide-up 0.22s ease;
+  }
+  #pp-chat-window.open { display: flex; }
+
+  @keyframes pp-slide-up {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  #pp-chat-header {
+    background: linear-gradient(135deg, #ff6b2b 0%, #ff8c42 100%);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .pp-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .pp-header-info { flex: 1; }
+  .pp-header-info h4 { margin: 0; color: #fff; font-size: 15px; font-weight: 700; }
+  .pp-header-info span { font-size: 12px; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 5px; }
+  .pp-online-dot { width: 7px; height: 7px; background: #4ade80; border-radius: 50%; display: inline-block; }
+  #pp-chat-close {
+    background: none; border: none; color: rgba(255,255,255,0.85);
+    cursor: pointer; font-size: 20px; padding: 4px; line-height: 1;
+    border-radius: 6px; transition: background 0.15s;
+  }
+  #pp-chat-close:hover { background: rgba(255,255,255,0.2); }
+
+  #pp-messages {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px; background: #fafafa;
+  }
+  #pp-messages::-webkit-scrollbar { width: 4px; }
+  #pp-messages::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 4px; }
+
+  .pp-msg {
+    max-width: 80%; font-size: 14px; line-height: 1.5;
+    padding: 9px 13px; border-radius: 14px; word-break: break-word;
+    animation: pp-msg-in 0.15s ease;
+  }
+  @keyframes pp-msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .pp-msg.bot {
+    background: #fff; color: #1a1a1a; align-self: flex-start;
+    border-bottom-left-radius: 4px; border: 1px solid #eee;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .pp-msg.user {
+    background: #ff6b2b; color: #fff; align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+
+  #pp-typing {
+    display: none; align-self: flex-start; background: #fff;
+    border: 1px solid #eee; border-radius: 14px; border-bottom-left-radius: 4px;
+    padding: 10px 14px; gap: 5px; align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  #pp-typing.show { display: flex; }
+  .pp-dot { width: 7px; height: 7px; background: #bbb; border-radius: 50%; animation: pp-bounce 1.2s infinite; }
+  .pp-dot:nth-child(2) { animation-delay: 0.2s; }
+  .pp-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pp-bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  #pp-chat-footer {
+    padding: 12px 14px; background: #fff; border-top: 1px solid #f0f0f0;
+    display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+  }
+  #pp-input {
+    flex: 1; border: 1.5px solid #e5e5e5; border-radius: 10px;
+    padding: 9px 12px; font-size: 14px; font-family: inherit;
+    resize: none; min-height: 38px; max-height: 100px; outline: none;
+    line-height: 1.4; color: #1a1a1a; background: #fafafa; transition: border-color 0.15s;
+  }
+  #pp-input:focus { border-color: #ff6b2b; background: #fff; }
+  #pp-input::placeholder { color: #aaa; }
+
+  #pp-send {
+    width: 38px; height: 38px; border-radius: 10px; background: #ff6b2b;
+    border: none; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; transition: background 0.15s, transform 0.1s;
+  }
+  #pp-send:hover { background: #e85d20; }
+  #pp-send:active { transform: scale(0.94); }
+  #pp-send:disabled { background: #ffc4a8; cursor: not-allowed; }
+  #pp-send svg { pointer-events: none; }
+
+  .pp-error { font-size: 12px; color: #e85d20; text-align: center; padding: 4px 8px; }
+
+  /* ── Mobile responsive ── */
+  @media (max-width: 768px) {
+    #pp-chat-btn {
+      bottom: 92px; /* clear mob-atc-bar */
+      right: 16px;
+      width: 52px;
+      height: 52px;
+    }
+    #pp-chat-window {
+      right: 10px;
+      left: 10px;
+      width: auto;
+      max-width: calc(100vw - 20px);
+      bottom: 156px; /* above button */
+      height: 420px;
+      max-height: calc(100vh - 200px);
+      border-radius: 16px;
+    }
+  }
+  @media (max-width: 480px) {
+    #pp-chat-window {
+      height: 380px;
+      max-height: calc(100vh - 180px);
+    }
+    #pp-messages { padding: 12px; gap: 8px; }
+    .pp-msg { font-size: 13px; max-width: 88%; padding: 8px 11px; }
+    #pp-chat-header { padding: 12px 14px; }
+    .pp-header-info h4 { font-size: 14px; }
+    #pp-chat-footer { padding: 10px 12px; }
+    #pp-input { font-size: 13px; padding: 8px 10px; }
+  }
+</style>
+
+<button id="pp-chat-btn" aria-label="Open chat support">
+  <div id="pp-chat-badge" aria-hidden="true">1</div>
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
+
+<div id="pp-chat-window" role="dialog" aria-label="PuppyPlace chat support">
+  <div id="pp-chat-header">
+    <div class="pp-avatar">🐾</div>
+    <div class="pp-header-info">
+      <h4>PuppyPlace Support</h4>
+      <span><span class="pp-online-dot"></span>We typically reply instantly</span>
+    </div>
+    <button id="pp-chat-close" aria-label="Close chat">✕</button>
+  </div>
+  <div id="pp-messages" aria-live="polite"></div>
+  <div id="pp-typing" aria-hidden="true">
+    <div class="pp-dot"></div><div class="pp-dot"></div><div class="pp-dot"></div>
+  </div>
+  <div id="pp-chat-footer">
+    <textarea id="pp-input" placeholder="Ask about an order, product, delivery…" rows="1" aria-label="Chat message"></textarea>
+    <button id="pp-send" aria-label="Send message">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const WEBHOOK_URL = 'https://n8n.prodeegee.com/webhook/puppyplace-chat';
+
+  const btn      = document.getElementById('pp-chat-btn');
+  const badge    = document.getElementById('pp-chat-badge');
+  const win      = document.getElementById('pp-chat-window');
+  const messages = document.getElementById('pp-messages');
+  const typing   = document.getElementById('pp-typing');
+  const input    = document.getElementById('pp-input');
+  const sendBtn  = document.getElementById('pp-send');
+  const closeBtn = document.getElementById('pp-chat-close');
+
+  let isOpen = false;
+  let sessionId = 'pp_' + Math.random().toString(36).slice(2, 10);
+
+  setTimeout(() => { if (!isOpen) badge.style.display = 'flex'; }, 3000);
+
+  function toggleChat() {
+    isOpen = !isOpen;
+    if (isOpen) {
+      win.classList.add('open');
+      badge.style.display = 'none';
+      if (messages.children.length === 0) showGreeting();
+      setTimeout(() => input.focus(), 250);
+    } else {
+      win.classList.remove('open');
+    }
+  }
+
+  function showGreeting() {
+    appendMsg('bot', '👋 Hi! Welcome to PuppyPlace. How can I help you today?\n\nYou can ask me about orders, products, delivery, returns — anything! 🐶');
+  }
+
+  function appendMsg(role, text) {
+    const el = document.createElement('div');
+    el.className = 'pp-msg ' + role;
+    el.textContent = text;
+    messages.appendChild(el);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function showTyping(show) {
+    typing.classList.toggle('show', show);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendMsg('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.disabled = true;
+    showTyping(true);
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, message: text, source: 'website', timestamp: new Date().toISOString() })
+      });
+
+      showTyping(false);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      const data = await res.json();
+      const reply = data.reply || data.message || data.output || data.text
+                 || (typeof data === 'string' ? data : null);
+
+      appendMsg('bot', reply || "Thanks for reaching out! Our team will get back to you shortly. 🐾");
+    } catch (err) {
+      showTyping(false);
+      appendMsg('bot', '⚠️ Something went wrong. Please try again or WhatsApp us directly.');
+      console.error('[PuppyPlace Chat]', err);
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  btn.addEventListener('click', toggleChat);
+  closeBtn.addEventListener('click', toggleChat);
+  sendBtn.addEventListener('click', sendMessage);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (isOpen && !win.contains(e.target) && e.target !== btn) toggleChat();
+  });
+})();
+</script>
+
 </body>
 </html>
