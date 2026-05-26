@@ -2989,6 +2989,60 @@ function toggleFc(h) {
     #pp-chat-footer { padding: 10px 12px; }
     #pp-input { font-size: 13px; padding: 8px 10px; }
   }
+
+  /* ── Pre-chat gate form ── */
+  #pp-prechat {
+    padding: 16px 14px 20px;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .pp-pc-subtitle {
+    font-size: 12px;
+    color: #777;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 2px;
+  }
+  .pp-pc-field { display: flex; flex-direction: column; gap: 3px; }
+  .pp-pc-field input {
+    border: 1.5px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    background: #fafafa;
+    color: #1a1a1a;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .pp-pc-field input:focus { border-color: #ff6b2b; background: #fff; }
+  .pp-pc-field input::placeholder { color: #aaa; }
+  .pp-fc-err { font-size: 11px; color: #e85d20; min-height: 14px; display: block; }
+  #pp-start-btn {
+    background: #ff6b2b;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 11px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 2px;
+    width: 100%;
+  }
+  #pp-start-btn:hover { background: #e85d20; }
+  @media (max-width: 480px) {
+    #pp-prechat { padding: 12px 12px 16px; gap: 8px; }
+    .pp-pc-field input { font-size: 13px; padding: 8px 10px; }
+    #pp-start-btn { font-size: 13px; padding: 10px; }
+  }
 </style>
 
 <button id="pp-chat-btn" aria-label="Open chat support">
@@ -3026,32 +3080,196 @@ function toggleFc(h) {
 (function () {
   const WEBHOOK_URL = 'https://n8n.prodeegee.com/webhook/puppyplace-chat';
 
+  // ── DOM refs ───────────────────────────────────────────────────
   const btn      = document.getElementById('pp-chat-btn');
   const badge    = document.getElementById('pp-chat-badge');
   const win      = document.getElementById('pp-chat-window');
   const messages = document.getElementById('pp-messages');
   const typing   = document.getElementById('pp-typing');
+  const footer   = document.getElementById('pp-chat-footer');
   const input    = document.getElementById('pp-input');
   const sendBtn  = document.getElementById('pp-send');
   const closeBtn = document.getElementById('pp-chat-close');
 
-  let isOpen = false;
-  let sessionId = 'pp_' + Math.random().toString(36).slice(2, 10);
+  let isOpen      = false;
+  let chatStarted = false;
+  let chatUser    = null; // { name, phone, email }
+  const sessionId = 'pp_' + Math.random().toString(36).slice(2, 10);
 
+  // ── Phone helpers ──────────────────────────────────────────────
+  function normalisePhone(raw) {
+    if (!raw) return '';
+    const d = String(raw).replace(/\D/g, '');
+    if (d.startsWith('234')) return '0' + d.slice(3);
+    return d;
+  }
+
+  function toWaId(localPhone) {
+    const d = String(localPhone || '').replace(/\D/g, '');
+    return d.startsWith('0') ? '234' + d.slice(1) : d;
+  }
+
+  // ── Session storage ────────────────────────────────────────────
+  const SS_KEY = 'pp_chat_user';
+  function loadCached() {
+    try { return JSON.parse(sessionStorage.getItem(SS_KEY)) || null; } catch { return null; }
+  }
+  function saveCache(u) { sessionStorage.setItem(SS_KEY, JSON.stringify(u)); }
+  function clearCache() { sessionStorage.removeItem(SS_KEY); }
+
+  // ── Supabase auth check ────────────────────────────────────────
+  async function fetchAuthUser() {
+    try {
+      const sb = window.supabase;
+      if (!sb) return null;
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.user) return null;
+      const u = session.user;
+
+      const { data: p } = await sb
+        .from('profiles')
+        .select('full_name, display_name, phone, email')
+        .eq('id', u.id)
+        .maybeSingle();
+
+      return {
+        name:  p?.full_name || p?.display_name || u.user_metadata?.name || u.email.split('@')[0],
+        email: p?.email || u.email || '',
+        phone: normalisePhone(p?.phone || u.user_metadata?.phone || ''),
+      };
+    } catch { return null; }
+  }
+
+  // Auth promise – resolves once on startup so gate never blocks on repeat opens
+  let _authResolve;
+  const _authPromise = new Promise(res => { _authResolve = res; });
+
+  (async function initAuth() {
+    const cached = loadCached();
+    if (cached) {
+      chatUser = cached;
+    } else {
+      const u = await fetchAuthUser();
+      if (u) { chatUser = u; saveCache(u); }
+    }
+    _authResolve(chatUser);
+  })();
+
+  // Sign-out: reset widget so gate reappears
+  try {
+    window.supabase?.auth.onAuthStateChange((event) => {
+      if (event !== 'SIGNED_OUT') return;
+      clearCache();
+      chatUser    = null;
+      chatStarted = false;
+      messages.innerHTML = '';
+      if (isOpen) {
+        const f = document.getElementById('pp-prechat');
+        if (f) f.remove();
+        footer.style.display = 'none';
+        showPreChatForm();
+      }
+    });
+  } catch {}
+
+  // ── Pre-chat gate form ─────────────────────────────────────────
+  function showPreChatForm() {
+    footer.style.display = 'none';
+    if (document.getElementById('pp-prechat')) return;
+
+    const div = document.createElement('div');
+    div.id = 'pp-prechat';
+    div.innerHTML =
+      '<p class="pp-pc-subtitle">Introduce yourself to get started</p>' +
+      '<div class="pp-pc-field">' +
+        '<input id="pp-fc-name" type="text" placeholder="Full Name" autocomplete="name"/>' +
+        '<span class="pp-fc-err" id="pp-err-name"></span>' +
+      '</div>' +
+      '<div class="pp-pc-field">' +
+        '<input id="pp-fc-phone" type="tel" placeholder="Phone (08012345678)" autocomplete="tel"/>' +
+        '<span class="pp-fc-err" id="pp-err-phone"></span>' +
+      '</div>' +
+      '<div class="pp-pc-field">' +
+        '<input id="pp-fc-email" type="email" placeholder="Email address" autocomplete="email"/>' +
+        '<span class="pp-fc-err" id="pp-err-email"></span>' +
+      '</div>' +
+      '<button id="pp-start-btn">Start Chat →</button>';
+
+    win.appendChild(div);
+
+    document.getElementById('pp-start-btn').addEventListener('click', submitPreChat);
+    document.getElementById('pp-fc-email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitPreChat();
+    });
+    setTimeout(() => document.getElementById('pp-fc-name')?.focus(), 150);
+  }
+
+  function submitPreChat() {
+    const nEl = document.getElementById('pp-fc-name');
+    const pEl = document.getElementById('pp-fc-phone');
+    const eEl = document.getElementById('pp-fc-email');
+    document.getElementById('pp-err-name').textContent  = '';
+    document.getElementById('pp-err-phone').textContent = '';
+    document.getElementById('pp-err-email').textContent = '';
+
+    let ok = true;
+    const name  = nEl.value.trim();
+    const phone = normalisePhone(pEl.value.trim());
+    const email = eEl.value.trim();
+
+    if (!name)
+      { document.getElementById('pp-err-name').textContent  = 'Please enter your full name.'; ok = false; }
+    if (!/^0\d{10}$/.test(phone))
+      { document.getElementById('pp-err-phone').textContent = 'Enter 11-digit number starting with 0 (e.g. 08012345678)'; ok = false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      { document.getElementById('pp-err-email').textContent = 'Enter a valid email address.'; ok = false; }
+
+    if (!ok) return;
+
+    chatUser = { name, phone, email };
+    saveCache(chatUser);
+    activateChatInterface();
+  }
+
+  function activateChatInterface() {
+    const form = document.getElementById('pp-prechat');
+    if (form) form.remove();
+    footer.style.display = 'flex';
+    if (!chatStarted) {
+      chatStarted = true;
+      showGreeting();
+    }
+    setTimeout(() => input.focus(), 100);
+  }
+
+  async function openGate() {
+    await _authPromise;
+    if (!isOpen) return; // user closed before auth resolved
+    if (chatUser) activateChatInterface();
+    else showPreChatForm();
+  }
+
+  // ── Badge ──────────────────────────────────────────────────────
   setTimeout(() => { if (!isOpen) badge.style.display = 'flex'; }, 3000);
 
+  // ── Toggle ─────────────────────────────────────────────────────
   function toggleChat() {
     isOpen = !isOpen;
     if (isOpen) {
       win.classList.add('open');
       badge.style.display = 'none';
-      if (messages.children.length === 0) showGreeting();
-      setTimeout(() => input.focus(), 250);
+      if (!chatStarted || !chatUser) {
+        footer.style.display = 'none'; // hide until gate resolves
+        openGate();
+      } else {
+        setTimeout(() => input.focus(), 250);
+      }
     } else {
       win.classList.remove('open');
     }
   }
 
+  // ── Message helpers ────────────────────────────────────────────
   function showGreeting() {
     appendMsg('bot', '👋 Hi! Welcome to PuppyPlace. How can I help you today?\n\nYou can ask me about orders, products, delivery, returns — anything! 🐶');
   }
@@ -3069,6 +3287,7 @@ function toggleFc(h) {
     messages.scrollTop = messages.scrollHeight;
   }
 
+  // ── Send message ───────────────────────────────────────────────
   async function sendMessage() {
     const text = input.value.trim();
     if (!text) return;
@@ -3079,11 +3298,26 @@ function toggleFc(h) {
     sendBtn.disabled = true;
     showTyping(true);
 
+    const waId = toWaId(chatUser?.phone || '');
+    const name  = chatUser?.name || 'Customer';
+
     try {
       const res = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, message: text, source: 'website', timestamp: new Date().toISOString() })
+        body: JSON.stringify({
+          body: {
+            senderData: {
+              sender:     waId + '@c.us',
+              chatId:     waId + '@c.us',
+              senderName: name
+            },
+            messageData: {
+              textMessageData: { textMessage: text }
+            }
+          },
+          source: 'website'
+        })
       });
 
       showTyping(false);
@@ -3104,6 +3338,7 @@ function toggleFc(h) {
     }
   }
 
+  // ── Event listeners ────────────────────────────────────────────
   btn.addEventListener('click', toggleChat);
   closeBtn.addEventListener('click', toggleChat);
   sendBtn.addEventListener('click', sendMessage);
