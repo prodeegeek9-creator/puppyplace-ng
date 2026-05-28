@@ -894,15 +894,15 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
           <span class="cat-menu-title">Categories</span>
         </div>
         <ul class="cat-menu-list" id="catMenu">
-          <li class="cat-menu-item on" onclick="filterCat(this,'All')"><div class="cat-menu-item-left"><span class="cat-ico">🐾</span><span class="cat-menu-item-name">All Products</span></div><span class="cat-count-badge">8.4k</span></li>
-          <li class="cat-menu-item" onclick="filterCat(this,'Food')"><div class="cat-menu-item-left"><span class="cat-ico">🥩</span><span class="cat-menu-item-name">Food &amp; Treats</span></div><span class="cat-count-badge">2.4k</span></li>
-          <li class="cat-menu-item" onclick="filterCat(this,'Toy')"><div class="cat-menu-item-left"><span class="cat-ico">🧸</span><span class="cat-menu-item-name">Toys &amp; Play</span></div><span class="cat-count-badge">980</span></li>
-          <li class="cat-menu-item" onclick="filterCat(this,'Grooming')"><div class="cat-menu-item-left"><span class="cat-ico">🛁</span><span class="cat-menu-item-name">Grooming</span></div><span class="cat-count-badge">640</span></li>
-          <li class="cat-menu-item" onclick="filterCat(this,'Housing')"><div class="cat-menu-item-left"><span class="cat-ico">🏠</span><span class="cat-menu-item-name">Housing &amp; Beds</span></div><span class="cat-count-badge">520</span></li>
-          <li class="cat-menu-item" onclick="filterCat(this,'Health')"><div class="cat-menu-item-left"><span class="cat-ico">💊</span><span class="cat-menu-item-name">Health &amp; Vet</span></div><span class="cat-count-badge">430</span></li>
-          <li class="cat-menu-item" onclick="filterCat(this,'Accessories')"><div class="cat-menu-item-left"><span class="cat-ico">🐾</span><span class="cat-menu-item-name">Accessories</span></div><span class="cat-count-badge">870</span></li>
-          <li class="cat-menu-item" onclick="filterCat(this,'Clothing')"><div class="cat-menu-item-left"><span class="cat-ico">👗</span><span class="cat-menu-item-name">Clothing</span></div><span class="cat-count-badge">290</span></li>
-          <li class="cat-menu-item" onclick="filterCat(this,'Travel')"><div class="cat-menu-item-left"><span class="cat-ico">🚗</span><span class="cat-menu-item-name">Travel</span></div><span class="cat-count-badge">215</span></li>
+          <li class="cat-menu-item on" onclick="filterCat(this,'All')"><div class="cat-menu-item-left"><span class="cat-ico">🐾</span><span class="cat-menu-item-name">All Products</span></div><span class="cat-count-badge"></span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Food')"><div class="cat-menu-item-left"><span class="cat-ico">🥩</span><span class="cat-menu-item-name">Food &amp; Treats</span></div><span class="cat-count-badge"></span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Toy')"><div class="cat-menu-item-left"><span class="cat-ico">🧸</span><span class="cat-menu-item-name">Toys &amp; Play</span></div><span class="cat-count-badge"></span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Grooming')"><div class="cat-menu-item-left"><span class="cat-ico">🛁</span><span class="cat-menu-item-name">Grooming</span></div><span class="cat-count-badge"></span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Housing')"><div class="cat-menu-item-left"><span class="cat-ico">🏠</span><span class="cat-menu-item-name">Housing &amp; Beds</span></div><span class="cat-count-badge"></span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Health')"><div class="cat-menu-item-left"><span class="cat-ico">💊</span><span class="cat-menu-item-name">Health &amp; Vet</span></div><span class="cat-count-badge"></span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Accessories')"><div class="cat-menu-item-left"><span class="cat-ico">🐾</span><span class="cat-menu-item-name">Accessories</span></div><span class="cat-count-badge"></span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Clothing')"><div class="cat-menu-item-left"><span class="cat-ico">👗</span><span class="cat-menu-item-name">Clothing</span></div><span class="cat-count-badge"></span></li>
+          <li class="cat-menu-item" onclick="filterCat(this,'Travel')"><div class="cat-menu-item-left"><span class="cat-ico">🚗</span><span class="cat-menu-item-name">Travel</span></div><span class="cat-count-badge"></span></li>
         </ul>
       </div>
 
@@ -910,31 +910,14 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         <div class="sb-title">Filter by Price</div>
         <div class="sb-body">
           <div class="price-inputs"><input class="price-inp" placeholder="Min ₦"/><input class="price-inp" placeholder="Max ₦"/></div>
-          <button class="btn-dark sb-btn" onclick="alert('Price filter applied!')">Apply</button>
+          <button class="btn-dark sb-btn" onclick="applyPriceFilter()">Apply</button>
         </div>
       </div>
 
-      <div class="sidebar-widget">
-        <div class="sb-title">Pet Type</div>
-        <div class="sb-body">
-          <div class="check-list">
-            <label class="chk-row"><input type="checkbox" checked/> 🐶 Dogs (3,200)</label>
-            <label class="chk-row"><input type="checkbox" checked/> 🐱 Cats (2,100)</label>
-            <label class="chk-row"><input type="checkbox"/> 🦜 Birds (780)</label>
-            <label class="chk-row"><input type="checkbox"/> 🐰 Rabbits (340)</label>
-          </div>
-        </div>
-      </div>
-      
-      <div class="sidebar-widget">
+      <div class="sidebar-widget" id="sbBrands" style="display:none">
         <div class="sb-title">Brands</div>
         <div class="sb-body">
-          <div class="tag-cloud">
-            <span class="stag on">Royal Canin</span>
-            <span class="stag" onclick="this.classList.toggle('on')">Pedigree</span>
-            <span class="stag" onclick="this.classList.toggle('on')">Whiskas</span>
-            <span class="stag" onclick="this.classList.toggle('on')">Kong</span>
-          </div>
+          <div class="tag-cloud" id="brandCloud"></div>
         </div>
       </div>
 
@@ -1431,6 +1414,7 @@ async function loadProductsFromSupabase() {
   updateBadges();
 
   renderProds(prods);
+  updateSidebarCounts();
   await renderPets();
   renderDeals();
   startDealCountdown();
@@ -1989,6 +1973,39 @@ function showCopiedToast() {
   t.textContent = '✅ Copied to clipboard';
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
+}
+
+function updateSidebarCounts() {
+  // Category counts
+  document.querySelectorAll('#catMenu .cat-menu-item').forEach(item => {
+    const m = (item.getAttribute('onclick') || '').match(/'([^']+)'\)/);
+    if (!m) return;
+    const cat = m[1];
+    const badge = item.querySelector('.cat-count-badge');
+    if (badge) badge.textContent = cat === 'All' ? prods.length : prods.filter(p => p.cat === cat).length;
+  });
+  // Brand cloud from real data
+  const brands = [...new Set(prods.map(p => p.brand).filter(Boolean))].sort().slice(0, 10);
+  const cloud = document.getElementById('brandCloud');
+  const sbBrands = document.getElementById('sbBrands');
+  if (cloud && brands.length) {
+    cloud.innerHTML = `<span class="stag on" onclick="filterBrand(this,'')">All</span>` +
+      brands.map(b => `<span class="stag" onclick="filterBrand(this,${JSON.stringify(b)})">${escHtml(b)}</span>`).join('');
+    if (sbBrands) sbBrands.style.display = '';
+  }
+}
+
+function filterBrand(el, brand) {
+  document.querySelectorAll('#brandCloud .stag').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  renderProds(brand ? prods.filter(p => p.brand === brand) : prods);
+}
+
+function applyPriceFilter() {
+  const inputs = document.querySelectorAll('.price-inp');
+  const min = parseFloat(String(inputs[0].value).replace(/[^0-9.]/g, '')) || 0;
+  const max = parseFloat(String(inputs[1].value).replace(/[^0-9.]/g, '')) || Infinity;
+  renderProds(prods.filter(p => p.p >= min && p.p <= max));
 }
 
 function filterCat(el, cat) {
