@@ -2002,7 +2002,7 @@ function closeModal() {
 
 async function shareProduct() {
   const pid = openModal._pid;
-  const p = prods.find(x => x.id === pid) || dealData[parseInt((pid||'').slice(1))];
+  const p = prods.find(x => x.id === pid);
   if (!p) return;
   const text = (p.desc || '').replace(/<[^>]+>/g,'').slice(0,120) || p.n;
   const shareData = {
