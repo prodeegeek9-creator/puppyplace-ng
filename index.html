@@ -819,7 +819,6 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
     <div class="mob-nav-link" onclick="filterCat(null,'Accessories');closeMobNav()"><span>🐾</span> Accessories</div>
     <div class="mob-nav-section">More</div>
     <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('pets').scrollIntoView({behavior:'smooth'})"><span>🐶</span> Adopt a Pet</div>
-    <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('vets').scrollIntoView({behavior:'smooth'})"><span>🏥</span> Vet Directory</div>
     <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('breeders').scrollIntoView({behavior:'smooth'})"><span>🤝</span> Breeders</div>
     <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('blog').scrollIntoView({behavior:'smooth'})"><span>📖</span> Blog</div>
     <div class="mob-nav-link" onclick="closeMobNav();document.getElementById('deals').scrollIntoView({behavior:'smooth'})"><span>🎁</span> Deals &amp; Offers</div>
@@ -877,7 +876,6 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
     <a class="nav-link" href="#" onclick="setNav(this)">👗 Clothing</a>
     <div class="nav-sep"></div>
     <a class="nav-link" href="#pets" onclick="setNav(this)">🐶 Adopt a Pet</a>
-    <a class="nav-link" href="#vets" onclick="setNav(this)">🏥 Vets</a>
     <a class="nav-link" href="#breeders" onclick="setNav(this)">🤝 Breeders</a>
     <a class="nav-link" href="#blog" onclick="setNav(this)">📖 Blog</a>
   </div>
@@ -964,13 +962,6 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
             <div class="hm-sub">Royal Canin, Pedigree &amp; more</div>
             <div class="hm-price">From ₦3,500 →</div>
           </div>
-          <div class="hero-mini" onclick="document.getElementById('vets').scrollIntoView({behavior:'smooth'})">
-            <span class="hero-mini-emoji">🏥</span>
-            <div class="hm-tag" style="background:var(--orange)">Book now</div>
-            <div class="hm-title">Find a Vet Near You</div>
-            <div class="hm-sub">200+ vets across Nigeria</div>
-            <div class="hm-price" style="color:#2ecc71">Free consultation →</div>
-          </div>
         </div>
       </div>
 
@@ -1044,16 +1035,6 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         <div class="pet-grid" id="petGrid"></div>
       </div>
 
-      <div class="sec" id="vets">
-        <div class="sec-head">
-          <div class="sec-head-left"><div class="sec-head-label">Healthcare</div><h2>Vet <span>Directory</span></h2></div>
-        </div>
-        <div class="vet-grid">
-          <div class="vet-card"><div class="vc-head"><div class="vc-avatar">👩‍⚕️</div><div><div class="vc-name">Dr. Adaeze Obi</div><div class="vc-spec">Small Animal Medicine</div><div class="vc-stars">★★★★★</div></div></div><div class="vc-chips"><span class="vc-chip">Dogs</span><span class="vc-chip">Cats</span><span class="vc-chip">Surgery</span></div><div class="vc-loc">📍 Lekki Phase 1, Lagos</div><div class="vc-footer"><button class="btn-dark vc-book" onclick="alert('Booking Dr. Adaeze…')">Book</button><button class="vc-call">📞</button></div></div>
-          <div class="vet-card"><div class="vc-head"><div class="vc-avatar">👨‍⚕️</div><div><div class="vc-name">Dr. Emeka Chukwu</div><div class="vc-spec">Exotic Animals Specialist</div><div class="vc-stars">★★★★★</div></div></div><div class="vc-chips"><span class="vc-chip">Birds</span><span class="vc-chip">Reptiles</span><span class="vc-chip">Fish</span></div><div class="vc-loc">📍 Wuse 2, Abuja</div><div class="vc-footer"><button class="btn-dark vc-book" onclick="alert('Booking Dr. Emeka…')">Book</button><button class="vc-call">📞</button></div></div>
-          <div class="vet-card"><div class="vc-head"><div class="vc-avatar">👩‍⚕️</div><div><div class="vc-name">Dr. Ngozi Eze</div><div class="vc-spec">Veterinary Dermatology</div><div class="vc-stars">★★★★☆</div></div></div><div class="vc-chips"><span class="vc-chip">Dogs</span><span class="vc-chip">Cats</span><span class="vc-chip">Skin Care</span></div><div class="vc-loc">📍 GRA, Port Harcourt</div><div class="vc-footer"><button class="btn-dark vc-book" onclick="alert('Booking Dr. Ngozi…')">Book</button><button class="vc-call">📞</button></div></div>
-        </div>
-      </div>
 
       <div class="sec" id="breeders">
         <div class="sec-head">
@@ -1135,7 +1116,6 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         <a href="shop.html?pet=Bird">Birds</a>
         <a href="#">Fish</a>
         <a href="#">Reptiles</a>
-        <a href="#vets">Find a Vet</a>
       </div>
     </div>
     <div class="fc">
