@@ -1466,6 +1466,7 @@ async function loadProductsFromSupabase() {
   renderProds(prods);
   await renderPets();
   renderDeals();
+  startDealCountdown();
 }
 
 
@@ -2454,6 +2455,28 @@ function renderDeals() {
       </div>
     </div>`;
   }).join('');
+}
+
+function startDealCountdown() {
+  // Count down to midnight each day; resets automatically each day
+  function tick() {
+    const now = new Date();
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const diff = Math.max(0, end - now);
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    const pad = n => String(n).padStart(2, '0');
+    const dh = document.getElementById('dh');
+    const dm = document.getElementById('dm');
+    const ds = document.getElementById('ds');
+    if (dh) dh.textContent = pad(h);
+    if (dm) dm.textContent = pad(m);
+    if (ds) ds.textContent = pad(s);
+  }
+  tick();
+  setInterval(tick, 1000);
 }
 
 /* ══════════════════════════════════════════
