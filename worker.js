@@ -269,11 +269,11 @@ async function servePetPage(slug, env) {
 }
 
 function petNotFoundPage() {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Pet Not Found | PuppyPlace</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet"/><style>body{font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;text-align:center;padding:24px}h1{font-size:28px;font-weight:900;margin-bottom:12px}a{color:#ed6436;font-weight:800}</style></head><body><div><div style="font-size:72px;margin-bottom:20px">🐾</div><h1>Pet Not Found</h1><p style="color:#868686;margin-bottom:24px">This listing doesn't exist or may have been removed.</p><a href="/pets.html">← Browse All Pets</a></div></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Pet Not Found | PuppyPlace</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet"/><style>body{font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;text-align:center;padding:24px}h1{font-size:28px;font-weight:900;margin-bottom:12px}a{color:#ed6436;font-weight:800}</style></head><body><div><div style="font-size:72px;margin-bottom:20px">🐾</div><h1>Pet Not Found</h1><p style="color:#868686;margin-bottom:24px">This listing doesn't exist or may have been removed.</p><a href="/pets.html">← Browse All Pets</a></div></body></html>`;
 }
 
 function petErrorPage(msg) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/><title>Error | PuppyPlace</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet"/><style>body{font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;text-align:center;padding:24px}a{color:#ed6436;font-weight:800}</style></head><body><div><h1>⚠️ ${esc(msg)}</h1><p style="color:#868686;margin-bottom:24px">Please try again later.</p><a href="/pets.html">← All Pets</a></div></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/><title>Error | PuppyPlace</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet"/><style>body{font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;text-align:center;padding:24px}a{color:#ed6436;font-weight:800}</style></head><body><div><h1>⚠️ ${esc(msg)}</h1><p style="color:#868686;margin-bottom:24px">Please try again later.</p><a href="/pets.html">← All Pets</a></div></body></html>`;
 }
 
 function renderPetPage(p) {
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded',function(){_show();});
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/>
+<meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>${esc(pageTitle)}</title>
 <meta name="description" content="${esc(metaDesc)}"/>
@@ -564,7 +564,7 @@ function renderPost(post, related) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/>
+<meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>${esc(pageTitle)}</title>
 <meta name="description" content="${esc(metaDesc)}"/>
@@ -651,14 +651,14 @@ ${heroHtml}
 }
 
 function notFoundPage() {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/><title>Post Not Found — PuppyPlace</title>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/><title>Post Not Found — PuppyPlace</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&display=swap" rel="stylesheet"/>
 <style>body{font-family:'Nunito',sans-serif;text-align:center;padding:100px 24px;background:#f8f9fa}h1{font-size:32px;font-weight:900;margin-bottom:12px}p{color:#868686;margin-bottom:32px}a{display:inline-block;background:#ed6436;color:#fff;border-radius:50px;padding:14px 32px;font-weight:800}</style>
 </head><body><div style="font-size:72px;margin-bottom:20px">🐾</div><h1>Post Not Found</h1><p>This article doesn't exist or may have been removed.</p><a href="/blog.html">Browse All Posts</a></body></html>`;
 }
 
 function errorPage(msg) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/><title>Error — PuppyPlace</title>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/><title>Error — PuppyPlace</title>
 <style>body{font-family:sans-serif;text-align:center;padding:100px 24px;background:#f8f9fa}h1{margin-bottom:12px}p{color:#868686;margin-bottom:32px}a{color:#ed6436;font-weight:700}</style>
 </head><body><h1>⚠️ ${esc(msg)}</h1><p>Please try again later.</p><a href="/blog.html">← All Posts</a></body></html>`;
 }
@@ -1039,7 +1039,7 @@ function renderProductPage(p, related = []) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/>
+<meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>${esc(name)} — PuppyPlace.ng</title>
 <meta name="description" content="${esc(metaDesc)}"/>
@@ -1723,14 +1723,14 @@ try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error
 }
 
 function productNotFoundPage() {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/><title>Product Not Found — PuppyPlace</title>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/><title>Product Not Found — PuppyPlace</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&display=swap" rel="stylesheet"/>
 <style>body{font-family:'Nunito',sans-serif;text-align:center;padding:100px 24px;background:#f8f9fa}h1{font-size:32px;font-weight:900;margin-bottom:12px}p{color:#868686;margin-bottom:32px}a{display:inline-block;background:#ed6436;color:#fff;border-radius:50px;padding:14px 32px;font-weight:800}</style>
 </head><body><div style="font-size:72px;margin-bottom:20px">📦</div><h1>Product Not Found</h1><p>This product may have been removed or is no longer available.</p><a href="/shop.html">Browse All Products</a></body></html>`;
 }
 
 function productErrorPage(msg) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/><title>Error — PuppyPlace</title>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/><title>Error — PuppyPlace</title>
 <style>body{font-family:sans-serif;text-align:center;padding:100px 24px;background:#f8f9fa}h1{margin-bottom:12px}p{color:#868686;margin-bottom:32px}a{color:#ed6436;font-weight:700}</style>
 </head><body><h1>⚠️ ${esc(msg)}</h1><p>Please try again later.</p><a href="/shop.html">← Back to Shop</a></body></html>`;
 }
