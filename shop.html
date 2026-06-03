@@ -1053,7 +1053,7 @@ function renderCartDrawer(){
     const cid=escHtml(i.cid||i.id);
     const prod=allProds.find(x=>x.id===i.id);
     const thumb=prod?.img||'';
-    const thumbHtml=thumb?`<img src="${escHtml(thumb)}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--rxs);" onerror="this.style.display='none'">`:`<span style="font-size:26px">${escHtml(i.e)}</span>`;
+    const thumbHtml=thumb?`<img src="${escHtml(thumb)}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--rxs);" onerror="this.style.display='none'">`:`<span style="font-size:26px">${escHtml(i.e||'📦')}</span>`;
     const varHtml=(i.varGroups&&i.varGroups.length)?`<div style="margin:6px 0;">${i.varGroups.map(g=>`<div style="margin-bottom:6px;"><div style="font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;margin-bottom:4px;">${escHtml(g.label)}</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${g.values.map(v=>`<button style="border:${v===g.selected?'1.5px solid var(--orange)':'1px solid var(--border)'};border-radius:50px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;background:${v===g.selected?'var(--orange)':'#fff'};color:${v===g.selected?'#fff':'inherit'};" onclick="changeCartVariant('${cid}','${escHtml(g.label)}','${escHtml(v)}')">${escHtml(v)}</button>`).join('')}</div></div>`).join('')}</div>`:'';
     return `<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;">
     <div style="width:56px;height:56px;background:var(--light);border-radius:var(--rxs);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${thumbHtml}</div>
@@ -1083,14 +1083,19 @@ function renderWishDrawer(){
   const el=document.getElementById('wishItems'), em=document.getElementById('wishEmpty'), ft=document.getElementById('wishFooter');
   if(!wishItems.length){em.style.display='';el.innerHTML='';ft.style.display='none';return;}
   em.style.display='none'; ft.style.display='block';
-  el.innerHTML=wishItems.map(i=>`<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;">
-    <div style="width:64px;height:64px;background:var(--light);border-radius:var(--rxs);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">${escHtml(i.e)}</div>
+  el.innerHTML=wishItems.map(i=>{
+    const wProd=allProds.find(x=>x.id===i.id);
+    const wThumb=wProd?.img||'';
+    const wThumbHtml=wThumb?`<img src="${escHtml(wThumb)}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--rxs);" onerror="this.style.display='none'">`:`<span style="font-size:26px">${escHtml(i.e||'📦')}</span>`;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;">
+    <div style="width:64px;height:64px;background:var(--light);border-radius:var(--rxs);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">${wThumbHtml}</div>
     <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:800;">${escHtml(i.n)}</div>
     <div style="font-size:15px;font-weight:900;color:var(--black);">${fmt(i.p)}</div>
     <button class="btn-dark" style="margin-top:8px;padding:6px 12px;font-size:11px;" onclick="addCartFromWish('${escHtml(i.id)}')">🛒 Add to Cart</button>
     </div>
     <button style="position:absolute;top:14px;right:0;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;" onclick="removeFromWish('${escHtml(i.id)}')">✕</button>
-  </div>`).join('');
+  </div>`;
+  }).join('');
 }
 function openWishlist(){ document.getElementById('wishDrawer').classList.add('open'); document.getElementById('wishOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
 function closeWishlist(){ document.getElementById('wishDrawer').classList.remove('open'); document.getElementById('wishOverlay').classList.remove('open'); document.body.style.overflow=''; }

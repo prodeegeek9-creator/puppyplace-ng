@@ -1171,9 +1171,9 @@ a{text-decoration:none;color:inherit}
 .pi-meta-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:4px}
 .pi-meta-val{font-size:14px;font-weight:700;color:var(--black)}
 .pi-actions{display:flex;gap:10px;margin-bottom:12px}
-.btn-wa-page{width:50px;height:50px;background:#fff;border:1.5px solid #25D366;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;text-decoration:none;cursor:pointer;transition:background .2s}
-.btn-wa-page:hover{background:#f0fff4}
-.btn-cart{flex:1;background:var(--orange);color:#fff;border:none;border-radius:10px;height:50px;padding:0 18px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s}
+.btn-wa-page{flex:1;background:#25D366;color:#fff;border:none;border-radius:10px;height:50px;padding:0 12px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s;text-decoration:none}
+.btn-wa-page:hover{background:#1ebe5d}
+.btn-cart{flex:1;background:var(--orange);color:#fff;border:none;border-radius:10px;height:50px;padding:0 12px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s}
 .btn-cart:hover{background:#c9530a}
 .pi-social-row{display:flex;gap:10px;margin-bottom:16px}
 .pi-soc-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:42px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;color:var(--black);transition:all .2s}
@@ -1285,12 +1285,12 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
         <div class="pi-meta-item"><div class="pi-meta-label">Stock</div><div class="pi-meta-val" style="color:#2ecc71">✅ In Stock</div></div>
       </div>
       <div class="pi-actions" id="piActions">
-        <a href="https://wa.me/2348156740438?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener" class="btn-wa-page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#25D366" width="24" height="24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
-        <button class="btn-cart" onclick="addToCartBtn()">🛒 Add to Cart</button>
+        <a href="https://wa.me/2348156740438?text=${encodeURIComponent('Hi! I\'m interested in ' + name + ' (' + price + ')')}" target="_blank" rel="noopener" class="btn-wa-page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Order on WhatsApp</a>
+        <button class="btn-cart" onclick="addToCartBtn()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Add to Cart</button>
       </div>
       <div class="pi-social-row">
-        <button class="pi-soc-btn" onclick="addToWishBtn()">❤️ Wishlist</button>
-        <button class="pi-soc-btn" onclick="shareProduct()">↗ Share</button>
+        <button class="pi-soc-btn" onclick="addToWishBtn()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Wishlist</button>
+        <button class="pi-soc-btn" onclick="shareProduct()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share</button>
       </div>
       <div style="font-size:12px;color:var(--gray);margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;">
         <span>🚚 Fast delivery across Nigeria</span>
@@ -1473,7 +1473,7 @@ function addToCartBtn(){
   var variantStr=varParts.join(', ');
   var cid=variantStr?id+'||'+variantStr:id;
   var ex=cartItems.find(function(i){return (i.cid||i.id)===cid;});
-  if(ex)ex.qty++;else cartItems.push({cid:cid,id:id,n:prod.n,e:prod.e,cat:prod.cat,p:prod.p||0,qty:1,variant:variantStr,varGroups:storedGroups});
+  if(ex)ex.qty++;else cartItems.push({cid:cid,id:id,n:prod.n,e:prod.e,img:prod.img||null,cat:prod.cat,p:prod.p||0,qty:1,variant:variantStr,varGroups:storedGroups});
   try{saveCart();}catch(e){}
   try{updateBadges();}catch(e){}
   try{renderCartDrawer();}catch(e){console.error('[PuppyPlace] renderCartDrawer error:',e);}
@@ -1522,8 +1522,10 @@ function renderCartDrawer(){
       });
       varHtml+='</div>';
     }
+    var cThumb=item.img||'';
+    var cThumbHtml=cThumb?'<img src="'+escH(cThumb)+'" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">'+escH(item.e||'📦')+'</span>';
     return '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid #e9ecef;position:relative;">'
-      +'<div style="width:56px;height:56px;background:#f1f3f5;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">'+escH(item.e)+'</div>'
+      +'<div style="width:56px;height:56px;background:#f1f3f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">'+cThumbHtml+'</div>'
       +'<div style="flex:1;min-width:0;">'
         +'<div style="font-size:10px;color:#868686;font-weight:700;text-transform:uppercase;margin-bottom:2px;">'+escH(item.cat)+'</div>'
         +'<div style="font-size:14px;font-weight:800;margin-bottom:5px;">'+escH(item.n)+'</div>'
@@ -1546,7 +1548,7 @@ function addToWishBtn(){
   var prod=window.__pp_prod||{};
   var id=prod.id;if(!id)return;
   if(wishItems.find(function(i){return i.id===id;})){showToast('Already in wishlist!');return;}
-  wishItems.push({id:id,n:prod.n,e:prod.e,cat:prod.cat,p:prod.p||0});
+  wishItems.push({id:id,n:prod.n,e:prod.e,img:prod.img||null,cat:prod.cat,p:prod.p||0});
   try{saveWish();}catch(e){}
   try{updateBadges();}catch(e){}
   try{renderWishDrawer();}catch(e){console.error('[PuppyPlace] renderWishDrawer error:',e);}
@@ -1577,8 +1579,10 @@ function renderWishDrawer(){
   if(!wishItems.length){emptyEl.style.display='';itemsEl.innerHTML='';footerEl.style.display='none';return;}
   emptyEl.style.display='none';footerEl.style.display='block';
   itemsEl.innerHTML=wishItems.map(function(item){
+    var wThumb=item.img||'';
+    var wThumbHtml=wThumb?'<img src="'+escH(wThumb)+'" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">':'<span style="font-size:30px">'+escH(item.e||'📦')+'</span>';
     return '<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #e9ecef;position:relative;">'
-      +'<div style="width:64px;height:64px;background:#f1f3f5;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">'+escH(item.e)+'</div>'
+      +'<div style="width:64px;height:64px;background:#f1f3f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">'+wThumbHtml+'</div>'
       +'<div style="flex:1;min-width:0;">'
         +'<div style="font-size:14px;font-weight:800;margin-bottom:5px;">'+escH(item.n)+'</div>'
         +'<div style="font-size:15px;font-weight:900;">'+fmt(item.p)+'</div>'
