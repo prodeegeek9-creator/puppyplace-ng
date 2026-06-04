@@ -1710,18 +1710,19 @@ async function shareProduct(){
   }
   try{if(navigator.share){await navigator.share(shareData);}else{await navigator.clipboard.writeText(shareData.url);showToast('Link copied!');}}catch(e){}
 }
-/* Smart sticky ATC: show when product ATC scrolled out of view, hide at footer */
-(function(){
-  if(!('IntersectionObserver' in window))return;
+/* Sticky ATC: show when product ATC buttons are scrolled out of view */
+try{(function(){
   var bar=document.getElementById('mobAtcBar');
   var anchor=document.getElementById('piActions');
   if(!bar||!anchor)return;
-  var anchorHidden=false,footerVisible=false;
-  function sync(){bar.style.display=(anchorHidden&&!footerVisible)?'flex':'none';}
-  new IntersectionObserver(function(e){anchorHidden=!e[0].isIntersecting;sync();},{threshold:0}).observe(anchor);
-  var ft=document.querySelector('footer');
-  if(ft)new IntersectionObserver(function(e){footerVisible=e[0].isIntersecting;sync();},{threshold:0}).observe(ft);
-})();
+  function checkBar(){
+    var rect=anchor.getBoundingClientRect();
+    bar.style.display=(rect.bottom<0)?'flex':'none';
+  }
+  window.addEventListener('scroll',checkBar,{passive:true});
+  window.addEventListener('resize',checkBar,{passive:true});
+  checkBar();
+})();}catch(e){}
 try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error('[PuppyPlace] Cart init error:',e);}
 </script>
 </body>
