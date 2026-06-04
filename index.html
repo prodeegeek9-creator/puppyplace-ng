@@ -1354,9 +1354,11 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 /* ══════════════════════════════════════════
    CHECKOUT + PAYSTACK + N8N INTEGRATION
    ══════════════════════════════════════════ */
-const PAYSTACK_PUBLIC_KEY = window.PPCONFIG.PAYSTACK_PUBLIC_KEY;
-const N8N_WEBHOOK_URL     = window.PPCONFIG.N8N_WEBHOOK_URL;
-const supabase = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
+const PAYSTACK_PUBLIC_KEY = (window.PPCONFIG && window.PPCONFIG.PAYSTACK_PUBLIC_KEY) || '';
+const N8N_WEBHOOK_URL     = (window.PPCONFIG && window.PPCONFIG.N8N_WEBHOOK_URL) || '';
+const supabase = (window.supabase && window.PPCONFIG && window.PPCONFIG.SUPABASE_URL)
+  ? window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON)
+  : null;
 
 let prods = [];
 

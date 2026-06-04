@@ -799,7 +799,9 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
 <script>
-const supabase = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
+const supabase = (window.supabase && window.PPCONFIG && window.PPCONFIG.SUPABASE_URL)
+  ? window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON)
+  : null;
 
 let allProds = [];
 let filteredProds = [];
