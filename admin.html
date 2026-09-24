@@ -300,6 +300,16 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 .bf-input::placeholder{color:#bbb}
 .bf-textarea{min-height:300px;resize:vertical;font-size:13px;line-height:1.7}
 .bf-hint{font-size:12px;color:var(--gray);margin-top:2px}
+.bf-count{float:right;font-weight:700}.bf-count.warn{color:#e67700}.bf-count.bad{color:#e03131}
+.bf-seo{border:1.5px solid var(--border);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;background:#fcfcfb}
+.bf-seo-hd{font-size:13px;font-weight:900;color:var(--black)}
+.serp{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:#fff;font-family:Arial,sans-serif}
+.serp-url{font-size:12px;color:#202124}.serp-title{font-size:18px;color:#1a0dab;margin:2px 0;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.serp-desc{font-size:13px;color:#4d5156;line-height:1.5}
+.seo-checks{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.seo-checks li::before{content:'⚪ ';}.seo-checks li.ok::before{content:'🟢 ';}.seo-checks li.no::before{content:'🟠 ';}
+.tox-tinymce{border-radius:var(--r)!important;border:1.5px solid var(--border)!important}
+.tox .tox-dialog-wrap{z-index:1400}
 .bf-footer{padding:20px 28px;border-top:1px solid var(--border);display:flex;gap:12px;position:sticky;bottom:0;background:var(--white)}
 .bf-cancel{flex:0 0 auto;background:transparent;border:1.5px solid var(--border);border-radius:50px;padding:12px 24px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--black);transition:all var(--trans)}
 .bf-cancel:hover{border-color:var(--black)}
@@ -654,10 +664,6 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         </div>
 
         <div class="panel" id="panelBlog">
-          <div id="blogWpNotice" style="display:none;background:#fff5f0;border:1.5px solid var(--orange);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;font-size:14px;line-height:1.6">
-            <strong>The blog is now managed in WordPress.</strong> Posts shown on puppyplace.ng come from WordPress; the posts below are the old Supabase copies and are no longer displayed.
-            <div style="margin-top:10px"><a id="blogWpLink" class="add-btn" style="display:inline-block;text-decoration:none" target="_blank" rel="noopener">Open WordPress ↗</a></div>
-          </div>
           <div class="blog-toolbar">
             <div style="font-size:15px;font-weight:800;color:var(--black)">All Posts</div>
             <button class="add-btn" onclick="openBlogForm()">＋ New Post</button>
@@ -886,11 +892,11 @@ input,select,textarea{font-family:'Nunito',sans-serif}
       <div class="bf-row">
         <div class="bf-field full">
           <label class="bf-label">Title <span>*</span></label>
-          <input class="bf-input" id="bfPostTitle" type="text" placeholder="e.g. 5 Tips for a Healthy Puppy" oninput="autoSlug(this.value)"/>
+          <input class="bf-input" id="bfPostTitle" type="text" placeholder="e.g. 5 Tips for a Healthy Puppy" oninput="autoSlug(this.value);updateSeo()"/>
         </div>
         <div class="bf-field full">
           <label class="bf-label">Slug (URL) <span>*</span></label>
-          <input class="bf-input" id="bfSlug" type="text" placeholder="e.g. 5-tips-healthy-puppy"/>
+          <input class="bf-input" id="bfSlug" type="text" placeholder="e.g. 5-tips-healthy-puppy" oninput="updateSeo()"/>
           <span class="bf-hint">Auto-generated from title. URL will be: /posts/SLUG.html</span>
         </div>
       </div>
@@ -913,7 +919,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         </div>
         <div class="bf-field">
           <label class="bf-label">Author</label>
-          <input class="bf-input" id="bfAuthor" type="text" placeholder="e.g. Dr. Amaka Osei"/>
+          <input class="bf-input" id="bfAuthor" type="text" placeholder="e.g. PuppyPlace Team"/>
         </div>
         <div class="bf-field">
           <label class="bf-label">Read Time (minutes)</label>
@@ -922,7 +928,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
       </div>
       <div class="bf-field">
         <label class="bf-label">Excerpt</label>
-        <textarea class="bf-input" id="bfExcerpt" rows="2" placeholder="A short summary shown on the blog listing…" style="resize:vertical"></textarea>
+        <textarea class="bf-input" id="bfExcerpt" rows="2" placeholder="A short summary shown on the blog listing…" style="resize:vertical" oninput="updateSeo()"></textarea>
       </div>
       <div class="bf-field">
         <label class="bf-label">Featured Image <span style="font-weight:600;color:#868686;font-size:11px">(optional — replaces header with photo)</span></label>
@@ -940,9 +946,30 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <span class="bf-hint">Max 5 MB. JPEG, PNG, WebP, GIF, AVIF.</span>
       </div>
       <div class="bf-field">
-        <label class="bf-label">Content (HTML) <span>*</span></label>
-        <textarea class="bf-input bf-textarea" id="bfContent" placeholder="&lt;p&gt;Your article content here. Use &lt;h4&gt; for headings, &lt;p&gt; for paragraphs, &lt;ul&gt;&lt;li&gt; for lists.&lt;/p&gt;"></textarea>
-        <span class="bf-hint">Accepts HTML — use &lt;h4&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;em&gt;</span>
+        <label class="bf-label">Content <span>*</span></label>
+        <textarea class="bf-input bf-textarea" id="bfContent"></textarea>
+        <span class="bf-hint">Use “Heading 2” for main sections and “Heading 3” for sub-sections. Paste from Word or Google Docs is cleaned up automatically. The <strong>&lt;&gt;</strong> button shows the HTML.</span>
+      </div>
+      <div class="bf-seo">
+        <div class="bf-seo-hd">🔍 SEO</div>
+        <div class="bf-field">
+          <label class="bf-label">Focus Keyword</label>
+          <input class="bf-input" id="bfFocusKw" type="text" placeholder="e.g. puppy food in Nigeria" oninput="updateSeo()"/>
+          <span class="bf-hint">The main phrase you want this post to rank for on Google.</span>
+        </div>
+        <div class="bf-field">
+          <label class="bf-label">SEO Title <span class="bf-count" id="bfMetaTitleCount"></span></label>
+          <input class="bf-input" id="bfMetaTitle" type="text" maxlength="70" placeholder="Leave empty to use the post title" oninput="updateSeo()"/>
+        </div>
+        <div class="bf-field">
+          <label class="bf-label">Meta Description <span class="bf-count" id="bfMetaDescCount"></span></label>
+          <textarea class="bf-input" id="bfMetaDesc" rows="2" maxlength="200" placeholder="Leave empty to use the excerpt" style="resize:vertical" oninput="updateSeo()"></textarea>
+        </div>
+        <div>
+          <div class="bf-label" style="margin-bottom:6px">Google preview</div>
+          <div class="serp"><div class="serp-url" id="serpUrl">puppyplace.ng › posts</div><div class="serp-title" id="serpTitle"></div><div class="serp-desc" id="serpDesc"></div></div>
+        </div>
+        <ul class="seo-checks" id="seoChecks"></ul>
       </div>
     </div>
     <div class="bf-footer">
@@ -1086,6 +1113,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@7.6.1/tinymce.min.js" referrerpolicy="origin"></script>
 <script src="config.js"></script>
 <script>
 const sbAdmin = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
@@ -1923,11 +1951,6 @@ async function clearAllProducts(){
 let _blogPosts = [];
 
 async function loadBlogPosts() {
-  const wpUrl = (window.PPCONFIG && window.PPCONFIG.WORDPRESS_URL) || '';
-  if (wpUrl) {
-    document.getElementById('blogWpNotice').style.display = 'block';
-    document.getElementById('blogWpLink').href = wpUrl + '/wp-admin/edit.php';
-  }
   const { data, error } = await sbAdmin.from('blog_posts').select('*').order('created_at', { ascending: false });
   if (error) { console.error('Blog load:', error.message); return; }
   _blogPosts = data || [];
@@ -1972,7 +1995,8 @@ function autoSlug(title) {
 function openBlogForm() {
   document.getElementById('bfTitle').textContent = 'New Post';
   document.getElementById('bfId').value = '';
-  ['bfPostTitle','bfSlug','bfCat','bfAuthor','bfExcerpt','bfContent','bfFeaturedImg'].forEach(id => document.getElementById(id).value = '');
+  ['bfPostTitle','bfSlug','bfCat','bfAuthor','bfExcerpt','bfFeaturedImg','bfFocusKw','bfMetaTitle','bfMetaDesc'].forEach(id => document.getElementById(id).value = '');
+  setBlogContent('');
   document.getElementById('bfEmoji').value = '📝';
   document.getElementById('bfCatColor').value = '#ED6436';
   document.getElementById('bfBg').value = '#fff5f0';
@@ -1996,7 +2020,10 @@ function editBlogPost(id) {
   document.getElementById('bfAuthor').value = p.author || '';
   document.getElementById('bfReadTime').value = p.read_time || 5;
   document.getElementById('bfExcerpt').value = p.excerpt || '';
-  document.getElementById('bfContent').value = p.content || '';
+  document.getElementById('bfFocusKw').value = p.focus_keyword || '';
+  document.getElementById('bfMetaTitle').value = p.meta_title || '';
+  document.getElementById('bfMetaDesc').value = p.meta_description || '';
+  setBlogContent(p.content || '');
   document.getElementById('bfFeaturedFile').value = '';
   const featUrl = p.featured_image || '';
   document.getElementById('bfFeaturedImg').value = featUrl;
@@ -2010,6 +2037,92 @@ function editBlogPost(id) {
   document.getElementById('blogFormBg').classList.add('open');
 }
 
+/* ── Visual editor (TinyMCE) ── */
+let _blogEditorReady = null;
+function initBlogEditor() {
+  if (_blogEditorReady) return _blogEditorReady;
+  if (!window.tinymce) return (_blogEditorReady = Promise.resolve(null)); // CDN blocked → plain textarea
+  _blogEditorReady = tinymce.init({
+    selector: '#bfContent',
+    license_key: 'gpl',
+    height: 480,
+    menubar: false,
+    branding: false,
+    promotion: false,
+    plugins: 'lists link image table code autolink wordcount',
+    toolbar: 'blocks | bold italic | bullist numlist | link image table blockquote | removeformat | code',
+    block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4',
+    content_style: "body{font-family:Nunito,Arial,sans-serif;font-size:16px;line-height:1.8;color:#444} h2,h3,h4{color:#0e0e0c} img{max-width:100%;height:auto}",
+    link_default_target: '',
+    image_caption: false,
+    images_file_types: 'jpeg,jpg,png,webp,gif,avif',
+    automatic_uploads: true,
+    images_upload_handler: blobInfo => uploadBlogInlineImg(blobInfo.blob()),
+    setup: ed => ed.on('input change undo redo SetContent', updateSeo),
+  }).then(eds => eds[0] || null);
+  return _blogEditorReady;
+}
+async function uploadBlogInlineImg(file) {
+  const compressed = await compressImage(file);
+  const fd = new FormData();
+  fd.append('file', compressed);
+  fd.append('bucket', 'hero-images');
+  const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Upload failed');
+  return data.url;
+}
+function setBlogContent(html) {
+  document.getElementById('bfContent').value = html;
+  initBlogEditor().then(ed => { if (ed) ed.setContent(html); updateSeo(); });
+}
+function getBlogContent() {
+  const ed = window.tinymce && tinymce.get('bfContent');
+  return ed ? ed.getContent() : document.getElementById('bfContent').value;
+}
+
+/* ── SEO preview & checklist (Yoast-style) ── */
+function updateSeo() {
+  const $ = id => document.getElementById(id);
+  const title   = $('bfPostTitle').value.trim();
+  const slug    = $('bfSlug').value.trim();
+  const kw      = $('bfFocusKw').value.trim().toLowerCase();
+  const mTitle  = $('bfMetaTitle').value.trim();
+  const mDesc   = $('bfMetaDesc').value.trim();
+  const excerpt = $('bfExcerpt').value.trim();
+  const html    = getBlogContent();
+  const text    = html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+  const words   = text ? text.split(' ').length : 0;
+  const seoTitle = mTitle || (title ? title + ' — PuppyPlace Blog' : '');
+  const seoDesc  = mDesc || excerpt || text.slice(0, 160);
+
+  const count = (el, n, lo, hi) => { el.textContent = n ? n + ' chars' : ''; el.className = 'bf-count' + (n > hi ? ' bad' : n && n < lo ? ' warn' : ''); };
+  count($('bfMetaTitleCount'), mTitle.length, 30, 60);
+  count($('bfMetaDescCount'), mDesc.length, 120, 160);
+
+  $('serpUrl').textContent   = 'puppyplace.ng › posts › ' + (slug || 'your-post');
+  $('serpTitle').textContent = seoTitle.length > 60 ? seoTitle.slice(0, 59) + '…' : (seoTitle || 'Post title');
+  $('serpDesc').textContent  = seoDesc.length > 160 ? seoDesc.slice(0, 159) + '…' : (seoDesc || 'Your meta description will appear here.');
+
+  const firstPara = ((html.match(/<p[^>]*>([\s\S]*?)<\/p>/i) || [])[1] || '').replace(/<[^>]+>/g, '').toLowerCase();
+  const has = s => kw && s.toLowerCase().includes(kw);
+  const kwSlug = kw.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const checks = [
+    [!!kw, 'Focus keyword set'],
+    [has(seoTitle), 'Focus keyword in SEO title'],
+    [has(seoDesc), 'Focus keyword in meta description'],
+    [kw && slug.includes(kwSlug), 'Focus keyword in URL slug'],
+    [has(firstPara), 'Focus keyword in the first paragraph'],
+    [seoTitle.length >= 30 && seoTitle.length <= 60, 'SEO title is 30–60 characters (' + seoTitle.length + ')'],
+    [seoDesc.length >= 120 && seoDesc.length <= 160, 'Meta description is 120–160 characters (' + seoDesc.length + ')'],
+    [words >= 600, 'At least 600 words (' + words + ')'],
+    [/<h[23][\s>]/i.test(html), 'Uses subheadings (Heading 2 / 3)'],
+    [/<a\s[^>]*href="\/(posts|product|shop|pets)/i.test(html), 'Links to another page on PuppyPlace'],
+    [!/<img(?![^>]*alt="[^"]+")[^>]*>/i.test(html), 'All images have alt text'],
+  ];
+  $('seoChecks').innerHTML = checks.map(([ok, label]) => `<li class="${ok ? 'ok' : 'no'}">${escAdm(label)}</li>`).join('');
+}
+
 function closeBlogForm() {
   document.getElementById('blogFormBg').classList.remove('open');
 }
@@ -2017,7 +2130,7 @@ function closeBlogForm() {
 async function saveBlogPost(publish) {
   const title   = document.getElementById('bfPostTitle').value.trim();
   const slug    = document.getElementById('bfSlug').value.trim();
-  const content = document.getElementById('bfContent').value.trim();
+  const content = getBlogContent().trim();
   if (!title || !slug || !content) { showToast('Title, slug, and content are required','error'); return; }
 
   const row = {
@@ -2032,16 +2145,23 @@ async function saveBlogPost(publish) {
     excerpt:        document.getElementById('bfExcerpt').value.trim(),
     featured_image: document.getElementById('bfFeaturedImg').value.trim() || null,
     content,
+    meta_title:       document.getElementById('bfMetaTitle').value.trim() || null,
+    meta_description: document.getElementById('bfMetaDesc').value.trim() || null,
+    focus_keyword:    document.getElementById('bfFocusKw').value.trim() || null,
     status:      publish ? 'published' : 'draft',
     published_at: publish ? new Date().toISOString() : null,
   };
 
   const id = document.getElementById('bfId').value;
-  let error;
-  if (id) {
-    ({ error } = await sbAdmin.from('blog_posts').update(row).eq('id', id));
-  } else {
-    ({ error } = await sbAdmin.from('blog_posts').insert(row));
+  const write = r => id
+    ? sbAdmin.from('blog_posts').update(r).eq('id', id)
+    : sbAdmin.from('blog_posts').insert(r);
+  let { error } = await write(row);
+  // SEO columns not added to the database yet → save the post without them
+  if (error && /meta_title|meta_description|focus_keyword/.test(error.message || '')) {
+    const { meta_title, meta_description, focus_keyword, ...rest } = row;
+    ({ error } = await write(rest));
+    if (!error) showToast('⚠️ Post saved, but SEO fields need a database update — see supabase/blog_seo_columns.sql', 'warning');
   }
 
   if (error) { showToast('❌ ' + error.message, 'error'); return; }
