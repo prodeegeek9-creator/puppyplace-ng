@@ -17,7 +17,6 @@ export default {
         SUPABASE_ANON:       env.SUPABASE_ANON       || '',
         PAYSTACK_PUBLIC_KEY: env.PAYSTACK_PUBLIC_KEY || '',
         N8N_WEBHOOK_URL:     env.N8N_WEBHOOK_URL     || '',
-        WORDPRESS_URL:       wpBase(env),
       };
       return new Response(`window.PPCONFIG = ${JSON.stringify(config)};`, {
         headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
@@ -419,7 +418,7 @@ ${galleryScript}
 }
 
 async function servePost(slug, env) {
-  if (!wpBase(env) && !env.SUPABASE_URL) {
+  if (!env.SUPABASE_URL) {
     return html(errorPage('Server not configured.'), 503);
   }
 
@@ -437,37 +436,10 @@ async function servePost(slug, env) {
   return html(renderPost(post, related), 200);
 }
 
-/* ══════════════════════════════════════════
-   BLOG DATA SOURCE
-   WordPress (headless, via REST API) when WORDPRESS_URL is set,
-   otherwise the legacy Supabase blog_posts table.
-   Both return the same normalised post shape used by renderPost().
-   ══════════════════════════════════════════ */
-const BLOG_CAT_COLORS = ['#ED6436', '#2B8A3E', '#1971C2', '#9C36B5', '#E8590C', '#0C8599', '#C2255C', '#5F3DC4'];
+// Blog posts live in the Supabase blog_posts table
 const BLOG_LIST_FIELDS = 'id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time,featured_image';
 
-function wpBase(env) {
-  return String(env.WORDPRESS_URL || '').trim().replace(/\/+$/, '');
-}
-
 async function getBlogPosts(env, { limit = 100, excludeSlug = '' } = {}) {
-  const wp = wpBase(env);
-  if (wp) {
-    const perPage = Math.min(100, limit + (excludeSlug ? 1 : 0));
-    const posts = [];
-    for (let page = 1; posts.length < limit + 1 && page <= 20; page++) {
-      const res = await wpFetch(env, `/wp/v2/posts?status=publish&orderby=date&order=desc&per_page=${perPage}&page=${page}&_embed=author,wp:featuredmedia,wp:term`);
-      if (!res.ok) {
-        if (page > 1 && res.status === 400) break; // past the last page
-        throw new Error(`WordPress ${res.status}`);
-      }
-      const rows = await res.json();
-      posts.push(...rows.map(r => normalizeWpPost(r)));
-      if (rows.length < perPage || page >= Number(res.headers.get('X-WP-TotalPages') || 1)) break;
-    }
-    return posts.filter(p => p.slug !== excludeSlug).slice(0, limit);
-  }
-
   if (!env.SUPABASE_URL) return [];
   const exclude = excludeSlug ? `&slug=neq.${encodeURIComponent(excludeSlug)}` : '';
   const res = await fetch(
@@ -479,14 +451,6 @@ async function getBlogPosts(env, { limit = 100, excludeSlug = '' } = {}) {
 }
 
 async function getBlogPost(slug, env) {
-  const wp = wpBase(env);
-  if (wp) {
-    const res = await wpFetch(env, `/wp/v2/posts?status=publish&slug=${encodeURIComponent(slug)}&_embed=author,wp:featuredmedia,wp:term`);
-    if (!res.ok) throw new Error(`WordPress ${res.status}`);
-    const rows = await res.json();
-    return rows && rows.length ? normalizeWpPost(rows[0], env) : null;
-  }
-
   const res = await fetch(
     `${env.SUPABASE_URL}/rest/v1/blog_posts?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=*`,
     { headers: sbHeaders(env) }
@@ -494,75 +458,6 @@ async function getBlogPost(slug, env) {
   if (!res.ok) throw new Error(`Supabase ${res.status}`);
   const rows = await res.json();
   return rows && rows.length ? rows[0] : null;
-}
-
-// Edge-cached for 5 minutes so WordPress is not hit on every page view
-function wpFetch(env, path) {
-  return fetch(`${wpBase(env)}/wp-json${path}`, {
-    headers: { 'Accept': 'application/json' },
-    cf: { cacheTtl: 300, cacheEverything: true },
-  });
-}
-
-// Pass env to also include the full article body (single-post view)
-function normalizeWpPost(p, env) {
-  const emb    = p._embedded || {};
-  const media  = (emb['wp:featuredmedia'] || [])[0];
-  const cats   = ((emb['wp:term'] || [])[0] || []).filter(t => t.taxonomy === 'category' && t.slug !== 'uncategorized');
-  const author = (emb.author || [])[0];
-  const yoast  = p.yoast_head_json || {};
-  const rawContent = (p.content && p.content.rendered) || '';
-  const words  = plainText(rawContent, Infinity).split(' ').filter(Boolean).length;
-  const category = cats.length ? decodeEntities(cats[0].name) : 'General';
-
-  const post = {
-    id:             p.id,
-    slug:           p.slug,
-    title:          decodeEntities((p.title && p.title.rendered) || ''),
-    category,
-    cat_color:      BLOG_CAT_COLORS[hashStr(category) % BLOG_CAT_COLORS.length],
-    emoji:          '📝',
-    bg_color:       '#fff5f0',
-    excerpt:        decodeEntities(plainText((p.excerpt && p.excerpt.rendered) || '', 300)),
-    author:         (author && author.name) || 'PuppyPlace Team',
-    published_at:   p.date_gmt ? p.date_gmt + 'Z' : p.date,
-    read_time:      Math.max(1, Math.round(words / 200)),
-    featured_image: (media && media.source_url) || null,
-  };
-  if (env) {
-    post.content          = rewriteWpLinks(rawContent, env);
-    post.meta_title       = yoast.title || null;
-    post.meta_description = yoast.description || null;
-  }
-  return post;
-}
-
-// Links to other posts inside WordPress content point at the WP site; send them to
-// puppyplace.ng/posts/<slug>.html instead (expects permalinks set to /posts/%postname%/).
-function rewriteWpLinks(content, env) {
-  const base = wpBase(env).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return content.replace(new RegExp(`href="${base}/posts/([^/"?#]+)/?"`, 'g'), 'href="/posts/$1.html"');
-}
-
-function decodeEntities(s) {
-  return String(s || '')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&hellip;/g, '…')
-    .replace(/&[nm]dash;/g, m => (m[1] === 'n' ? '–' : '—'))
-    .replace(/&[lr]squo;/g, '’')
-    .replace(/&[lr]dquo;/g, '"')
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
-}
-
-function hashStr(s) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
 }
 
 // Public listing used by index.html and blog.html
@@ -755,7 +650,14 @@ a{text-decoration:none;color:inherit}
 /* Content */
 .art-wrap{max-width:780px;margin:0 auto;width:100%;flex:1}
 .art-body{padding:56px 24px 0}
+.art-body h2{font-size:26px;font-weight:900;margin:40px 0 14px;color:var(--black);line-height:1.3}
+.art-body h3{font-size:22px;font-weight:900;margin:34px 0 12px;color:var(--black);line-height:1.35}
 .art-body h4{font-size:21px;font-weight:900;margin:36px 0 12px;color:var(--black)}
+.art-body img{max-width:100%;height:auto;border-radius:var(--r);margin:8px 0 20px;display:block}
+.art-body blockquote{border-left:4px solid var(--orange);background:#fff;padding:14px 20px;margin:0 0 20px;font-style:italic;color:#555}
+.art-body table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:15px;display:block;overflow-x:auto}
+.art-body th,.art-body td{border:1px solid var(--border);padding:10px 12px;text-align:left}
+.art-body th{background:var(--light);font-weight:800}
 .art-body p{margin:0 0 20px;font-size:17px;color:#444;line-height:1.85}
 .art-body ul,.art-body ol{margin:0 0 20px;padding-left:26px}
 .art-body li{margin-bottom:10px;font-size:17px;color:#444;line-height:1.75}
