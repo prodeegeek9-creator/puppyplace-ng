@@ -654,6 +654,10 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         </div>
 
         <div class="panel" id="panelBlog">
+          <div id="blogWpNotice" style="display:none;background:#fff5f0;border:1.5px solid var(--orange);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;font-size:14px;line-height:1.6">
+            <strong>The blog is now managed in WordPress.</strong> Posts shown on puppyplace.ng come from WordPress; the posts below are the old Supabase copies and are no longer displayed.
+            <div style="margin-top:10px"><a id="blogWpLink" class="add-btn" style="display:inline-block;text-decoration:none" target="_blank" rel="noopener">Open WordPress ↗</a></div>
+          </div>
           <div class="blog-toolbar">
             <div style="font-size:15px;font-weight:800;color:var(--black)">All Posts</div>
             <button class="add-btn" onclick="openBlogForm()">＋ New Post</button>
@@ -1919,6 +1923,11 @@ async function clearAllProducts(){
 let _blogPosts = [];
 
 async function loadBlogPosts() {
+  const wpUrl = (window.PPCONFIG && window.PPCONFIG.WORDPRESS_URL) || '';
+  if (wpUrl) {
+    document.getElementById('blogWpNotice').style.display = 'block';
+    document.getElementById('blogWpLink').href = wpUrl + '/wp-admin/edit.php';
+  }
   const { data, error } = await sbAdmin.from('blog_posts').select('*').order('created_at', { ascending: false });
   if (error) { console.error('Blog load:', error.message); return; }
   _blogPosts = data || [];

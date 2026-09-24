@@ -2312,13 +2312,9 @@ let blogPosts = [];
 
 async function loadBlogPosts() {
   try {
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .select('id,slug,title,category,cat_color,emoji,bg_color,featured_image,excerpt,author,published_at,read_time')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(6);
-    if (error) throw error;
+    const res = await fetch('/api/blog-posts?limit=6');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
     blogPosts = (data || []).map(p => ({
       id:       p.id,
       slug:     p.slug,
