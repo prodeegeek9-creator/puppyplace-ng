@@ -1428,8 +1428,10 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
         ${disc > 0 ? `<span class="pi-disc">-${disc}%</span>` : ''}
       </div>
       <div class="pi-rating">
-        <span class="pi-stars">★★★★${(p.rating || 4.5) >= 5 ? '★' : '☆'}</span>
-        <span>${esc(String(p.rating || '4.5'))} · ${esc(String(p.review_count || 0))} reviews</span>
+${p.review_count > 0 ? `
+        <span class="pi-stars">${'★'.repeat(Math.min(5, Math.round(p.rating || 0)))}${'☆'.repeat(5 - Math.min(5, Math.round(p.rating || 0)))}</span>
+        <span>${esc(String(p.rating || 0))} · ${esc(String(p.review_count))} reviews</span>` : `
+        <span>No reviews yet</span>`}
       </div>
       ${renderVarGroups(p) ? `<div style="margin-bottom:20px">${renderVarGroups(p)}</div>` : ''}
       ${desc ? `<div class="pi-desc">${desc}</div>` : ''}

@@ -798,7 +798,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 </div>
 <div class="mob-search-bar" id="mobSearch">
   <div class="mob-search-inner">
-    <input type="text" placeholder="Search products, pets, vets…" oninput="liveSearch(this.value)"/>
+    <input type="text" placeholder="Search products, pets…" oninput="liveSearch(this.value)"/>
     <button onclick="liveSearch(document.querySelector('#mobSearch input').value)" style="background:var(--orange);border:none;width:50px;height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff;">🔍</button>
   </div>
 </div>
@@ -848,7 +848,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         <option>Grooming</option>
         <option>Live Pets</option>
       </select>
-      <input id="sInput" type="text" placeholder="Search products, pets, vets…" oninput="liveSearch(this.value)"/>
+      <input id="sInput" type="text" placeholder="Search products, pets…" oninput="liveSearch(this.value)"/>
       <button class="search-submit">🔍</button>
     </div>
     <div class="header-icons">
@@ -1380,7 +1380,7 @@ async function loadProductsFromSupabase() {
       brand: row.brand      || '',
       p:     row.price,
       o:     row.original_price || null,
-      r:     row.rating     || 4.5,
+      r:     row.review_count ? (row.rating || 0) : 0,
       rv:    row.review_count || 0,
       tag:   row.tag        || '',
       img:   (()=>{const r=row.image_url||'';try{const a=JSON.parse(r);if(Array.isArray(a))return a[0]||'';}catch{}return r;})(),
@@ -1713,7 +1713,7 @@ function renderProds(list) {
       <div class="pc-body">
         <div class="pc-cat">${escHtml(p.cat)} · ${escHtml(p.pet)}</div>
         <div class="pc-name">${escHtml(p.n)}</div>
-        <div class="pc-stars">★★★★${p.r>=5?'★':'☆'}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>
+        ${p.rv>0?`<div class="pc-stars">${'★'.repeat(Math.min(5,Math.round(p.r)))}${'☆'.repeat(5-Math.min(5,Math.round(p.r)))}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>`:'<div class="pc-stars"><span class="pc-rc">No reviews yet</span></div>'}
         <div class="pc-price-row">
           <span class="pc-price">${fmt(p.p)}</span>
           ${p.o ? `<span class="pc-del">${fmt(p.o)}</span><span class="pc-disc">-${disc}%</span>` : ''}
@@ -1884,7 +1884,7 @@ function openModal(id) {
     <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Category</span><span style="font-weight:700;">${escHtml(p.cat)}</span></div>
     <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">For</span><span style="font-weight:700;">${escHtml(p.pet)}</span></div>
     <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Brand</span><span style="font-weight:700;">${escHtml(p.brand || '—')}</span></div>
-    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Rating</span><span style="font-weight:700;">⭐ ${escHtml(String(p.r || '4.7'))}</span></div>`;
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Rating</span><span style="font-weight:700;">${p.rv>0?'⭐ '+escHtml(String(p.r)):'No reviews yet'}</span></div>`;
 
   // Variation groups
   const vgEl = document.getElementById('mVarGroups');
@@ -2518,13 +2518,20 @@ function openNlPopup() {
 function closeNlPopup() {
   document.getElementById('nlPopupOverlay').classList.remove('open');
   document.body.style.overflow = '';
-  sessionStorage.setItem('pp_nl_shown', '1');
+  try { localStorage.setItem('pp_nl_shown', '1'); } catch (_) {}
 }
 function subscribeNlPopup() {
   const email = document.getElementById('nlPopupEmail').value.trim();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     document.getElementById('nlPopupEmail').style.borderColor = 'var(--red)';
     return;
+  }
+  if (N8N_WEBHOOK_URL) {
+    fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'newsletter', email, timestamp: new Date().toISOString() }),
+    }).catch(() => {});
   }
   closeNlPopup();
   // Toast confirmation
@@ -2536,9 +2543,11 @@ function subscribeNlPopup() {
     setTimeout(() => t.remove(), 3500);
   }, 300);
 }
-// Show popup on first visit (not shown in same session)
-if (!sessionStorage.getItem('pp_nl_shown')) {
-  setTimeout(openNlPopup, 2000);
+// Show popup once per browser, after the visitor has had time to read the page
+let _nlSeen = false;
+try { _nlSeen = !!localStorage.getItem('pp_nl_shown'); } catch (_) {}
+if (!_nlSeen && N8N_WEBHOOK_URL) {
+  setTimeout(openNlPopup, 30000);
 }
 
 /* ══════════════════════════════════════════

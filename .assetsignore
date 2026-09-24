@@ -1,0 +1,8 @@
+worker.js
+wrangler.jsonc
+README.md
+config.example.js
+docs
+scripts
+.git
+.gitignore

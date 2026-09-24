@@ -477,8 +477,8 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
     <div class="slide-overlay"></div>
     <div class="slide-content">
       <div class="slide-tag">🛍️ All Products</div>
-      <div class="slide-title">Everything Your Pet Needs</div>
-      <div class="slide-sub">Browse thousands of premium pet products — from food and toys to grooming and healthcare.</div>
+      <h1 class="slide-title">Everything Your Pet Needs</h1>
+      <div class="slide-sub">Browse premium pet products — from food and toys to grooming and healthcare.</div>
       <button class="slide-btn" onclick="setActiveCat(null,'All')">Shop All →</button>
     </div>
   </div>
@@ -834,7 +834,7 @@ async function loadProducts() {
       brand:    row.brand       || '',
       p:        row.price,
       o:        row.original_price || null,
-      r:        row.rating      || 4.5,
+      r:        row.review_count ? (row.rating || 0) : 0,
       rv:       row.review_count|| 0,
       tag:      row.tag         || '',
       img:      (()=>{const r=row.image_url||'';try{const a=JSON.parse(r);if(Array.isArray(a))return a[0]||'';}catch{}return r;})(),
@@ -950,7 +950,7 @@ function loadMore() {
       <div class="pc-body">
         <div class="pc-cat">${escHtml(p.cat)} · ${escHtml(p.pet)}</div>
         <div class="pc-name">${escHtml(p.n)}</div>
-        <div class="pc-stars">★★★★${p.r>=5?'★':'☆'}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>
+        ${p.rv>0?`<div class="pc-stars">${'★'.repeat(Math.min(5,Math.round(p.r)))}${'☆'.repeat(5-Math.min(5,Math.round(p.r)))}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>`:'<div class="pc-stars"><span class="pc-rc">No reviews yet</span></div>'}
         <div class="pc-price-row">
           <span class="pc-price">${fmt(p.p)}</span>
           ${p.o ? `<span class="pc-del">${fmt(p.o)}</span><span class="pc-disc">-${disc}%</span>` : ''}
