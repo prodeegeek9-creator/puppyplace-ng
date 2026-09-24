@@ -411,7 +411,7 @@ a{text-decoration:none;color:inherit}
     ${wa ? `<div class="pg-cta"><a href="https://wa.me/${wa}?text=${encodeURIComponent('Hi, I\'m interested in the ' + (p.breed||p.type) + (p.name?' ('+p.name+')':'') + ' listed on PuppyPlace.ng')}" target="_blank" rel="noopener noreferrer" class="btn-wa">💬 Contact on WhatsApp</a></div>` : ''}
   </div>
 </div>
-<footer class="footer"><a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace · <a href="/privacy.html">Privacy</a></footer>
+<footer class="footer"><a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace · <a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></footer>
 ${galleryScript}
 <script>(function(){var s=Date.now(),p=location.pathname;function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
@@ -790,7 +790,7 @@ ${heroHtml}
   ${related.length ? `<div class="art-divider"></div><div class="related"><div class="rel-label">More from the Blog</div><div class="rel-grid">${relCards}</div></div>` : '<div style="padding-bottom:80px"></div>'}
 </div>
 <footer class="footer">
-  &copy; 2025 <a href="/index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria
+  &copy; 2026 <a href="/index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria<br/><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/faq.html">FAQs</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
 </footer>
 </body>
 </html>`;
@@ -824,6 +824,13 @@ async function serveSitemap(env) {
     { loc: 'https://puppyplace.ng/blog.html', lastmod: today },
     { loc: 'https://puppyplace.ng/pets.html', lastmod: today },
     { loc: 'https://puppyplace.ng/privacy.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/terms.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/faq.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/shipping.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/returns.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/track-order.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/sell.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/careers.html', lastmod: today },
   ];
 
   let posts = [];
@@ -1578,9 +1585,13 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
     <a href="/shop.html">Shop</a>
     <a href="/about.html">About</a>
     <a href="/contact.html">Contact</a>
+    <a href="/faq.html">FAQs</a>
+    <a href="/shipping.html">Shipping</a>
+    <a href="/returns.html">Returns</a>
+    <a href="/terms.html">Terms</a>
     <a href="/privacy.html">Privacy</a>
   </div>
-  <div class="footer-copy">&copy; 2025 PuppyPlace.ng &#x2014; All rights reserved.</div>
+  <div class="footer-copy">&copy; 2026 PuppyPlace.ng &#x2014; All rights reserved.</div>
 </footer>
 
 <script>window.__pp_prod=${JSON.stringify({id:String(p.id||''),n:name,e:p.emoji||'📦',cat:p.category||'',p:Number(p.price)||0,img:p.image_url||null}).replace(/<\//g,'<\\/')};</script>
