@@ -10,7 +10,7 @@
 <meta name="description" content="Shop all pet products at PuppyPlace.ng — food, toys, grooming, accessories, health and more. Filter by category, pet type and price."/>
 <meta property="og:type" content="website"/>
 <meta property="og:title" content="Shop — PuppyPlace.ng"/>
-<meta property="og:description" content="Nigeria's #1 online pet store. Shop all products with full filters."/>
+<meta property="og:description" content="Shop pet food, toys, grooming and health products online in Nigeria."/>
 <meta property="og:url" content="https://puppyplace.ng/shop.html"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -477,8 +477,8 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
     <div class="slide-overlay"></div>
     <div class="slide-content">
       <div class="slide-tag">🛍️ All Products</div>
-      <div class="slide-title">Everything Your Pet Needs</div>
-      <div class="slide-sub">Browse thousands of premium pet products — from food and toys to grooming and healthcare.</div>
+      <h1 class="slide-title">Everything Your Pet Needs</h1>
+      <div class="slide-sub">Browse premium pet products — from food and toys to grooming and healthcare.</div>
       <button class="slide-btn" onclick="setActiveCat(null,'All')">Shop All →</button>
     </div>
   </div>
@@ -606,21 +606,18 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
   <div class="footer-inner">
     <div class="fc">
       <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px;">Puppy<span style="color:var(--orange)">Place</span></div>
-      <p class="fb-desc">Nigeria's #1 online pet store. From Lagos to Abuja, we deliver quality pet products right to your door.</p>
+      <p class="fb-desc">Your online pet store in Nigeria. We deliver quality pet products right to your door.</p>
       <div class="fb-social">
-        <a class="fsoc" href="#" aria-label="Instagram">📸</a>
-        <a class="fsoc" href="#" aria-label="WhatsApp">💬</a>
-        <a class="fsoc" href="#" aria-label="Facebook">📘</a>
-        <a class="fsoc" href="#" aria-label="Twitter">🐦</a>
+        <a class="fsoc" href="https://wa.me/2348156740438" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
       </div>
     </div>
     <div class="fc"><h4>Shop</h4><a href="shop.html">All Products</a><a href="shop.html?cat=Food">Dog Food</a><a href="shop.html?cat=Food">Cat Food</a><a href="shop.html?cat=Toy">Toys &amp; Play</a><a href="shop.html?cat=Grooming">Grooming</a><a href="shop.html?cat=Health">Health &amp; Meds</a></div>
-    <div class="fc"><h4>Pets</h4><a href="shop.html?pet=Dog">Dogs</a><a href="shop.html?pet=Cat">Cats</a><a href="shop.html?pet=Bird">Birds</a><a href="#">Fish</a><a href="#">Reptiles</a></div>
-    <div class="fc"><h4>Help</h4><a href="#">Track Order</a><a href="#">Returns Policy</a><a href="#">Shipping Info</a><a href="#">FAQs</a><a href="contact.html">Contact Us</a></div>
-    <div class="fc"><h4>Company</h4><a href="about.html">About Us</a><a href="blog.html">Blog</a><a href="#">Careers</a><a href="#">Terms</a><a href="privacy.html">Privacy</a></div>
+    <div class="fc"><h4>Pets</h4><a href="shop.html?pet=Dog">Dogs</a><a href="shop.html?pet=Cat">Cats</a><a href="shop.html?pet=Bird">Birds</a><a href="shop.html?pet=Fish">Fish</a><a href="shop.html?pet=Reptile">Reptiles</a></div>
+    <div class="fc"><h4>Help</h4><a href="track-order.html">Track Order</a><a href="returns.html">Returns Policy</a><a href="shipping.html">Shipping Info</a><a href="faq.html">FAQs</a><a href="contact.html">Contact Us</a></div>
+    <div class="fc"><h4>Company</h4><a href="about.html">About Us</a><a href="blog.html">Blog</a><a href="sell.html">Sell on PuppyPlace</a><a href="careers.html">Careers</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></div>
   </div>
   <div class="footer-bottom">
-    <span>&copy; 2025 PuppyPlace.ng &mdash; All rights reserved.</span>
+    <span>&copy; 2026 PuppyPlace.ng &mdash; All rights reserved.</span>
     <div class="pay-row">
       <span class="pay-badge">Paystack</span><span class="pay-badge">Mastercard</span><span class="pay-badge">Visa</span><span class="pay-badge">Bank Transfer</span>
     </div>
@@ -837,7 +834,7 @@ async function loadProducts() {
       brand:    row.brand       || '',
       p:        row.price,
       o:        row.original_price || null,
-      r:        row.rating      || 4.5,
+      r:        row.review_count ? (row.rating || 0) : 0,
       rv:       row.review_count|| 0,
       tag:      row.tag         || '',
       img:      (()=>{const r=row.image_url||'';try{const a=JSON.parse(r);if(Array.isArray(a))return a[0]||'';}catch{}return r;})(),
@@ -953,7 +950,7 @@ function loadMore() {
       <div class="pc-body">
         <div class="pc-cat">${escHtml(p.cat)} · ${escHtml(p.pet)}</div>
         <div class="pc-name">${escHtml(p.n)}</div>
-        <div class="pc-stars">★★★★${p.r>=5?'★':'☆'}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>
+        ${p.rv>0?`<div class="pc-stars">${'★'.repeat(Math.min(5,Math.round(p.r)))}${'☆'.repeat(5-Math.min(5,Math.round(p.r)))}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>`:'<div class="pc-stars"><span class="pc-rc">No reviews yet</span></div>'}
         <div class="pc-price-row">
           <span class="pc-price">${fmt(p.p)}</span>
           ${p.o ? `<span class="pc-del">${fmt(p.o)}</span><span class="pc-disc">-${disc}%</span>` : ''}

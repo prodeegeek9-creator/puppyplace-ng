@@ -8,16 +8,16 @@
 <meta name="google-site-verification" content="eSIFEuzjYMpl6JgDdSte2sDWqQMOYWDwdF7JrSckn3U" />
 <meta name="tiktok-developers-site-verification" content="tiktok-developers-site-verification=5jTn4TlwVlagT3GzedBb0uPWA9AgNFE3" />
 <link rel="canonical" href="https://puppyplace.ng/"/>
-<title>PuppyPlace.ng — Nigeria's #1 Pet Shop</title>
-<meta name="description" content="Nigeria's #1 online pet store. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
+<title>PuppyPlace.ng — Online Pet Store in Nigeria</title>
+<meta name="description" content="Online pet store in Nigeria. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="PuppyPlace"/>
-<meta property="og:title" content="PuppyPlace.ng — Nigeria's #1 Pet Shop"/>
-<meta property="og:description" content="Nigeria's #1 online pet store. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
+<meta property="og:title" content="PuppyPlace.ng — Online Pet Store in Nigeria"/>
+<meta property="og:description" content="Online pet store in Nigeria. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
 <meta property="og:url" content="https://puppyplace.ng/"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="PuppyPlace.ng — Nigeria's #1 Pet Shop"/>
-<meta name="twitter:description" content="Nigeria's #1 online pet store. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
+<meta name="twitter:title" content="PuppyPlace.ng — Online Pet Store in Nigeria"/>
+<meta name="twitter:description" content="Online pet store in Nigeria. Shop pet food, toys, grooming, healthcare and more — delivered to your door across Lagos, Abuja and beyond."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -696,7 +696,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   }
   .trust-label { font-size: 11px !important; font-weight: 900 !important; }
   .trust-sub { font-size: 10px !important; }
-  /* Show only Fast Delivery, 100% Authentic, Secure Pay on mobile */
+  /* Show only Nationwide Delivery, Genuine Products, Secure Pay on mobile */
   .trust-item:nth-child(2),
   .trust-item:nth-child(5) { display: none !important; }
   .breeder-grid { grid-template-columns: 1fr !important; }
@@ -770,7 +770,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   <div class="topbar-inner">
     <div class="tb-left">
       <div class="tb-item"><i>📍</i><span>Lagos, Nigeria</span></div>
-      <div class="tb-item"><i>📞</i><span>0800-PUPPY-NG</span></div>
+      <div class="tb-item"><i>📞</i><span>+234 815 674 0438</span></div>
       <div class="tb-item"><i>✉️</i><span>hello@puppyplace.ng</span></div>
     </div>
     <div class="tb-right">
@@ -778,13 +778,13 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       <div class="tb-sep"></div>
       <a href="account.html">Register</a>
       <div class="tb-sep"></div>
-      <a href="#">Track Order</a>
+      <a href="track-order.html">Track Order</a>
     </div>
   </div>
 </div>
 
 <div class="mob-bar">
-  <a href="#" class="mob-logo">
+  <a href="/" class="mob-logo">
     <div class="mob-logo-icon">🐾</div>
     <div class="mob-logo-text">Puppy<span>Place</span></div>
   </a>
@@ -798,7 +798,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 </div>
 <div class="mob-search-bar" id="mobSearch">
   <div class="mob-search-inner">
-    <input type="text" placeholder="Search products, pets, vets…" oninput="liveSearch(this.value)"/>
+    <input type="text" placeholder="Search products, pets…" oninput="liveSearch(this.value)"/>
     <button onclick="liveSearch(document.querySelector('#mobSearch input').value)" style="background:var(--orange);border:none;width:50px;height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff;">🔍</button>
   </div>
 </div>
@@ -832,7 +832,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 
 <header class="site-header">
   <div class="header-inner">
-    <a href="#" class="logo">
+    <a href="/" class="logo">
       <div class="logo-icon">🐾</div>
       <div>
         <div class="logo-name">Puppy<span>Place</span></div>
@@ -848,7 +848,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         <option>Grooming</option>
         <option>Live Pets</option>
       </select>
-      <input id="sInput" type="text" placeholder="Search products, pets, vets…" oninput="liveSearch(this.value)"/>
+      <input id="sInput" type="text" placeholder="Search products, pets…" oninput="liveSearch(this.value)"/>
       <button class="search-submit">🔍</button>
     </div>
     <div class="header-icons">
@@ -867,14 +867,14 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 
 <nav class="main-nav">
   <div class="nav-inner wrap">
-    <a class="nav-link on" href="#">🏠 Home</a>
+    <a class="nav-link on" href="/">🏠 Home</a>
     <a class="nav-link" href="#products" onclick="setNav(this)">🛍️ Shop All</a>
-    <a class="nav-link" href="#" onclick="setNav(this)">🥩 Food &amp; Treats</a>
-    <a class="nav-link" href="#" onclick="setNav(this)">🧸 Toys</a>
-    <a class="nav-link" href="#" onclick="setNav(this)">🛁 Grooming</a>
-    <a class="nav-link" href="#" onclick="setNav(this)">🏠 Housing</a>
-    <a class="nav-link" href="#" onclick="setNav(this)">💊 Health <span class="nav-badge">New</span></a>
-    <a class="nav-link" href="#" onclick="setNav(this)">👗 Clothing</a>
+    <a class="nav-link" href="shop.html?cat=Food">🥩 Food &amp; Treats</a>
+    <a class="nav-link" href="shop.html?cat=Toy">🧸 Toys</a>
+    <a class="nav-link" href="shop.html?cat=Grooming">🛁 Grooming</a>
+    <a class="nav-link" href="shop.html?cat=Housing">🏠 Housing</a>
+    <a class="nav-link" href="shop.html?cat=Health">💊 Health <span class="nav-badge">New</span></a>
+    <a class="nav-link" href="shop.html?cat=Clothing">👗 Clothing</a>
     <div class="nav-sep"></div>
     <a class="nav-link" href="#pets" onclick="setNav(this)">🐶 Adopt a Pet</a>
     <a class="nav-link" href="#blog" onclick="setNav(this)">📖 Blog</a>
@@ -929,7 +929,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
 
       <div class="hero-banner sec">
         <div class="hero-left">
-          <div class="hero-eyebrow">🇳🇬 Nigeria's #1 Pet Shop</div>
+          <div class="hero-eyebrow">🇳🇬 Online Pet Store in Nigeria</div>
           <h1>Everything Your Pet<br><em>Loves</em>, Delivered.</h1>
           <p class="hero-desc">Food, toys, grooming, accessories &amp; healthcare — plus find your next companion from verified breeders nationwide.</p>
           <div class="hero-btns">
@@ -949,11 +949,11 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       </div>
 
       <div class="trust-strip sec" id="trustStrip">
-        <div class="trust-item"><div class="trust-ico">🚚</div><div><span class="trust-label">Fast Delivery</span><span class="trust-sub">Lagos &amp; Abuja</span></div></div>
+        <div class="trust-item"><div class="trust-ico">🚚</div><div><span class="trust-label">Nationwide Delivery</span><span class="trust-sub">Across Nigeria</span></div></div>
         <div class="trust-item"><div class="trust-ico">↩️</div><div><span class="trust-label">7-Day Returns</span><span class="trust-sub">Hassle-free</span></div></div>
-        <div class="trust-item"><div class="trust-ico">✅</div><div><span class="trust-label">100% Authentic</span><span class="trust-sub">Verified sellers</span></div></div>
+        <div class="trust-item"><div class="trust-ico">✅</div><div><span class="trust-label">Genuine Products</span><span class="trust-sub">Trusted brands</span></div></div>
         <div class="trust-item"><div class="trust-ico">🔒</div><div><span class="trust-label">Secure Pay</span><span class="trust-sub">Paystack &amp; Bank</span></div></div>
-        <div class="trust-item"><div class="trust-ico">🏥</div><div><span class="trust-label">Vet-Backed</span><span class="trust-sub">Expert picks</span></div></div>
+        <div class="trust-item"><div class="trust-ico">💬</div><div><span class="trust-label">WhatsApp Support</span><span class="trust-sub">Mon–Sat</span></div></div>
       </div>
 
       <div class="banner-grid sec">
@@ -1060,12 +1060,9 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   <div class="footer-inner">
     <div class="fc">
       <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px;">Puppy<span style="color:var(--orange)">Place</span></div>
-      <p class="fb-desc">Nigeria's #1 online pet store. From Lagos to Abuja, we deliver quality pet food, accessories, healthcare &amp; more — right to your door.</p>
+      <p class="fb-desc">Your online pet store in Nigeria. We deliver quality pet food, accessories, healthcare &amp; more — right to your door.</p>
       <div class="fb-social">
-        <a class="fsoc" href="#" aria-label="Instagram">📸</a>
-        <a class="fsoc" href="#" aria-label="WhatsApp">💬</a>
-        <a class="fsoc" href="#" aria-label="Facebook">📘</a>
-        <a class="fsoc" href="#" aria-label="Twitter">🐦</a>
+        <a class="fsoc" href="https://wa.me/2348156740438" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
       </div>
     </div>
     <div class="fc">
@@ -1086,17 +1083,17 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         <a href="shop.html?pet=Dog">Dogs</a>
         <a href="shop.html?pet=Cat">Cats</a>
         <a href="shop.html?pet=Bird">Birds</a>
-        <a href="#">Fish</a>
-        <a href="#">Reptiles</a>
+        <a href="shop.html?pet=Fish">Fish</a>
+        <a href="shop.html?pet=Reptile">Reptiles</a>
       </div>
     </div>
     <div class="fc">
       <h4 class="fc-h" onclick="toggleFc(this)">Help <span class="fc-arr">+</span></h4>
       <div class="fc-links">
-        <a href="#">Track Order</a>
-        <a href="#">Returns Policy</a>
-        <a href="#">Shipping Info</a>
-        <a href="#">FAQs</a>
+        <a href="track-order.html">Track Order</a>
+        <a href="returns.html">Returns Policy</a>
+        <a href="shipping.html">Shipping Info</a>
+        <a href="faq.html">FAQs</a>
         <a href="contact.html">Contact Us</a>
       </div>
     </div>
@@ -1105,15 +1102,15 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       <div class="fc-links">
         <a href="about.html">About Us</a>
         <a href="blog.html">Blog</a>
-        <a href="#">Sell on PuppyPlace</a>
-        <a href="#">Careers</a>
+        <a href="sell.html">Sell on PuppyPlace</a>
+        <a href="careers.html">Careers</a>
         <a href="terms.html">Terms</a>
         <a href="privacy.html">Privacy</a>
       </div>
     </div>
   </div>
   <div class="footer-bottom">
-    <span>&copy; 2025 PuppyPlace.ng &mdash; All rights reserved.</span>
+    <span>&copy; 2026 PuppyPlace.ng &mdash; All rights reserved.</span>
     <div class="pay-row">
       <span class="pay-badge">Paystack</span>
       <span class="pay-badge">Mastercard</span>
@@ -1341,8 +1338,8 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div id="pmPrice" style="font-size:22px;font-weight:900;color:var(--orange);"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <a id="pmProfile" href="#" class="btn-dark" style="padding:12px 20px;text-decoration:none;border-radius:50px;background:#1a1a18;color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;">See Full Profile →</a>
-          <a id="pmWa" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding:12px 20px;text-decoration:none;">💬 WhatsApp</a>
+          <a id="pmProfile" href="/pets.html" class="btn-dark" style="padding:12px 20px;text-decoration:none;border-radius:50px;background:#1a1a18;color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;">See Full Profile →</a>
+          <a id="pmWa" href="https://wa.me/2348156740438" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding:12px 20px;text-decoration:none;">💬 WhatsApp</a>
         </div>
       </div>
     </div>
@@ -1383,7 +1380,7 @@ async function loadProductsFromSupabase() {
       brand: row.brand      || '',
       p:     row.price,
       o:     row.original_price || null,
-      r:     row.rating     || 4.5,
+      r:     row.review_count ? (row.rating || 0) : 0,
       rv:    row.review_count || 0,
       tag:   row.tag        || '',
       img:   (()=>{const r=row.image_url||'';try{const a=JSON.parse(r);if(Array.isArray(a))return a[0]||'';}catch{}return r;})(),
@@ -1716,7 +1713,7 @@ function renderProds(list) {
       <div class="pc-body">
         <div class="pc-cat">${escHtml(p.cat)} · ${escHtml(p.pet)}</div>
         <div class="pc-name">${escHtml(p.n)}</div>
-        <div class="pc-stars">★★★★${p.r>=5?'★':'☆'}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>
+        ${p.rv>0?`<div class="pc-stars">${'★'.repeat(Math.min(5,Math.round(p.r)))}${'☆'.repeat(5-Math.min(5,Math.round(p.r)))}<span class="pc-rc">${escHtml(String(p.r))} (${escHtml(String(p.rv))})</span></div>`:'<div class="pc-stars"><span class="pc-rc">No reviews yet</span></div>'}
         <div class="pc-price-row">
           <span class="pc-price">${fmt(p.p)}</span>
           ${p.o ? `<span class="pc-del">${fmt(p.o)}</span><span class="pc-disc">-${disc}%</span>` : ''}
@@ -1774,8 +1771,8 @@ function openPetModal(id) {
   document.getElementById('pmLoc').textContent=p.location?'📍 '+p.location:'';
   document.getElementById('pmPrice').innerHTML=isAdopt?'<span style="color:#2ecc71">Free / Adoption</span>':`₦${(p.price||0).toLocaleString('en-NG')}`;
   const wa=(p.whatsapp||'').replace(/\D/g,'');
-  const waEl=document.getElementById('pmWa'); waEl.href=wa?`https://wa.me/${wa}`:'#'; waEl.style.display=wa?'':'none';
-  const profileEl=document.getElementById('pmProfile'); profileEl.href=p.slug?'/pets/'+p.slug:'#'; profileEl.style.display=p.slug?'':'none';
+  const waEl=document.getElementById('pmWa'); waEl.href=wa?`https://wa.me/${wa}`:'/pets.html'; waEl.style.display=wa?'':'none';
+  const profileEl=document.getElementById('pmProfile'); profileEl.href=p.slug?'/pets/'+p.slug:'/pets.html'; profileEl.style.display=p.slug?'':'none';
   document.getElementById('petModal').style.display='flex';
   document.body.style.overflow='hidden';
 }
@@ -1887,7 +1884,7 @@ function openModal(id) {
     <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Category</span><span style="font-weight:700;">${escHtml(p.cat)}</span></div>
     <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">For</span><span style="font-weight:700;">${escHtml(p.pet)}</span></div>
     <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Brand</span><span style="font-weight:700;">${escHtml(p.brand || '—')}</span></div>
-    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Rating</span><span style="font-weight:700;">⭐ ${escHtml(String(p.r || '4.7'))}</span></div>`;
+    <div style="background:var(--light);padding:10px;border-radius:var(--rxs);"><span style="display:block;font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:800;">Rating</span><span style="font-weight:700;">${p.rv>0?'⭐ '+escHtml(String(p.r)):'No reviews yet'}</span></div>`;
 
   // Variation groups
   const vgEl = document.getElementById('mVarGroups');
@@ -2312,13 +2309,9 @@ let blogPosts = [];
 
 async function loadBlogPosts() {
   try {
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .select('id,slug,title,category,cat_color,emoji,bg_color,featured_image,excerpt,author,published_at,read_time')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(6);
-    if (error) throw error;
+    const res = await fetch('/api/blog-posts?limit=6');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
     blogPosts = (data || []).map(p => ({
       id:       p.id,
       slug:     p.slug,
@@ -2525,13 +2518,20 @@ function openNlPopup() {
 function closeNlPopup() {
   document.getElementById('nlPopupOverlay').classList.remove('open');
   document.body.style.overflow = '';
-  sessionStorage.setItem('pp_nl_shown', '1');
+  try { localStorage.setItem('pp_nl_shown', '1'); } catch (_) {}
 }
 function subscribeNlPopup() {
   const email = document.getElementById('nlPopupEmail').value.trim();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     document.getElementById('nlPopupEmail').style.borderColor = 'var(--red)';
     return;
+  }
+  if (N8N_WEBHOOK_URL) {
+    fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'newsletter', email, timestamp: new Date().toISOString() }),
+    }).catch(() => {});
   }
   closeNlPopup();
   // Toast confirmation
@@ -2543,9 +2543,11 @@ function subscribeNlPopup() {
     setTimeout(() => t.remove(), 3500);
   }, 300);
 }
-// Show popup on first visit (not shown in same session)
-if (!sessionStorage.getItem('pp_nl_shown')) {
-  setTimeout(openNlPopup, 2000);
+// Show popup once per browser, after the visitor has had time to read the page
+let _nlSeen = false;
+try { _nlSeen = !!localStorage.getItem('pp_nl_shown'); } catch (_) {}
+if (!_nlSeen && N8N_WEBHOOK_URL) {
+  setTimeout(openNlPopup, 30000);
 }
 
 /* ══════════════════════════════════════════
