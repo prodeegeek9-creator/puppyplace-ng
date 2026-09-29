@@ -2129,7 +2129,10 @@ function closeBlogForm() {
 
 async function saveBlogPost(publish) {
   const title   = document.getElementById('bfPostTitle').value.trim();
-  const slug    = document.getElementById('bfSlug').value.trim();
+  // Keep slugs URL-safe: lower-case letters, numbers and hyphens only
+  const slug    = document.getElementById('bfSlug').value.trim().toLowerCase()
+    .normalize('NFKD').replace(/[^a-z0-9\s-]/g, '').trim().replace(/[\s-]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+  document.getElementById('bfSlug').value = slug;
   const content = getBlogContent().trim();
   if (!title || !slug || !content) { showToast('Title, slug, and content are required','error'); return; }
 
