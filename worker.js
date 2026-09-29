@@ -146,12 +146,21 @@ async function handleTrackTime(request, env) {
 
 // Returns headers using the service key when available, anon key as fallback
 function sbHeaders(env) {
-  const key = env.SUPABASE_SERVICE_KEY || env.SUPABASE_ANON;
-  return {
-    'apikey':        key,
-    'Authorization': `Bearer ${key}`,
-    'Content-Type':  'application/json',
-  };
+  return sbKeyHeaders(env.SUPABASE_SERVICE_KEY || env.SUPABASE_ANON);
+}
+
+// Anon (publishable) key first — for public data such as published blog posts,
+// matching what the browser could already read
+function sbPublicHeaders(env) {
+  return sbKeyHeaders(env.SUPABASE_ANON || env.SUPABASE_SERVICE_KEY);
+}
+
+function sbKeyHeaders(key) {
+  const h = { 'apikey': key, 'Content-Type': 'application/json' };
+  // Legacy keys are JWTs and may also go in Authorization; the newer
+  // sb_publishable_/sb_secret_ keys are rejected there, so send them in apikey only
+  if (String(key || '').startsWith('eyJ')) h['Authorization'] = `Bearer ${key}`;
+  return h;
 }
 
 async function handleHeroUpload(request, env) {
@@ -444,18 +453,18 @@ async function getBlogPosts(env, { limit = 100, excludeSlug = '' } = {}) {
   const exclude = excludeSlug ? `&slug=neq.${encodeURIComponent(excludeSlug)}` : '';
   const res = await fetch(
     `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.published${exclude}&select=${BLOG_LIST_FIELDS}&order=published_at.desc&limit=${limit}`,
-    { headers: sbHeaders(env) }
+    { headers: sbPublicHeaders(env) }
   );
-  if (!res.ok) throw new Error(`Supabase ${res.status}`);
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return (await res.json()) || [];
 }
 
 async function getBlogPost(slug, env) {
   const res = await fetch(
     `${env.SUPABASE_URL}/rest/v1/blog_posts?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=*`,
-    { headers: sbHeaders(env) }
+    { headers: sbPublicHeaders(env) }
   );
-  if (!res.ok) throw new Error(`Supabase ${res.status}`);
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const rows = await res.json();
   return rows && rows.length ? rows[0] : null;
 }
@@ -472,7 +481,8 @@ async function handleBlogPosts(url, env) {
       },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: 'Failed to load posts' }), {
+    console.error('blog-posts:', e.message);
+    return new Response(JSON.stringify({ error: 'Failed to load posts', detail: e.message }), {
       status: 502,
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
     });
