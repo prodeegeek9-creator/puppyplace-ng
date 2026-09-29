@@ -181,7 +181,7 @@ async function loadPosts() {
         ? `<img src="${escHtml(p.featured_image)}" alt="${escHtml(p.title)}" loading="lazy"/>`
         : `<div class="post-card-thumb-emoji" style="background:${escHtml(p.bg_color||'#f1f3f5')}">${escHtml(p.emoji||'📰')}</div>`;
       return `
-        <a class="post-card" href="/posts/${escHtml(p.slug)}.html">
+        <a class="post-card" href="/posts/${escHtml(encodeURIComponent(String(p.slug||p.id)))}.html">
           <div class="post-card-thumb" style="${p.featured_image ? '' : ''}">
             ${thumbHtml}
             <div class="post-card-cat" style="background:${escHtml(p.cat_color||'#ed6436')}">${escHtml(p.category||'General')}</div>

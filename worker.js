@@ -1,5 +1,6 @@
 export default {
   async fetch(request, env, ctx) {
+    env = cleanEnv(env);
     const url = new URL(request.url);
 
     if (shouldTrack(url.pathname)) {
@@ -69,7 +70,9 @@ export default {
 
     const postMatch = url.pathname.match(/^\/posts\/([^/]+?)(?:\.html)?$/);
     if (postMatch) {
-      return servePost(decodeURIComponent(postMatch[1]), env);
+      let slug;
+      try { slug = decodeURIComponent(postMatch[1]); } catch { slug = postMatch[1]; }
+      return servePost(slug, env);
     }
 
     const productMatch = url.pathname.match(/^\/product\/(.+?)(?:\.html)?$/);
@@ -81,9 +84,32 @@ export default {
       return new Response(null, { status: 204 });
     }
 
-    return env.ASSETS.fetch(request);
+    const asset = await env.ASSETS.fetch(request);
+    if (asset.status !== 404) return asset;
+    // Serve the custom 404 page here rather than with assets.not_found_handling:
+    // that setting answers browser navigations itself, so /posts/, /pets/ and
+    // /product/ pages would never reach this Worker when a link is clicked
+    const page = await env.ASSETS.fetch(new Request(new URL('/404', url.origin)));
+    return new Response(page.body, { status: 404, headers: new Headers(page.headers) });
   },
 };
+
+// Secrets pasted into the dashboard can carry stray whitespace or a trailing
+// slash. supabase-js tolerates both in the browser; raw fetch() here does not
+// (".../rest/v1" becomes "//rest/v1" and every server-side query fails).
+function cleanEnv(env) {
+  const trim = v => (typeof v === 'string' ? v.trim() : v);
+  return Object.assign({}, env, {
+    SUPABASE_URL:         (trim(env.SUPABASE_URL) || '').replace(/\/+$/, ''),
+    SUPABASE_ANON:        trim(env.SUPABASE_ANON),
+    SUPABASE_SERVICE_KEY: trim(env.SUPABASE_SERVICE_KEY),
+  });
+}
+
+// Link path for a blog post; falls back to the id for posts saved without a slug
+function postPath(p) {
+  return `/posts/${encodeURIComponent(String(p.slug || p.id || ''))}.html`;
+}
 
 function shouldTrack(pathname) {
   if (pathname.startsWith('/api/')) return false;
@@ -438,6 +464,7 @@ async function servePost(slug, env) {
       getBlogPosts(env, { limit: 3, excludeSlug: slug }),
     ]);
   } catch (e) {
+    console.error('post ' + slug + ':', e.message);
     return html(errorPage('Failed to load article.'), 500);
   }
   if (!post) return html(notFoundPage(), 404);
@@ -460,13 +487,24 @@ async function getBlogPosts(env, { limit = 100, excludeSlug = '' } = {}) {
 }
 
 async function getBlogPost(slug, env) {
-  const res = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/blog_posts?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=*`,
-    { headers: sbPublicHeaders(env) }
-  );
-  if (!res.ok) throw new Error(`Supabase ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  const rows = await res.json();
-  return rows && rows.length ? rows[0] : null;
+  // Exact slug first; then the trimmed/lower-cased slug; then the post id
+  // (older links and posts saved without a slug use the id)
+  const clean = slug.trim().toLowerCase();
+  const filters = [`slug=eq.${encodeURIComponent(slug)}`];
+  if (clean && clean !== slug) filters.push(`slug=eq.${encodeURIComponent(clean)}`);
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean) || /^\d+$/.test(clean)) {
+    filters.push(`id=eq.${encodeURIComponent(clean)}`);
+  }
+  for (const f of filters) {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/blog_posts?${f}&status=eq.published&select=*&limit=1`,
+      { headers: sbPublicHeaders(env) }
+    );
+    if (!res.ok) throw new Error(`Supabase ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    const rows = await res.json();
+    if (rows && rows.length) return rows[0];
+  }
+  return null;
 }
 
 // Public listing used by index.html and blog.html
@@ -554,7 +592,7 @@ function renderPost(post, related) {
     ? new Date(post.published_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
   const relCards = related.map(r => `
-    <a class="rel-card" href="/posts/${esc(r.slug)}.html">
+    <a class="rel-card" href="${esc(postPath(r))}">
       ${r.featured_image
         ? `<img class="rel-thumb" src="${esc(r.featured_image)}" alt="${esc(r.title)}" loading="lazy"/>`
         : `<div class="rel-thumb-placeholder">🐾</div>`}
@@ -597,7 +635,7 @@ function renderPost(post, related) {
   const imgUrl    = post.featured_image
     ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(post.featured_image)}`)
     : '';
-  const postUrl   = `https://puppyplace.ng/posts/${escUrl(post.slug)}.html`;
+  const postUrl   = escUrl(`https://puppyplace.ng${postPath(post)}`);
   const jsonLd    = JSON.stringify({
     '@context':    'https://schema.org',
     '@type':       'BlogPosting',
@@ -607,7 +645,7 @@ function renderPost(post, related) {
     author:    { '@type': 'Organization', name: 'PuppyPlace.ng' },
     publisher: { '@type': 'Organization', name: 'PuppyPlace.ng', url: 'https://puppyplace.ng' },
     datePublished: post.published_at || '',
-    url:           `https://puppyplace.ng/posts/${post.slug}.html`,
+    url:           `https://puppyplace.ng${postPath(post)}`,
   }).replace(/<\//g, '<\\/');
 
   return `<!DOCTYPE html>
@@ -624,6 +662,7 @@ ${post.focus_keyword ? `<meta name="keywords" content="${esc(post.focus_keyword)
 <meta property="og:site_name" content="PuppyPlace"/>
 <meta property="og:title" content="${esc(post.meta_title || post.title)}"/>
 <meta property="og:description" content="${esc(metaDesc)}"/>
+<link rel="canonical" href="${postUrl}"/>
 <meta property="og:url" content="${postUrl}"/>
 ${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>
 <meta property="og:image:secure_url" content="${imgUrl}"/>
@@ -768,7 +807,7 @@ async function serveSitemap(env) {
     `  <url>\n    <loc>${loc}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
 
   const staticUrls = staticPages.map(p => toUrl(p.loc, p.lastmod));
-  const postUrls = posts.map(p => toUrl(`https://puppyplace.ng/posts/${encodeURIComponent(p.slug)}.html`, p.published_at ? p.published_at.slice(0, 10) : ''));
+  const postUrls = posts.map(p => toUrl(`https://puppyplace.ng${postPath(p)}`, p.published_at ? p.published_at.slice(0, 10) : ''));
   const productUrls = products.map(p => toUrl(`https://puppyplace.ng/product/${encodeURIComponent(p.slug)}.html`, p.updated_at ? p.updated_at.slice(0, 10) : ''));
   const petUrls = pets.map(p => toUrl(p.loc, p.lastmod));
 
