@@ -144,15 +144,30 @@ a{text-decoration:none;color:inherit}
   &copy; 2026 <a href="index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria<br/><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/faq.html">FAQs</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="/config.js"></script>
 <script>
 function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 async function loadPosts() {
   const grid = document.getElementById('allPostsGrid');
   try {
-    const res = await fetch('/api/blog-posts');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const posts = (await res.json()) || [];
+    let posts;
+    try {
+      const res = await fetch('/api/blog-posts');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      posts = (await res.json()) || [];
+    } catch (apiErr) {
+      // Fall back to reading Supabase directly from the browser
+      console.warn('Blog API failed, using Supabase directly:', apiErr.message);
+      const cfg = window.PPCONFIG || {};
+      if (!window.supabase || !cfg.SUPABASE_URL) throw apiErr;
+      const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON);
+      const r = await sb.from('blog_posts').select('id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time,featured_image')
+        .eq('status', 'published').order('published_at', { ascending: false });
+      if (r.error) throw r.error;
+      posts = r.data || [];
+    }
     if (!posts.length) {
       grid.innerHTML = `<div class="empty-state"><div class="empty-state-ico">📝</div><div style="font-size:18px;font-weight:800;margin-bottom:8px">No posts yet</div><div>Check back soon for pet care tips and guides.</div></div>`;
       return;
