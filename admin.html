@@ -697,6 +697,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
             <div style="font-size:15px;font-weight:800;color:var(--black)">Pets for Sale &amp; Adoption</div>
             <button class="add-btn" onclick="openPetForm()">＋ Add Pet</button>
           </div>
+          <div id="petsPendingNote" style="font-size:13px;font-weight:700;color:var(--orange);margin:-8px 0 14px"></div>
           <div class="blog-table-wrap">
             <table class="blog-table">
               <thead><tr><th>Photo</th><th>Name</th><th>Type</th><th>Listing</th><th>Price</th><th>Location</th><th>Actions</th></tr></thead>
@@ -1427,16 +1428,21 @@ async function loadPets() {
   const { data, error }=await sbAdmin.from('pets').select('*').order('created_at',{ascending:false});
   if(error){ tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--red)">${error.message}</td></tr>`; return; }
   document.getElementById('sbPetsCount').textContent=data.length;
+  // Hidden pets (including seller listings from Vendwyze awaiting review) go first
+  data.sort((a,b)=>(a.active===false?0:1)-(b.active===false?0:1));
+  const pending=data.filter(p=>p.active===false).length;
+  document.getElementById('petsPendingNote').textContent=pending?`${pending} waiting for review — check the photos and details, then tap ✅ to publish.`:'';
   if(!data.length){ tbody.innerHTML='<tr><td colspan="7" class="empty-table"><div class="empty-table-ico">🐾</div><div>No pets yet</div></td></tr>'; return; }
   const fmt=n=>'₦'+Number(n).toLocaleString('en-NG');
   tbody.innerHTML=data.map(p=>`<tr>
     <td><div style="width:48px;height:48px;border-radius:8px;overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center;">${p.image_url?`<img src="${escHtml(p.image_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>`:'🐾'}</div></td>
     <td style="font-weight:800">${escHtml(p.breed||p.name||'—')}${p.slug?` <a href="/pets/${p.slug}" target="_blank" style="font-size:11px;color:var(--orange)">↗</a>`:''}<small style="display:block;font-weight:500;color:var(--gray)">${escHtml(p.age||'')}</small></td>
     <td>${escHtml(p.type)}</td>
-    <td><span class="badge ${p.listing_type==='adoption'?'badge-new':'badge-hot'}">${p.listing_type==='adoption'?'Adoption':'For Sale'}</span></td>
+    <td><span class="badge ${p.listing_type==='adoption'?'badge-new':'badge-hot'}">${p.listing_type==='adoption'?'Adoption':'For Sale'}</span>${p.active===false?'<span class="badge badge-popular" style="margin-top:4px">⏳ Pending</span>':''}</td>
     <td style="font-weight:800">${p.listing_type==='sale'&&p.price?fmt(p.price):'—'}</td>
-    <td>${escHtml(p.location||'—')}</td>
+    <td>${escHtml(p.location||'—')}${p.active===false&&p.whatsapp?`<small style="display:block"><a href="https://wa.me/${escHtml(String(p.whatsapp).replace(/\D/g,''))}" target="_blank" rel="noopener" style="color:var(--orange);font-weight:700">${escHtml(p.whatsapp)}</a>${p.breeder?' · '+escHtml(p.breeder):''}</small>`:''}</td>
     <td><div class="action-btns">
+      ${p.active===false?`<button class="act-btn" title="Approve and publish" onclick="approvePet('${p.id}')">✅</button>`:''}
       <button class="act-btn" onclick="editPet('${p.id}')">✏️</button>
       <button class="act-btn del" onclick="deletePet('${p.id}','${(p.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">🗑️</button>
     </div></td>
@@ -1492,6 +1498,12 @@ async function savePet() {
   if(error){ showToast('❌ '+error.message,'error'); return; }
   showToast('✅ Pet saved','success');
   closePetForm();
+  loadPets();
+}
+async function approvePet(id) {
+  const { error }=await sbAdmin.from('pets').update({ active:true }).eq('id',id);
+  if(error){ showToast('❌ '+error.message,'error'); return; }
+  showToast('✅ Pet published','success');
   loadPets();
 }
 async function deletePet(id,name) {
