@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="google-adsense-account" content="ca-pub-4218810555810518">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4218810555810518" crossorigin="anonymous"></script>
-<link rel="canonical" href="https://puppyplace.ng/blog.html"/>
-<title>Blog — PuppyPlace</title>
-<meta name="description" content="Pet care tips, nutrition guides, health advice and training insights for Nigerian dog, cat and pet owners from the PuppyPlace.ng team."/>
+<link rel="canonical" href="{{CANONICAL}}"/>
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESCRIPTION}}"/>
+{{HEAD_EXTRA}}
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -68,6 +69,21 @@ a{text-decoration:none;color:inherit}
 .post-card-meta{font-size:12px;color:var(--gray);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .post-card-read{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--orange);margin-top:14px}
 
+/* ── CATEGORY NAV ── */
+.cat-nav{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:64px;z-index:90}
+.cat-nav-inner{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cat-nav-inner::-webkit-scrollbar{display:none}
+.cat-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:var(--light);font-size:13px;font-weight:800;color:#555;transition:all var(--trans)}
+.cat-chip:hover{border-color:var(--orange);color:var(--orange)}
+.cat-chip.on{background:var(--orange);border-color:var(--orange);color:#fff}
+.cat-chip-n{font-size:11px;font-weight:800;opacity:.7}
+
+/* ── PAGER ── */
+.pager{max-width:1100px;margin:-40px auto 0;padding:0 24px 80px;display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
+.pager a,.pager span{min-width:42px;height:42px;padding:0 14px;border-radius:50px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:1.5px solid var(--border);background:var(--white);color:#555}
+.pager a:hover{border-color:var(--orange);color:var(--orange)}
+.pager .on{background:var(--orange);border-color:var(--orange);color:#fff}
+
 /* ── EMPTY / ERROR ── */
 .empty-state{grid-column:1/-1;text-align:center;padding:80px 24px;color:var(--gray)}
 .empty-state-ico{font-size:64px;margin-bottom:20px}
@@ -77,12 +93,10 @@ a{text-decoration:none;color:inherit}
 .footer a{color:rgba(255,255,255,.6);font-weight:700}
 .footer a:hover{color:var(--orange)}
 
-/* ── SKELETON ── */
-.skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
 @media(max-width:600px){
   .nav{padding:0 20px}
+  .cat-nav-inner{padding:12px 16px}
+  .pager{margin-top:-20px}
   .all-hero{padding:48px 20px 40px}
   .all-posts-grid{padding:28px 16px 60px;grid-template-columns:1fr}
 }
@@ -92,122 +106,35 @@ a{text-decoration:none;color:inherit}
 
 <!-- NAV -->
 <nav class="nav">
-  <div class="nav-logo" onclick="window.location.href='index.html'">Puppy<span>Place</span></div>
-  <button class="nav-back" onclick="window.location.href='index.html'">
+  <a class="nav-logo" href="/index.html">Puppy<span>Place</span></a>
+  <a class="nav-back" href="/shop.html">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M10 12L6 8l4-4"/></svg>
     Back to Shop
-  </button>
+  </a>
 </nav>
 
 <!-- HERO -->
 <div class="all-hero">
   <div class="all-hero-bg"></div>
   <div class="all-hero-content">
-    <h1>Pet Care Blog</h1>
-    <p>Expert tips, nutrition guides, health advice, and training insights for Nigerian pet owners</p>
+    <h1>{{H1}}</h1>
+    <p>{{INTRO}}</p>
   </div>
 </div>
+
+<!-- CATEGORY NAV -->
+{{CATNAV}}
 
 <!-- POSTS GRID -->
 <div class="all-posts-grid" id="allPostsGrid">
-  <!-- skeleton cards -->
-  <div style="background:#fff;border:1.5px solid #e9ecef;border-radius:12px;overflow:hidden">
-    <div class="skeleton" style="height:200px"></div>
-    <div style="padding:24px;display:flex;flex-direction:column;gap:12px">
-      <div class="skeleton" style="height:22px;width:80%"></div>
-      <div class="skeleton" style="height:14px;width:60%"></div>
-      <div class="skeleton" style="height:14px;width:90%"></div>
-      <div class="skeleton" style="height:14px;width:70%"></div>
-    </div>
-  </div>
-  <div style="background:#fff;border:1.5px solid #e9ecef;border-radius:12px;overflow:hidden">
-    <div class="skeleton" style="height:200px"></div>
-    <div style="padding:24px;display:flex;flex-direction:column;gap:12px">
-      <div class="skeleton" style="height:22px;width:75%"></div>
-      <div class="skeleton" style="height:14px;width:55%"></div>
-      <div class="skeleton" style="height:14px;width:85%"></div>
-      <div class="skeleton" style="height:14px;width:65%"></div>
-    </div>
-  </div>
-  <div style="background:#fff;border:1.5px solid #e9ecef;border-radius:12px;overflow:hidden">
-    <div class="skeleton" style="height:200px"></div>
-    <div style="padding:24px;display:flex;flex-direction:column;gap:12px">
-      <div class="skeleton" style="height:22px;width:70%"></div>
-      <div class="skeleton" style="height:14px;width:50%"></div>
-      <div class="skeleton" style="height:14px;width:88%"></div>
-      <div class="skeleton" style="height:14px;width:60%"></div>
-    </div>
-  </div>
+{{POSTS}}
 </div>
+{{PAGER}}
 
 <footer class="footer">
-  &copy; 2026 <a href="index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria<br/><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/faq.html">FAQs</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
+  &copy; 2026 <a href="/index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria<br/><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/faq.html">FAQs</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
-<script src="/config.js"></script>
-<script>
-function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-
-async function loadPosts() {
-  const grid = document.getElementById('allPostsGrid');
-  try {
-    let posts;
-    try {
-      const res = await fetch('/api/blog-posts');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      posts = (await res.json()) || [];
-    } catch (apiErr) {
-      // Fall back to reading Supabase directly from the browser
-      console.warn('Blog API failed, using Supabase directly:', apiErr.message);
-      const cfg = window.PPCONFIG || {};
-      if (!window.supabase || !cfg.SUPABASE_URL) throw apiErr;
-      const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON);
-      const r = await sb.from('blog_posts').select('id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time,featured_image')
-        .eq('status', 'published').order('published_at', { ascending: false });
-      if (r.error) throw r.error;
-      posts = r.data || [];
-    }
-    if (!posts.length) {
-      grid.innerHTML = `<div class="empty-state"><div class="empty-state-ico">📝</div><div style="font-size:18px;font-weight:800;margin-bottom:8px">No posts yet</div><div>Check back soon for pet care tips and guides.</div></div>`;
-      return;
-    }
-
-    grid.innerHTML = posts.map(p => {
-      const date = p.published_at
-        ? new Date(p.published_at).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'})
-        : '';
-      const thumbHtml = p.featured_image
-        ? `<img src="${escHtml(p.featured_image)}" alt="${escHtml(p.title)}" loading="lazy"/>`
-        : `<div class="post-card-thumb-emoji" style="background:${escHtml(p.bg_color||'#f1f3f5')}">${escHtml(p.emoji||'📰')}</div>`;
-      return `
-        <a class="post-card" href="/posts/${escHtml(encodeURIComponent(String(p.slug||p.id)))}.html">
-          <div class="post-card-thumb" style="${p.featured_image ? '' : ''}">
-            ${thumbHtml}
-            <div class="post-card-cat" style="background:${escHtml(p.cat_color||'#ed6436')}">${escHtml(p.category||'General')}</div>
-          </div>
-          <div class="post-card-body">
-            <div class="post-card-title">${escHtml(p.title)}</div>
-            <div class="post-card-excerpt">${escHtml(p.excerpt||'')}</div>
-            <div class="post-card-meta">
-              <span>${escHtml(p.author||'')}</span>
-              ${p.author ? '<span>·</span>' : ''}
-              <span>${escHtml(date)}</span>
-              <span>·</span>
-              <span>${escHtml(String(p.read_time||5))} min read</span>
-            </div>
-            <div class="post-card-read">Read article →</div>
-          </div>
-        </a>`;
-    }).join('');
-  } catch(err) {
-    grid.innerHTML = `<div class="empty-state"><div class="empty-state-ico">⚠️</div><div style="font-size:16px;font-weight:800;margin-bottom:8px">Could not load posts</div><div>Please check your connection and try again.</div></div>`;
-    console.error('Blog load error:', err);
-  }
-}
-
-loadPosts();
-</script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>

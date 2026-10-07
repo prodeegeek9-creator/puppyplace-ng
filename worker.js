@@ -1,3 +1,5 @@
+import BLOG_TEMPLATE from './templates/blog.html';
+
 export default {
   async fetch(request, env, ctx) {
     env = cleanEnv(env);
@@ -65,6 +67,20 @@ export default {
       return servePetPage(decodeURIComponent(petMatch[1]), env);
     }
 
+    if (url.pathname === '/blog.html') {
+      return serveBlogIndex(url, env, null);
+    }
+    if (url.pathname === '/blog' || url.pathname === '/blog/') {
+      return Response.redirect(`https://puppyplace.ng/blog.html${url.search}`, 301);
+    }
+    const blogCatMatch = url.pathname.match(/^\/blog\/([a-z0-9-]+)(?:\.html)?$/);
+    if (blogCatMatch) {
+      const cat = BLOG_CATS.find(c => c.slug === blogCatMatch[1]);
+      if (!cat) return notFound(url, env);
+      if (!url.pathname.endsWith('.html')) return Response.redirect(`https://puppyplace.ng${blogCatPath(cat)}${url.search}`, 301);
+      return serveBlogIndex(url, env, cat);
+    }
+
     const postMatch = url.pathname.match(/^\/posts\/([^/]+?)(?:\.html)?$/);
     if (postMatch) {
       let slug;
@@ -83,13 +99,27 @@ export default {
 
     const asset = await env.ASSETS.fetch(request);
     if (asset.status !== 404) return asset;
-    // Serve the custom 404 page here rather than with assets.not_found_handling:
-    // that setting answers browser navigations itself, so /posts/, /pets/ and
-    // /product/ pages would never reach this Worker when a link is clicked
-    const page = await env.ASSETS.fetch(new Request(new URL('/404', url.origin)));
-    return new Response(page.body, { status: 404, headers: new Headers(page.headers) });
+    // html_handling is "none", so .html pages are served as-is (matching the
+    // canonical links and sitemap); the home page and old extensionless
+    // addresses are handled here
+    if (url.pathname === '/') {
+      return env.ASSETS.fetch(new Request(new URL('/index.html', url.origin), request));
+    }
+    const bare = url.pathname.replace(/\/+$/, '');
+    if (bare === '/index') return Response.redirect('https://puppyplace.ng/', 301);
+    if (/^\/[a-z0-9-]+$/i.test(bare)) {
+      const target = new URL(`${bare}.html${url.search}`, url.origin);
+      const probe = await env.ASSETS.fetch(new Request(target));
+      if (probe.ok) return Response.redirect(`https://puppyplace.ng${bare}.html${url.search}`, 301);
+    }
+    return notFound(url, env);
   },
 };
+
+async function notFound(url, env) {
+  const page = await env.ASSETS.fetch(new Request(new URL('/404.html', url.origin)));
+  return new Response(page.body, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
 
 // Secrets pasted into the dashboard can carry stray whitespace or a trailing
 // slash. supabase-js tolerates both in the browser; raw fetch() here does not
@@ -328,6 +358,8 @@ async function handleOgImageProxy(request, url, env) {
       'Cache-Control':               'public, max-age=604800, immutable',
       'Access-Control-Allow-Origin': '*',
       'X-Content-Type-Options':      'nosniff',
+      // Preview copies of images for WhatsApp/Facebook; keep them out of Google
+      'X-Robots-Tag':                'noindex',
     },
   });
 }
@@ -497,37 +529,223 @@ async function servePost(slug, env) {
     return html(errorPage('Server not configured.'), 503);
   }
 
-  let post, related;
+  let post, all;
   try {
-    [post, related] = await Promise.all([
+    [post, all] = await Promise.all([
       getBlogPost(slug, env),
-      getBlogPosts(env, { limit: 3, excludeSlug: slug }),
+      getAllPosts(env).catch(() => []),
     ]);
   } catch (e) {
     console.error('post ' + slug + ':', e.message);
     return html(errorPage('Failed to load article.'), 500);
   }
-  if (!post) return html(notFoundPage(), 404);
+  if (!post) {
+    const match = closestSlug(slug, all.map(p => p.slug).filter(Boolean));
+    if (match) return Response.redirect(`https://puppyplace.ng${postPath({ slug: match })}`, 301);
+    return html(notFoundPage(), 404);
+  }
   if (post.slug && slug !== post.slug) {
     return Response.redirect(`https://puppyplace.ng${postPath(post)}`, 301);
   }
 
-  // Prefer related posts on the same topic, topped up with the latest ones
-  let products = [];
-  try {
-    const [sameCat, prods] = await Promise.all([
-      post.category ? getBlogPosts(env, { limit: 3, excludeSlug: post.slug || slug, category: post.category }).catch(() => []) : [],
-      getShopProducts(env).catch(() => []),
-    ]);
-    const seen = new Set(sameCat.map(r => r.id));
-    related = [...sameCat, ...related.filter(r => !seen.has(r.id) && r.id !== post.id)].slice(0, 3);
-    products = prods;
-  } catch { /* non-critical */ }
+  // Related: same category first, topped up with the latest posts
+  const cat = blogCategory(post);
+  const others = all.filter(p => p.id !== post.id);
+  const related = [...others.filter(p => blogCategory(p).slug === cat.slug), ...others.filter(p => blogCategory(p).slug !== cat.slug)].slice(0, 3);
+  const products = await getShopProducts(env).catch(() => []);
 
   return html(renderPost(post, related, matchProducts(post, products)), 200);
 }
 
 // Blog posts live in the Supabase blog_posts table
+// Main blog categories. Posts saved as "General" (or with no category) are
+// placed by their title, so every post lands in one of these.
+const BLOG_CATS = [
+  { slug: 'poisoning-first-aid', name: 'Poisoning & First Aid', emoji: '⚠️', color: '#c0392b',
+    intro: 'What to do when your pet eats something toxic, is bitten by a snake or toad, or is given human medicine.',
+    re: /\b(poison\w*|toxic\w*|dangers?|dangerous|deadly|snake ?bites?|snakes?|toads?|rat (poison|killer)|paracetamol|panadol|painkillers?|human (antibiotics?|medicines?|multivitamins?|vitamins?|painkillers?|anti-?diarrh\w*)|antibiotics?|amoxicillin|flagyl|first aid)\b/ },
+  { slug: 'fleas-ticks-worms',  name: 'Fleas, Ticks & Worms', emoji: '🐛', color: '#8e6e53',
+    intro: 'Getting rid of fleas, ticks, mange and worms — safe treatments and prevention for dogs and cats in Nigeria.',
+    re: /\b(fleas?|flea comb|ticks?|tick fever|worms?|deworm\w*|tapeworms?|mange|mites?|lice)\b/ },
+  { slug: 'health',             name: 'Health & Emergencies', emoji: '🩺', color: '#e74c3c',
+    intro: 'Symptoms, first aid, poisoning, parasites and when to see a vet — practical health guides for pets in Nigeria.',
+    re: /\b(health\w*|vets?|veterinar\w*|sick\w*|ill|illness|diseases?|symptoms?|emergenc\w*|first aid|poison\w*|toxic\w*|dangers?|deadly|vomit\w*|diarrh\w*|stool\w*|pooping|blood\w*|bleed\w*|anemia|anaemia|worms?|deworm\w*|tapeworms?|fleas?|ticks?|tick fever|mange|parvo\w*|fever|infections?|antibiotics?|medicines?|medication|paracetamol|panadol|painkillers?|amoxicillin|flagyl|vitamins?|multivitamins?|supplements?|vaccin\w*|pancreatitis|snake ?bites?|snakes?|toads?|rat (poison|killer)|not eating|stops? eating|appetite|weak|shaking|seizures?|coughing|sneez\w*|eye infection|ears?|skin|itch\w*|wounds?|injur\w*|pain|recover\w*|treat(ment)?s? for|how to treat|cure)\b/ },
+  { slug: 'food-nutrition',     name: 'Food & Nutrition', emoji: '🍖', color: '#f39c12',
+    intro: 'What to feed dogs, cats and other pets — safe Nigerian foods, diets, treats and feeding schedules.',
+    re: /\b(foods?|feed\w*|diet\w*|eat|eats|eating|nutrition\w*|treats|milk|meals?|kibble|garri|eba|fufu|rice|meat|bones?|fish|eggs?|fruits?|vegetables?|calories|wet food|dry food|formula)\b/ },
+  { slug: 'grooming',           name: 'Grooming & Hygiene', emoji: '🛁', color: '#3498db',
+    intro: 'Bathing, brushing, nail trims, dental care and keeping your pet clean and comfortable.',
+    re: /\b(groom\w*|bath\w*|bathe|soaps?|shampoo\w*|morning fresh|brush\w*|nails?|fur|coat|shed\w*|teeth|tooth\w*|dental|hygiene)\b/ },
+  { slug: 'training-behaviour', name: 'Training & Behaviour', emoji: '🎓', color: '#27ae60',
+    intro: 'Training tips and what your pet’s behaviour means — barking, chewing, anxiety, house training and more.',
+    re: /\b(train\w*|bark\w*|behaviou?r\w*|aggress\w*|anxiety|anxious|stress\w*|happy|unhappy|depress\w*|grumpy|hid(e|es|ing)|bit(e|es|ing)|chew\w*|potty|litter[- ]train\w*|obedien\w*|commands?|socializ\w*|socialis\w*|rules?)\b/ },
+  { slug: 'puppy-kitten-care',  name: 'Puppy & Kitten Care', emoji: '🍼', color: '#9b59b6',
+    intro: 'Caring for newborn, young and orphaned puppies and kittens, and for pregnant dogs and cats.',
+    re: /\b(newborns?|orphan\w*|pregnan\w*|wean\w*|whelp\w*|birth|\d+[- ]?(day|week)[- ]old|pupp(y|ies)|kittens?)\b/ },
+  { slug: 'breeds-buying',      name: 'Breeds & Buying', emoji: '🐕', color: '#16a085',
+    intro: 'Breed guides, prices in Nigeria and what to know before you buy or adopt a pet.',
+    re: /\b(prices?|cost\w*|breeds?|buy\w*|adopt\w*|choos\w*|for sale|german shepherd|boerboel|rottweiler|caucasian|lhasa|chihuahua|pit ?bull|husky|persian)\b/ },
+];
+const BLOG_CAT_FALLBACK = { slug: 'pet-care', name: 'Pet Care Tips', emoji: '🐾', color: '#ed6436',
+  intro: 'Everyday advice for looking after dogs, cats and other pets in Nigeria.' };
+BLOG_CATS.push(BLOG_CAT_FALLBACK);
+// Specific baby-animal topics (newborn, orphaned, pregnant) win over everything;
+// otherwise the first matching topic below decides
+const BABY_RE = /\b(newborns?|orphan\w*|abandoned|pregnan\w*|wean\w*|whelp\w*|birth|formula|(\d+|one|two|three|four|five|six)[- ]?(day|week)s?[- ]old)\b/;
+const CAT_ORDER = ['poisoning-first-aid', 'fleas-ticks-worms', 'grooming', 'health', 'food-nutrition', 'training-behaviour', 'breeds-buying', 'puppy-kitten-care'];
+
+function blogCategory(p) {
+  // A post saved with one of the main category names (the admin editor
+  // suggests them) keeps it; anything else is placed by its title
+  const saved = String(p.category || '').toLowerCase().trim();
+  const chosen = saved && BLOG_CATS.find(c => c.name.toLowerCase() === saved);
+  if (chosen) return chosen;
+  const text = [p.title, p.focus_keyword, String(p.slug || '').replace(/-/g, ' ')].filter(Boolean).join(' ').toLowerCase();
+  if (BABY_RE.test(text)) return BLOG_CATS.find(c => c.slug === 'puppy-kitten-care');
+  for (const slug of CAT_ORDER) {
+    const c = BLOG_CATS.find(x => x.slug === slug);
+    if (c.re.test(text)) return c;
+  }
+  return BLOG_CAT_FALLBACK;
+}
+
+function blogCatPath(c) {
+  return `/blog/${c.slug}.html`;
+}
+
+// All published posts (list fields), cached briefly per Worker instance
+let _postsCache = { at: 0, posts: null };
+async function getAllPosts(env) {
+  if (_postsCache.posts && Date.now() - _postsCache.at < 5 * 60 * 1000) return _postsCache.posts;
+  const posts = await getBlogPosts(env, { limit: 5000 });
+  _postsCache = { at: Date.now(), posts };
+  return posts;
+}
+
+const BLOG_PER_PAGE = 24;
+
+async function serveBlogIndex(url, env, cat) {
+  let posts;
+  try {
+    posts = await getAllPosts(env);
+  } catch (e) {
+    console.error('blog index:', e.message);
+    return html(errorPage('Failed to load the blog.'), 500);
+  }
+  const counts = {};
+  for (const p of posts) { const c = blogCategory(p).slug; counts[c] = (counts[c] || 0) + 1; }
+  const list = cat ? posts.filter(p => blogCategory(p).slug === cat.slug) : posts;
+  const pages = Math.max(1, Math.ceil(list.length / BLOG_PER_PAGE));
+  const page = Math.max(1, parseInt(url.searchParams.get('page'), 10) || 1);
+  if (page > pages) return notFound(url, env);
+  const basePath = cat ? blogCatPath(cat) : '/blog.html';
+  const pageUrl = n => `${basePath}${n > 1 ? `?page=${n}` : ''}`;
+  if (url.searchParams.has('page') && page === 1) return Response.redirect(`https://puppyplace.ng${basePath}`, 301);
+
+  const cards = list.slice((page - 1) * BLOG_PER_PAGE, page * BLOG_PER_PAGE).map((p, i) => {
+    const c = blogCategory(p);
+    const date = p.published_at
+      ? new Date(p.published_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '';
+    const thumb = p.featured_image
+      ? `<img src="${esc(p.featured_image)}" alt="${esc(p.title)}"${i > 2 ? ' loading="lazy"' : ''}/>`
+      : `<div class="post-card-thumb-emoji" style="background:${esc(p.bg_color || '#f1f3f5')}">${esc(p.emoji || c.emoji)}</div>`;
+    return `
+  <a class="post-card" href="${esc(postPath(p))}">
+    <div class="post-card-thumb">
+      ${thumb}
+      <div class="post-card-cat" style="background:${c.color}">${esc(c.name)}</div>
+    </div>
+    <div class="post-card-body">
+      <h2 class="post-card-title">${esc(p.title)}</h2>
+      <div class="post-card-excerpt">${esc(p.excerpt || '')}</div>
+      <div class="post-card-meta">
+        ${p.author ? `<span>${esc(p.author)}</span><span>·</span>` : ''}
+        <span>${esc(date)}</span>
+        <span>·</span>
+        <span>${esc(String(p.read_time || 5))} min read</span>
+      </div>
+      <div class="post-card-read">Read article →</div>
+    </div>
+  </a>`;
+  }).join('');
+
+  const chips = [
+    `<a class="cat-chip${cat ? '' : ' on'}" href="/blog.html">🐾 All Posts <span class="cat-chip-n">${posts.length}</span></a>`,
+    ...BLOG_CATS.filter(c => counts[c.slug]).map(c =>
+      `<a class="cat-chip${cat && cat.slug === c.slug ? ' on' : ''}" href="${blogCatPath(c)}">${c.emoji} ${esc(c.name)} <span class="cat-chip-n">${counts[c.slug]}</span></a>`),
+  ].join('\n    ');
+  const catNav = `<nav class="cat-nav" aria-label="Blog categories">\n  <div class="cat-nav-inner">\n    ${chips}\n  </div>\n</nav>`;
+
+  let pager = '';
+  if (pages > 1) {
+    const items = [];
+    if (page > 1) items.push(`<a href="${pageUrl(page - 1)}" rel="prev">← Prev</a>`);
+    for (let n = 1; n <= pages; n++) {
+      if (n === 1 || n === pages || Math.abs(n - page) <= 2) items.push(n === page ? `<span class="on">${n}</span>` : `<a href="${pageUrl(n)}">${n}</a>`);
+      else if (Math.abs(n - page) === 3) items.push('<span>…</span>');
+    }
+    if (page < pages) items.push(`<a href="${pageUrl(page + 1)}" rel="next">Next →</a>`);
+    pager = `<nav class="pager" aria-label="Pages">${items.join('')}</nav>`;
+  }
+
+  const name = cat ? cat.name : 'Pet Care Blog';
+  const pageSuffix = page > 1 ? ` — Page ${page}` : '';
+  const title = cat ? `${cat.name}: Pet Care Guides for Nigeria${pageSuffix} | PuppyPlace Blog` : `Pet Care Blog for Nigerian Pet Owners${pageSuffix} | PuppyPlace`;
+  const intro = cat ? cat.intro : 'Expert tips, nutrition guides, health advice, and training insights for Nigerian pet owners';
+  const description = cat
+    ? `${cat.intro} ${list.length} articles from PuppyPlace.ng.`
+    : 'Pet care tips, nutrition guides, health advice and training insights for Nigerian dog, cat and pet owners from the PuppyPlace.ng team.';
+  const crumbs = [{ name: 'Home', url: 'https://puppyplace.ng/' }, { name: 'Blog', url: 'https://puppyplace.ng/blog.html' }];
+  if (cat) crumbs.push({ name: cat.name, url: `https://puppyplace.ng${blogCatPath(cat)}` });
+  const headExtra = `<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="PuppyPlace"/>
+<meta property="og:title" content="${esc(title)}"/>
+<meta property="og:description" content="${esc(description)}"/>
+<meta property="og:url" content="https://puppyplace.ng${pageUrl(page)}"/>
+<script type="application/ld+json">${breadcrumbLd(crumbs)}</script>`;
+
+  const fill = {
+    CANONICAL: `https://puppyplace.ng${pageUrl(page)}`,
+    TITLE: esc(title),
+    DESCRIPTION: esc(description),
+    HEAD_EXTRA: headExtra,
+    H1: esc(cat ? `${cat.emoji} ${name}` : name) + (page > 1 ? ` <small style="font-size:.5em;opacity:.6">Page ${page}</small>` : ''),
+    INTRO: esc(intro),
+    CATNAV: catNav,
+    POSTS: cards || `<div class="empty-state"><div class="empty-state-ico">📝</div><div style="font-size:18px;font-weight:800;margin-bottom:8px">No posts yet</div><div>Check back soon for pet care tips and guides.</div></div>`,
+    PAGER: pager,
+  };
+  const out = BLOG_TEMPLATE.replace(/\{\{([A-Z0-9_]+)\}\}/g, (m, k) => (k in fill ? fill[k] : m));
+  return new Response(out, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });
+}
+
+function breadcrumbLd(items) {
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, item: it.url })),
+  }).replace(/<\//g, '<\\/');
+}
+
+// Closest live slug for a removed or renamed page (word overlap), so old
+// links from Google land on the matching page instead of a 404
+function closestSlug(slug, candidates, min = 0.75) {
+  const words = s => new Set(String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length > 1));
+  const a = words(slug);
+  if (a.size < 2) return null;
+  let best = null, bestScore = 0;
+  for (const c of candidates) {
+    const b = words(c);
+    if (!b.size) continue;
+    let shared = 0;
+    for (const t of a) if (b.has(t)) shared++;
+    const score = (2 * shared) / (a.size + b.size);
+    if (score > bestScore) { bestScore = score; best = c; }
+  }
+  return bestScore >= min ? best : null;
+}
+
 const BLOG_LIST_FIELDS = 'id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time,featured_image';
 
 async function getBlogPosts(env, { limit = 100, excludeSlug = '', category = '' } = {}) {
@@ -675,17 +893,24 @@ function postPet(text) {
 
 // Pick up to 3 shop products that suit a blog post, plus the shop section to browse
 function matchProducts(post, products) {
-  const text = [post.title, post.focus_keyword, post.category].filter(Boolean).join(' ').toLowerCase();
+  const text = [post.title, post.focus_keyword, blogCategory(post).name].filter(Boolean).join(' ').toLowerCase();
   const pet = postPet(text);
   const topic = (POST_TOPICS.find(([, re]) => re.test(text)) || [])[0] || '';
   const words = new Set(text.split(/[^a-z0-9]+/).filter(t => t.length > 2 && !STOP_WORDS.has(t)));
   const scored = products.map(p => {
     const petType = String(p.pet_type || '');
     if (pet && petType && petType !== 'All' && petType !== pet) return { p, score: 0 };
-    let score = 0;
+    // Shared words between the post and product name ("deworming" ~ "dewormer")
+    let shared = 0;
+    for (const t of String(p.name || '').toLowerCase().split(/[^a-z0-9]+/)) {
+      if (t.length < 3 || STOP_WORDS.has(t)) continue;
+      if (words.has(t) || (t.length >= 5 && [...words].some(w => w.length >= 5 && w.slice(0, 5) === t.slice(0, 5)))) shared++;
+    }
+    // Health products only make sense when they name what the post is about
+    if (topic === 'Health' && !shared) return { p, score: 0 };
+    let score = shared * 2;
     if (topic && p.category === topic) score += 3;
     if (pet && petType === pet) score += 1;
-    for (const t of String(p.name || '').toLowerCase().split(/[^a-z0-9]+/)) if (words.has(t)) score += 2;
     return { p, score };
   }).filter(s => s.score >= 3).sort((a, b) => b.score - a.score);
   const params = new URLSearchParams();
@@ -705,6 +930,7 @@ function productImage(p) {
 }
 
 function renderPost(post, related, shop = { items: [], shopUrl: '/shop.html', label: 'Pet' }) {
+  const cat = blogCategory(post);
   const date = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
@@ -714,7 +940,7 @@ function renderPost(post, related, shop = { items: [], shopUrl: '/shop.html', la
         ? `<img class="rel-thumb" src="${esc(r.featured_image)}" alt="${esc(r.title)}" loading="lazy"/>`
         : `<div class="rel-thumb-placeholder">🐾</div>`}
       <div class="rel-body">
-        <div class="rel-cat" style="color:${esc(r.cat_color || '#ED6436')}">${esc(r.category || 'General')}</div>
+        <div class="rel-cat" style="color:${blogCategory(r).color}">${esc(blogCategory(r).name)}</div>
         <div class="rel-title">${esc(r.title)}</div>
       </div>
     </a>`).join('');
@@ -738,7 +964,7 @@ function renderPost(post, related, shop = { items: [], shopUrl: '/shop.html', la
         <img class="art-hero-bg" src="${esc(post.featured_image)}" alt="${esc(post.title)}" fetchpriority="high"/>
         <div class="art-hero-overlay"></div>
         <div class="art-hero-content">
-          <div class="art-cat" style="background:${esc(post.cat_color || '#ED6436')}">${esc(post.category || 'General')}</div>
+          <a class="art-cat" href="${blogCatPath(cat)}" style="background:${cat.color}">${cat.emoji} ${esc(cat.name)}</a>
           <h1 class="art-title">${esc(post.title)}</h1>
           <div class="art-meta">
             <span>${esc(post.author || 'PuppyPlace')}</span>
@@ -750,7 +976,7 @@ function renderPost(post, related, shop = { items: [], shopUrl: '/shop.html', la
         </div>
       </div>`
     : `<div class="art-hero">
-        <div class="art-cat" style="background:${esc(post.cat_color || '#ED6436')}">${esc(post.category || 'General')}</div>
+        <a class="art-cat" href="${blogCatPath(cat)}" style="background:${cat.color}">${cat.emoji} ${esc(cat.name)}</a>
         <h1 class="art-title">${esc(post.title)}</h1>
         <div class="art-meta">
           <span>${esc(post.author || 'PuppyPlace')}</span>
@@ -773,7 +999,8 @@ function renderPost(post, related, shop = { items: [], shopUrl: '/shop.html', la
     '@type':       'BlogPosting',
     headline:      post.title      || '',
     description:   plainText(post.excerpt) || plainText(post.content, 200),
-    image:         imgUrl || post.featured_image || '',
+    image:         post.featured_image || '',
+    articleSection: cat.name,
     author:    { '@type': 'Organization', name: 'PuppyPlace.ng' },
     publisher: { '@type': 'Organization', name: 'PuppyPlace.ng', url: 'https://puppyplace.ng' },
     datePublished: post.published_at || '',
@@ -806,6 +1033,12 @@ ${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>
 <meta name="twitter:description" content="${esc(metaDesc)}"/>
 ${imgUrl ? `<meta name="twitter:image" content="${imgUrl}"/>` : ''}
 <script type="application/ld+json">${jsonLd}</script>
+<script type="application/ld+json">${breadcrumbLd([
+  { name: 'Home', url: 'https://puppyplace.ng/' },
+  { name: 'Blog', url: 'https://puppyplace.ng/blog.html' },
+  { name: cat.name, url: `https://puppyplace.ng${blogCatPath(cat)}` },
+  { name: post.title || '', url: `https://puppyplace.ng${postPath(post)}` },
+])}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -825,6 +1058,8 @@ a{text-decoration:none;color:inherit}
 /* Hero — with featured image */
 .art-hero-img{background:#1a1a18 center/cover no-repeat;padding:0;min-height:420px;display:flex;align-items:flex-end}
 .art-hero-img::before{display:none}
+.crumbs{max-width:760px;margin:0 auto;padding:18px 24px 0;font-size:13px;font-weight:700;color:var(--gray)}.crumbs a{color:var(--gray)}.crumbs a:hover{color:var(--orange)}
+a.art-cat{display:inline-block}
 .art-hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .shop-box{padding:8px 24px 40px}.shop-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}.shop-all{color:var(--orange);font-weight:800;font-size:15px}
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
@@ -876,6 +1111,7 @@ a{text-decoration:none;color:inherit}
   <a class="nav-back" href="/blog.html">← All Posts</a>
 </nav>
 ${heroHtml}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/index.html">Home</a> › <a href="/blog.html">Blog</a> › <a href="${blogCatPath(cat)}">${esc(cat.name)}</a></nav>
 <div class="art-wrap">
   <div class="art-body">${injectAlsoRead(post.content || '')}</div>
   ${shopHtml}
@@ -933,7 +1169,7 @@ async function serveSitemap(env) {
     const h = sbHeaders(env);
     const base = env.SUPABASE_URL;
     const [postRows, productsRes, petsRes] = await Promise.all([
-      getBlogPosts(env, { limit: 2000 }).catch(() => []),
+      getAllPosts(env).catch(() => []),
       fetch(`${base}/rest/v1/shop_products?active=eq.true&select=slug,updated_at`, { headers: h }),
       fetch(`${base}/rest/v1/pets?active=eq.true&select=slug,updated_at&order=created_at.desc`, { headers: h }),
     ]);
@@ -949,11 +1185,13 @@ async function serveSitemap(env) {
     `  <url>\n    <loc>${loc}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
 
   const staticUrls = staticPages.map(p => toUrl(p.loc, p.lastmod));
+  const usedCats = new Set(posts.map(p => blogCategory(p).slug));
+  const catUrls = BLOG_CATS.filter(c => usedCats.has(c.slug)).map(c => toUrl(`https://puppyplace.ng${blogCatPath(c)}`, today));
   const postUrls = posts.map(p => toUrl(`https://puppyplace.ng${postPath(p)}`, p.published_at ? p.published_at.slice(0, 10) : ''));
   const productUrls = products.map(p => toUrl(`https://puppyplace.ng/product/${encodeURIComponent(p.slug)}.html`, p.updated_at ? p.updated_at.slice(0, 10) : ''));
   const petUrls = pets.map(p => toUrl(p.loc, p.lastmod));
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...postUrls, ...productUrls, ...petUrls].join('\n')}\n</urlset>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...catUrls, ...postUrls, ...productUrls, ...petUrls].join('\n')}\n</urlset>`;
 
   return new Response(xml, {
     status: 200,
@@ -1210,7 +1448,12 @@ async function serveProduct(slugOrId, env) {
     return html(productErrorPage('Failed to load product.'), 500);
   }
 
-  if (!product) return html(productNotFoundPage(), 404);
+  if (!product) {
+    const live = await getShopProducts(env).catch(() => []);
+    const match = closestSlug(slugOrId, live.map(p => p.slug).filter(Boolean));
+    if (match) return Response.redirect(`https://puppyplace.ng${productPath({ slug: match })}`, 301);
+    return html(productNotFoundPage(), 404);
+  }
   if (product.slug && slugOrId !== product.slug) {
     return Response.redirect(`https://puppyplace.ng${productPath(product)}`, 301);
   }
@@ -1264,7 +1507,8 @@ function renderProductPage(p, related = []) {
   const disc     = (p.price && p.original_price) ? Math.round((1 - p.price / p.original_price) * 100) : 0;
   const desc     = p.description || '';
   const slug     = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const imgUrl   = p.image_url ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(p.image_url)}`) : '';
+  const mainImage = productImage(p);
+  const imgUrl   = mainImage ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(mainImage)}`) : '';
   const pageUrl  = `https://puppyplace.ng${productPath(p)}`;
   const metaDesc = plainText(desc, 160) || `${name} — available at PuppyPlace.ng`;
 
@@ -1273,7 +1517,7 @@ function renderProductPage(p, related = []) {
     '@type': 'Product',
     name,
     description: plainText(desc, 300),
-    image: p.image_url || '',
+    image: mainImage,
     sku: p.id,
     brand: { '@type': 'Brand', name: p.brand || 'PuppyPlace' },
     offers: {

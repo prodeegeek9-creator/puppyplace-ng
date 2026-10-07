@@ -4,6 +4,15 @@
   "main": "worker.js",
   "assets": {
     "directory": "./",
-    "binding": "ASSETS"
-  }
+    "binding": "ASSETS",
+    // Serve /page.html as-is instead of redirecting to /page, so the address
+    // matches the canonical links, internal links and sitemap. worker.js
+    // serves "/" and redirects old extensionless addresses.
+    "html_handling": "none"
+  },
+  // Page templates bundled into the Worker (kept out of the public assets
+  // by .assetsignore)
+  "rules": [
+    { "type": "Text", "globs": ["templates/**/*.html"], "fallthrough": true }
+  ]
 }
