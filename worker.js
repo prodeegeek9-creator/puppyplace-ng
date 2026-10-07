@@ -22,6 +22,11 @@ export default {
       return handleHeroUpload(request, env);
     }
 
+    // Pet listings sent in by sellers through Vendwyze; saved hidden until approved in admin
+    if (url.pathname === '/api/seller-listings' && request.method === 'POST') {
+      return handleSellerListing(request, env, ctx);
+    }
+
     if (url.pathname === '/api/update-profile' && request.method === 'POST') {
       return handleUpdateProfile(request, env);
     }
@@ -315,6 +320,160 @@ async function handleHeroUpload(request, env) {
   return jsonResp({ url: publicUrl }, 200);
 }
 
+/* ── SELLER LISTINGS (Vendwyze gateway) ── */
+
+const PET_TYPES = ['Dog', 'Cat', 'Bird', 'Rabbit', 'Fish', 'Guinea Pig', 'Reptile', 'Other'];
+const PHOTO_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif' };
+const MAX_PHOTOS = 6;
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // Vendwyze's own limit, so a photo it took is never refused here
+
+// Nigerian numbers become +234…; other international numbers keep their digits
+function normalizeWhatsapp(v) {
+  let d = String(v || '').replace(/\D/g, '');
+  if (d.length === 11 && d.startsWith('0')) d = '234' + d.slice(1);
+  if (d.length === 10 && /^[789]/.test(d)) d = '234' + d;
+  if (d.startsWith('2340')) d = '234' + d.slice(4); // "+234 0803…"
+  if (d.startsWith('234') && d.length !== 13) return '';
+  return d.length >= 10 && d.length <= 15 ? '+' + d : '';
+}
+
+function cleanText(v, max) {
+  const s = String(v ?? '').replace(/\s+/g, ' ').trim();
+  return s ? s.slice(0, max) : null;
+}
+
+// Fetch a seller photo (https URL or data: URI) and copy it into Supabase storage,
+// since WhatsApp media links expire
+async function storeSellerPhoto(src, path, env) {
+  let bytes, type;
+  const dataUri = /^data:(image\/[a-z+]+);base64,([A-Za-z0-9+/=\s]+)$/i.exec(String(src));
+  if (dataUri) {
+    type = dataUri[1].toLowerCase();
+    bytes = Uint8Array.from(atob(dataUri[2].replace(/\s/g, '')), c => c.charCodeAt(0));
+  } else {
+    let u;
+    try { u = new URL(String(src)); } catch { throw new Error('not a valid URL'); }
+    if (u.protocol !== 'https:') throw new Error('must be an https URL');
+    const res = await fetch(u.toString(), { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error(`download failed (${res.status})`);
+    type = (res.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+    bytes = new Uint8Array(await res.arrayBuffer());
+  }
+  if (!PHOTO_TYPES[type]) throw new Error('not a JPEG, PNG, WebP, GIF or AVIF image');
+  if (bytes.byteLength > MAX_PHOTO_BYTES) throw new Error('larger than 8 MB');
+
+  const key = env.SUPABASE_SERVICE_KEY;
+  const file = `${path}.${PHOTO_TYPES[type]}`;
+  const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/hero-images/${file}`, {
+    method: 'POST',
+    headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': type, 'x-upsert': 'true' },
+    body: bytes,
+  });
+  if (!up.ok) throw new Error('storage upload failed');
+  return `${env.SUPABASE_URL}/storage/v1/object/public/hero-images/${file}`;
+}
+
+async function handleSellerListing(request, env, ctx) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY || !env.SELLER_API_KEY) {
+    return jsonResp({ error: 'Server not configured' }, 503);
+  }
+  const auth = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!safeEqual(auth, String(env.SELLER_API_KEY).trim())) {
+    return jsonResp({ error: 'Unauthorized' }, 401);
+  }
+
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Body must be JSON' }, 400); }
+  if (!b || typeof b !== 'object') return jsonResp({ error: 'Body must be a JSON object' }, 400);
+
+  const breed = cleanText(b.breed, 80);
+  const whatsapp = normalizeWhatsapp(b.whatsapp);
+  const photos = Array.isArray(b.photos) ? b.photos.filter(Boolean) : [];
+  const type = PET_TYPES.find(t => t.toLowerCase() === String(b.type || 'Dog').trim().toLowerCase()) || 'Other';
+  const listingType = String(b.listing_type || 'sale').toLowerCase() === 'adoption' ? 'adoption' : 'sale';
+  const price = b.price === undefined || b.price === null || b.price === '' ? null : Number(String(b.price).replace(/[^\d.]/g, ''));
+
+  const errors = [];
+  if (!breed) errors.push('breed is required');
+  if (!whatsapp) errors.push('whatsapp must be a valid phone number');
+  if (!photos.length) errors.push('at least one photo is required');
+  if (photos.length > MAX_PHOTOS) errors.push(`at most ${MAX_PHOTOS} photos`);
+  if (listingType === 'sale' && price !== null && !(price >= 0)) errors.push('price must be a number');
+  if (errors.length) return jsonResp({ error: 'Invalid listing', details: errors }, 400);
+
+  const h = sbHeaders(env);
+  const base = env.SUPABASE_URL;
+
+  // A seller who resends the same pet within 15 minutes gets the pending listing back
+  const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  try {
+    const dupRes = await fetch(
+      `${base}/rest/v1/pets?whatsapp=eq.${encodeURIComponent(whatsapp)}&breed=ilike.${encodeURIComponent(breed)}&active=eq.false&created_at=gte.${since}&select=id,slug&limit=1`,
+      { headers: h }
+    );
+    const dup = dupRes.ok ? await dupRes.json() : [];
+    if (dup.length) return jsonResp({ ok: true, status: 'pending', duplicate: true, id: dup[0].id, slug: dup[0].slug }, 200);
+  } catch { /* fall through and save */ }
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}-${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}`;
+  const slug = `${breed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'pet'}-${stamp}-${crypto.randomUUID().slice(0, 4)}`;
+
+  const imageUrls = [];
+  for (let i = 0; i < photos.length; i++) {
+    try {
+      imageUrls.push(await storeSellerPhoto(photos[i], `seller-pets/${slug}-${i + 1}`, env));
+    } catch (e) {
+      return jsonResp({ error: 'Invalid listing', details: [`photo ${i + 1}: ${e.message}`] }, 400);
+    }
+  }
+
+  const row = {
+    slug,
+    breed,
+    name:         cleanText(b.name, 60),
+    breeder:      cleanText(b.seller_name, 80),
+    type,
+    listing_type: listingType,
+    pedigree:     ['pedigree', 'non-pedigree'].includes(String(b.pedigree || '').toLowerCase()) ? String(b.pedigree).toLowerCase() : null,
+    price:        listingType === 'sale' ? price : null,
+    age:          cleanText(b.age, 40),
+    specs:        cleanText(b.description, 1500),
+    location:     cleanText(b.location, 80),
+    whatsapp,
+    image_urls:   imageUrls,
+    image_url:    imageUrls[0],
+    dewormed:     b.dewormed === true,
+    vaccinated:   b.vaccinated === true,
+    active:       false,
+  };
+
+  const ins = await fetch(`${base}/rest/v1/pets`, {
+    method: 'POST',
+    headers: { ...h, 'Prefer': 'return=representation' },
+    body: JSON.stringify(row),
+  });
+  if (!ins.ok) {
+    return jsonResp({ error: 'Could not save listing', details: [(await ins.text()).slice(0, 200)] }, 500);
+  }
+  const saved = (await ins.json())[0] || {};
+
+  if (env.SELLER_ALERT_WEBHOOK) {
+    ctx.waitUntil(fetch(env.SELLER_ALERT_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'pet_listing_pending', id: saved.id, slug, breed, pet_type: type, listing_type: listingType,
+        price: row.price, location: row.location, seller_name: row.breeder, whatsapp, photo: imageUrls[0],
+        review_url: 'https://puppyplace.ng/admin.html',
+      }),
+    }).catch(() => {}));
+  }
+
+  return jsonResp({ ok: true, status: 'pending', id: saved.id, slug, url: `https://puppyplace.ng/pets/${slug}` }, 201);
+}
+
 function jsonResp(data, status) {
   return new Response(JSON.stringify(data), {
     status,
@@ -517,7 +676,7 @@ a{text-decoration:none;color:inherit}
     ${wa ? `<div class="pg-cta"><a href="https://wa.me/${wa}?text=${encodeURIComponent('Hi, I\'m interested in the ' + (p.breed||p.type) + (p.name?' ('+p.name+')':'') + ' listed on PuppyPlace.ng')}" target="_blank" rel="noopener noreferrer" class="btn-wa">💬 Contact on WhatsApp</a></div>` : ''}
   </div>
 </div>
-<footer class="footer"><a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace · <a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></footer>
+<footer class="footer"><a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace · <a href="/sell-my-dog.html">Sell your dog</a> · <a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></footer>
 ${galleryScript}
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
@@ -1159,6 +1318,7 @@ async function serveSitemap(env) {
     { loc: 'https://puppyplace.ng/returns.html', lastmod: today },
     { loc: 'https://puppyplace.ng/track-order.html', lastmod: today },
     { loc: 'https://puppyplace.ng/sell.html', lastmod: today },
+    { loc: 'https://puppyplace.ng/sell-my-dog.html', lastmod: today },
     { loc: 'https://puppyplace.ng/careers.html', lastmod: today },
   ];
 
