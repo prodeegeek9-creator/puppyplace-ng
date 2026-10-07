@@ -7,3 +7,5 @@ scripts
 .git
 .gitignore
 supabase
+.wrangler
+templates

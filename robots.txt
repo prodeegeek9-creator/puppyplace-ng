@@ -2,5 +2,10 @@ User-agent: *
 Allow: /
 Disallow: /account.html
 Disallow: /admin.html
+Disallow: /api/track-view
+Disallow: /api/track-time
+Disallow: /api/stats
+Disallow: /api/blog-posts
+Disallow: /cdn-cgi/
 
 Sitemap: https://puppyplace.ng/sitemap.xml
