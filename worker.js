@@ -372,8 +372,8 @@ document.addEventListener('DOMContentLoaded',function(){_show();});
 <head>
 <meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="google-adsense-account" content="ca-pub-1378798890305844">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1378798890305844" crossorigin="anonymous"></script>
+<meta name="google-adsense-account" content="ca-pub-4218810555810518">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4218810555810518" crossorigin="anonymous"></script>
 <title>${esc(pageTitle)}</title>
 <meta name="description" content="${esc(metaDesc)}"/>
 <link rel="canonical" href="${petUrl}"/>
@@ -653,8 +653,8 @@ function renderPost(post, related) {
 <head>
 <meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="google-adsense-account" content="ca-pub-1378798890305844">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1378798890305844" crossorigin="anonymous"></script>
+<meta name="google-adsense-account" content="ca-pub-4218810555810518">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4218810555810518" crossorigin="anonymous"></script>
 <title>${esc(pageTitle)}</title>
 <meta name="description" content="${esc(metaDesc)}"/>
 ${post.focus_keyword ? `<meta name="keywords" content="${esc(post.focus_keyword)}"/>` : ''}
@@ -1145,8 +1145,8 @@ function renderProductPage(p, related = []) {
 <head>
 <meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="google-adsense-account" content="ca-pub-1378798890305844">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1378798890305844" crossorigin="anonymous"></script>
+<meta name="google-adsense-account" content="ca-pub-4218810555810518">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4218810555810518" crossorigin="anonymous"></script>
 <title>${esc(name)} — PuppyPlace.ng</title>
 <meta name="description" content="${esc(metaDesc)}"/>
 <meta property="og:type" content="product"/>
