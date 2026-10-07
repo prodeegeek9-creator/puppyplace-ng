@@ -814,7 +814,7 @@ const fmt = n => '₦' + n.toLocaleString('en-NG');
 function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 const lblMap={sale:'lbl-sale',new:'lbl-new',hot:'lbl-hot',best:'lbl-best',popular:'lbl-sale'};
 const lblText={sale:'Sale',new:'New',hot:'Hot',best:'Best Seller',popular:'Popular'};
-const productUrl = p => { const s = p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); return p.slug ? `/product/${p.slug}` : `/product/${s}--${p.id}`; };
+const productUrl = p => { const s = p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); return p.slug ? `/product/${p.slug}.html` : `/product/${s}--${p.id}`; };
 
 /* ── SUPABASE LOAD ── */
 async function loadProducts() {
@@ -872,6 +872,11 @@ async function loadProducts() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('cat')) { activeCat = params.get('cat'); syncSidebarCat(activeCat); }
   if (params.get('pet')) { activePet = params.get('pet'); }
+  if (params.get('q')) {
+    const q = params.get('q').trim();
+    searchQ = q.toLowerCase();
+    document.querySelectorAll('#sInput, #mobSearch input').forEach(i => { i.value = q; });
+  }
 
   applyFilters();
 }

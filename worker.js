@@ -108,6 +108,11 @@ function postPath(p) {
   return `/posts/${encodeURIComponent(String(p.slug || p.id || ''))}.html`;
 }
 
+// Canonical link path for a product (matches the sitemap)
+function productPath(p) {
+  return `/product/${encodeURIComponent(String(p.slug || p.id || ''))}.html`;
+}
+
 function shouldTrack(pathname) {
   if (typeof pathname !== 'string' || pathname.length > 300) return false;
   if (pathname.startsWith('/api/')) return false;
@@ -503,18 +508,34 @@ async function servePost(slug, env) {
     return html(errorPage('Failed to load article.'), 500);
   }
   if (!post) return html(notFoundPage(), 404);
+  if (post.slug && slug !== post.slug) {
+    return Response.redirect(`https://puppyplace.ng${postPath(post)}`, 301);
+  }
 
-  return html(renderPost(post, related), 200);
+  // Prefer related posts on the same topic, topped up with the latest ones
+  let products = [];
+  try {
+    const [sameCat, prods] = await Promise.all([
+      post.category ? getBlogPosts(env, { limit: 3, excludeSlug: post.slug || slug, category: post.category }).catch(() => []) : [],
+      getShopProducts(env).catch(() => []),
+    ]);
+    const seen = new Set(sameCat.map(r => r.id));
+    related = [...sameCat, ...related.filter(r => !seen.has(r.id) && r.id !== post.id)].slice(0, 3);
+    products = prods;
+  } catch { /* non-critical */ }
+
+  return html(renderPost(post, related, matchProducts(post, products)), 200);
 }
 
 // Blog posts live in the Supabase blog_posts table
 const BLOG_LIST_FIELDS = 'id,slug,title,category,cat_color,emoji,bg_color,excerpt,author,published_at,read_time,featured_image';
 
-async function getBlogPosts(env, { limit = 100, excludeSlug = '' } = {}) {
+async function getBlogPosts(env, { limit = 100, excludeSlug = '', category = '' } = {}) {
   if (!env.SUPABASE_URL) return [];
   const exclude = excludeSlug ? `&slug=neq.${encodeURIComponent(excludeSlug)}` : '';
+  const cat = category ? `&category=eq.${encodeURIComponent(category)}` : '';
   const res = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.published${exclude}&select=${BLOG_LIST_FIELDS}&order=published_at.desc&limit=${limit}`,
+    `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.published${exclude}${cat}&select=${BLOG_LIST_FIELDS}&order=published_at.desc&limit=${limit}`,
     { headers: sbPublicHeaders(env) }
   );
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${(await res.text()).slice(0, 200)}`);
@@ -622,7 +643,68 @@ function injectAlsoRead(content) {
   return out.join('');
 }
 
-function renderPost(post, related) {
+async function getShopProducts(env) {
+  if (!env.SUPABASE_URL) return [];
+  const res = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/shop_products?active=eq.true&select=id,name,slug,category,pet_type,image_url,price,emoji&limit=500`,
+    { headers: sbPublicHeaders(env) }
+  );
+  if (!res.ok) return [];
+  const rows = await res.json();
+  return Array.isArray(rows) ? rows : [];
+}
+
+// Shop category a post is about, judged from its title, keyword and category
+const POST_TOPICS = [
+  ['Health',      /\b(health|vet|vets|worms?|deworm\w*|ticks?|fleas?|vaccin\w*|disease|sick|ill|vomit\w*|diarrh\w*|poison\w*|toxic|vitamins?|supplements?|medic\w*|infection|parvo|symptoms?|emergency|pain|fever|allerg\w*|skin|itch\w*)\b/],
+  ['Food',        /\b(food|foods|feed|feeding|diet|eat|eating|nutrition|treats?|milk|meals?|kibble|calories)\b/],
+  ['Grooming',    /\b(groom\w*|bath\w*|shampoo|brush\w*|nails?|fur|coat|shedding|teeth|dental|hygiene)\b/],
+  ['Toy',         /\b(toys?|play\w*|chew\w*|bored\w*|enrichment)\b/],
+  ['Accessories', /\b(train\w*|leash\w*|collars?|walk\w*|harness\w*)\b/],
+  ['Housing',     /\b(beds?|kennels?|cages?|crates?|house|housing|sleep\w*)\b/],
+  ['Travel',      /\b(travel\w*|carriers?|trip)\b/],
+  ['Clothing',    /\b(cloth\w*|sweaters?|jackets?|raincoats?)\b/],
+];
+const STOP_WORDS = new Set('a an and are as at be best can do dog dogs cat cats for from how in is it my nigeria of on or puppy puppies kitten kittens safe the to what when which why with your you'.split(' '));
+
+function postPet(text) {
+  const dog = /\b(dogs?|pupp(y|ies)|canine)\b/.test(text);
+  const cat = /\b(cats?|kittens?|feline)\b/.test(text);
+  return dog === cat ? '' : (dog ? 'Dog' : 'Cat');
+}
+
+// Pick up to 3 shop products that suit a blog post, plus the shop section to browse
+function matchProducts(post, products) {
+  const text = [post.title, post.focus_keyword, post.category].filter(Boolean).join(' ').toLowerCase();
+  const pet = postPet(text);
+  const topic = (POST_TOPICS.find(([, re]) => re.test(text)) || [])[0] || '';
+  const words = new Set(text.split(/[^a-z0-9]+/).filter(t => t.length > 2 && !STOP_WORDS.has(t)));
+  const scored = products.map(p => {
+    const petType = String(p.pet_type || '');
+    if (pet && petType && petType !== 'All' && petType !== pet) return { p, score: 0 };
+    let score = 0;
+    if (topic && p.category === topic) score += 3;
+    if (pet && petType === pet) score += 1;
+    for (const t of String(p.name || '').toLowerCase().split(/[^a-z0-9]+/)) if (words.has(t)) score += 2;
+    return { p, score };
+  }).filter(s => s.score >= 3).sort((a, b) => b.score - a.score);
+  const params = new URLSearchParams();
+  if (topic) params.set('cat', topic);
+  if (pet) params.set('pet', pet);
+  return {
+    items: scored.slice(0, 3).map(s => s.p),
+    shopUrl: '/shop.html' + (params.toString() ? '?' + params : ''),
+    label: [pet, topic === 'Toy' ? 'Toys' : topic].filter(Boolean).join(' ') || 'Pet',
+  };
+}
+
+function productImage(p) {
+  const v = String(p.image_url || '');
+  if (v.startsWith('[')) { try { return JSON.parse(v)[0] || ''; } catch { return ''; } }
+  return v;
+}
+
+function renderPost(post, related, shop = { items: [], shopUrl: '/shop.html', label: 'Pet' }) {
   const date = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
@@ -637,8 +719,23 @@ function renderPost(post, related) {
       </div>
     </a>`).join('');
 
+  const shopCards = shop.items.map(p => {
+    const img = productImage(p);
+    return `
+    <a class="shop-card" href="${esc(productPath(p))}">
+      ${img ? `<img class="shop-thumb" src="${esc(img)}" alt="${esc(p.name)}" loading="lazy"/>` : `<div class="shop-thumb shop-thumb-ph">${esc(p.emoji || '🐾')}</div>`}
+      <div class="shop-name">${esc(p.name)}</div>
+      ${p.price ? `<div class="shop-price">₦${Number(p.price).toLocaleString('en-NG')}</div>` : ''}
+    </a>`;
+  }).join('');
+  const shopHtml = `<div class="shop-box">
+    <div class="shop-head"><div class="rel-label">Shop ${esc(shop.label)} Products</div><a class="shop-all" href="${esc(shop.shopUrl)}">Browse all →</a></div>
+    ${shopCards ? `<div class="shop-grid">${shopCards}</div>` : ''}
+  </div>`;
+
   const heroHtml = post.featured_image
-    ? `<div class="art-hero art-hero-img" style="background-image:url('${esc(post.featured_image)}')">
+    ? `<div class="art-hero art-hero-img">
+        <img class="art-hero-bg" src="${esc(post.featured_image)}" alt="${esc(post.title)}" fetchpriority="high"/>
         <div class="art-hero-overlay"></div>
         <div class="art-hero-content">
           <div class="art-cat" style="background:${esc(post.cat_color || '#ED6436')}">${esc(post.category || 'General')}</div>
@@ -680,6 +777,8 @@ function renderPost(post, related) {
     author:    { '@type': 'Organization', name: 'PuppyPlace.ng' },
     publisher: { '@type': 'Organization', name: 'PuppyPlace.ng', url: 'https://puppyplace.ng' },
     datePublished: post.published_at || '',
+    dateModified:  post.updated_at || post.published_at || '',
+    mainEntityOfPage: `https://puppyplace.ng${postPath(post)}`,
     url:           `https://puppyplace.ng${postPath(post)}`,
   }).replace(/<\//g, '<\\/');
 
@@ -726,6 +825,12 @@ a{text-decoration:none;color:inherit}
 /* Hero — with featured image */
 .art-hero-img{background:#1a1a18 center/cover no-repeat;padding:0;min-height:420px;display:flex;align-items:flex-end}
 .art-hero-img::before{display:none}
+.art-hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.shop-box{padding:8px 24px 40px}.shop-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}.shop-all{color:var(--orange);font-weight:800;font-size:15px}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+.shop-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;display:block;transition:all var(--trans)}.shop-card:hover{border-color:var(--orange);transform:translateY(-3px);box-shadow:var(--shadow)}
+.shop-thumb{width:100%;height:150px;object-fit:cover;display:block;background:#fff}.shop-thumb-ph{display:flex;align-items:center;justify-content:center;font-size:48px;background:linear-gradient(135deg,#fdeee7,#fbd4c3)}
+.shop-name{font-size:14px;font-weight:800;line-height:1.4;color:var(--black);padding:12px 14px 4px}.shop-price{font-size:14px;font-weight:900;color:var(--orange);padding:0 14px 14px}
 .art-hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.25) 0%,rgba(0,0,0,.72) 100%);pointer-events:none}
 .art-hero-content{position:relative;z-index:1;width:100%;padding:72px 40px 60px;text-align:center}
 .art-cat{display:inline-block;color:#fff;font-size:11px;font-weight:800;padding:6px 18px;border-radius:50px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px}
@@ -773,6 +878,7 @@ a{text-decoration:none;color:inherit}
 ${heroHtml}
 <div class="art-wrap">
   <div class="art-body">${injectAlsoRead(post.content || '')}</div>
+  ${shopHtml}
   ${related.length ? `<div class="art-divider"></div><div class="related"><div class="rel-label">More from the Blog</div><div class="rel-grid">${relCards}</div></div>` : '<div style="padding-bottom:80px"></div>'}
 </div>
 <footer class="footer">
@@ -1105,6 +1211,9 @@ async function serveProduct(slugOrId, env) {
   }
 
   if (!product) return html(productNotFoundPage(), 404);
+  if (product.slug && slugOrId !== product.slug) {
+    return Response.redirect(`https://puppyplace.ng${productPath(product)}`, 301);
+  }
 
   // Fetch related products from the same category (excluding current product)
   let related = [];
@@ -1156,7 +1265,7 @@ function renderProductPage(p, related = []) {
   const desc     = p.description || '';
   const slug     = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const imgUrl   = p.image_url ? escUrl(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(p.image_url)}`) : '';
-  const pageUrl  = `https://puppyplace.ng/product/${p.slug || slug}`;
+  const pageUrl  = `https://puppyplace.ng${productPath(p)}`;
   const metaDesc = plainText(desc, 160) || `${name} — available at PuppyPlace.ng`;
 
   const jsonLd = JSON.stringify({
@@ -1189,6 +1298,7 @@ function renderProductPage(p, related = []) {
 <meta property="og:site_name" content="PuppyPlace"/>
 <meta property="og:title" content="${esc(name)} — PuppyPlace.ng"/>
 <meta property="og:description" content="${esc(metaDesc)}"/>
+<link rel="canonical" href="${escUrl(pageUrl)}"/>
 <meta property="og:url" content="${escUrl(pageUrl)}"/>
 ${imgUrl ? `<meta property="og:image" content="${imgUrl}"/>
 <meta property="og:image:secure_url" content="${imgUrl}"/>
