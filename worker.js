@@ -1781,7 +1781,7 @@ function renderCartDrawer(){
       varHtml+='</div>';
     }
     var cThumb=item.img||'';
-    var cThumbHtml=cThumb?'<img src="'+escH(cThumb)+'" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">'+escH(item.e||'📦')+'</span>';
+    var cThumbHtml=cThumb?'<img src="'+escH(cThumb)+'" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\\'none\\'">':'<span style="font-size:28px">'+escH(item.e||'📦')+'</span>';
     return '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid #e9ecef;position:relative;">'
       +'<div style="width:56px;height:56px;background:#f1f3f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">'+cThumbHtml+'</div>'
       +'<div style="flex:1;min-width:0;">'
@@ -1838,7 +1838,7 @@ function renderWishDrawer(){
   emptyEl.style.display='none';footerEl.style.display='block';
   itemsEl.innerHTML=wishItems.map(function(item){
     var wThumb=item.img||'';
-    var wThumbHtml=wThumb?'<img src="'+escH(wThumb)+'" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">':'<span style="font-size:30px">'+escH(item.e||'📦')+'</span>';
+    var wThumbHtml=wThumb?'<img src="'+escH(wThumb)+'" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\\'none\\'">':'<span style="font-size:30px">'+escH(item.e||'📦')+'</span>';
     return '<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #e9ecef;position:relative;">'
       +'<div style="width:64px;height:64px;background:#f1f3f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">'+wThumbHtml+'</div>'
       +'<div style="flex:1;min-width:0;">'
