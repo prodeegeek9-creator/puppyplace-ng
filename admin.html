@@ -1116,6 +1116,8 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 <script src="https://cdn.jsdelivr.net/npm/tinymce@7.6.1/tinymce.min.js" referrerpolicy="origin"></script>
 <script src="config.js"></script>
 <script>
+// Stop counting the site owner's own visits in Page Analytics on this device
+try { localStorage.setItem('pp_notrack', '1'); } catch (e) {}
 const sbAdmin = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
 let _cachedProducts = [];
 
