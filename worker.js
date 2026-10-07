@@ -3,15 +3,6 @@ export default {
     env = cleanEnv(env);
     const url = new URL(request.url);
 
-    if (shouldTrack(url.pathname)) {
-      const ip   = request.headers.get('CF-Connecting-IP') || '';
-      const date = new Date().toISOString().slice(0, 10);
-      const ref  = extractReferrer(request.headers.get('Referer') || '', url.hostname);
-      ctx.waitUntil(
-        hashVisitor(ip, date).then(hash => trackView(url.pathname, request.cf?.country, hash, ref, env))
-      );
-    }
-
     if (url.pathname === '/config.js') {
       const config = {
         SUPABASE_URL:        env.SUPABASE_URL        || '',
@@ -43,6 +34,12 @@ export default {
 
     if (url.pathname === '/api/stats' && request.method === 'GET') {
       return handleStats(request, url, env);
+    }
+
+    // Page views are reported by the page's own script once it runs in a
+    // browser, so crawlers and scanners that never execute JS aren't counted
+    if (url.pathname === '/api/track-view' && request.method === 'POST') {
+      return handleTrackView(request, url, env, ctx);
     }
 
     if (url.pathname === '/api/track-time' && request.method === 'POST') {
@@ -112,14 +109,50 @@ function postPath(p) {
 }
 
 function shouldTrack(pathname) {
+  if (typeof pathname !== 'string' || pathname.length > 300) return false;
   if (pathname.startsWith('/api/')) return false;
-  if (['/config.js', '/sitemap.xml', '/favicon.ico'].includes(pathname)) return false;
-  // Drop known bot probe paths (scanners, security tools, CMS probes)
-  const botPrefixes = ['/swagger', '/actuator', '/wp-', '/phpmyadmin', '/.env', '/.git', '/webjars', '/v2/', '/v3/', '/xmlrpc', '/admin.php', '/console'];
-  if (botPrefixes.some(b => pathname.startsWith(b))) return false;
+  if (['/admin.html', '/404.html', '/404'].includes(pathname)) return false;
   if (pathname === '/') return true;
   if (pathname.endsWith('.html')) return true;
+  return /^\/(pets|posts|product)\/[^/]+$/.test(pathname);
+}
+
+// Crawlers, link previews, monitors, scripts and headless browsers
+const BOT_UA = /bot|crawl|spider|slurp|scrap|fetch|preview|facebookexternalhit|whatsapp|telegrambot|discordbot|skypeuripreview|pinterestbot|embedly|mediapartners|adsbot|google-inspectiontool|google-read-aloud|feedfetcher|lighthouse|pagespeed|gtmetrix|pingdom|uptime|monitor|statuscake|headless|phantom|puppeteer|playwright|selenium|python|curl|wget|httpie|go-http|java\/|okhttp|axios|node-fetch|undici|libwww|perl|ruby|php|scrapy|ahrefs|semrush|mj12|dotbot|petalbot|bytespider|yandex|baidu|sogou|gptbot|chatgpt|claude|anthropic|perplexity|amazonbot|applebot|ccbot|dataforseo|censys|zgrab|masscan|nmap|nuclei/i;
+
+// Cloud and hosting networks: real shoppers don't browse from these, but
+// bots that fake a browser user agent usually run on them
+const DATACENTER_ORG = /amazon|aws|google cloud|google llc|microsoft|azure|digitalocean|linode|ovh|hetzner|vultr|contabo|leaseweb|alibaba|tencent|huawei cloud|oracle|scaleway|choopa|m247|datacamp|hostinger|ionos|hostroyale|colocrossing|psychz|quadranet|servers\.com|tzulo|g-core|cdn77|zenlayer/i;
+
+function isLikelyBot(request) {
+  const ua = request.headers.get('User-Agent') || '';
+  if (!ua || BOT_UA.test(ua)) return true;
+  // Every real browser sends Accept-Language; most scripts don't
+  if (!request.headers.get('Accept-Language')) return true;
+  const cf = request.cf || {};
+  const bm = cf.botManagement;
+  if (bm && (bm.verifiedBot || (typeof bm.score === 'number' && bm.score < 30))) return true;
+  if (cf.asOrganization && DATACENTER_ORG.test(cf.asOrganization)) return true;
   return false;
+}
+
+async function handleTrackView(request, url, env, ctx) {
+  const ok = new Response(null, { status: 204 });
+  try {
+    if (isLikelyBot(request)) return ok;
+    // Beacons only come from our own pages
+    const origin = request.headers.get('Origin');
+    if (origin && new URL(origin).hostname !== url.hostname) return ok;
+    const { path, ref } = JSON.parse(await request.text());
+    if (!shouldTrack(path)) return ok;
+    const ip   = request.headers.get('CF-Connecting-IP') || '';
+    const date = new Date().toISOString().slice(0, 10);
+    const referrer = extractReferrer(typeof ref === 'string' ? ref : '', url.hostname);
+    ctx.waitUntil(
+      hashVisitor(ip, date).then(hash => trackView(path, request.cf?.country, hash, referrer, env))
+    );
+  } catch { /* non-critical */ }
+  return ok;
 }
 
 function extractReferrer(refHeader, ownHost) {
@@ -155,8 +188,10 @@ async function handleTrackTime(request, env) {
   const ok = new Response('ok', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
   if (!env.SUPABASE_URL) return ok;
   try {
-    const { path, secs } = await request.json();
-    if (!path || typeof secs !== 'number' || secs < 2 || secs > 86400) return ok;
+    if (isLikelyBot(request)) return ok;
+    const { path: rawPath, secs } = await request.json();
+    if (!rawPath || typeof secs !== 'number' || secs < 2 || secs > 86400) return ok;
+    const path = rawPath === '/index.html' ? '/' : rawPath;
     const ip   = request.headers.get('CF-Connecting-IP') || '';
     const date = new Date().toISOString().slice(0, 10);
     const hash = await hashVisitor(ip, date);
@@ -447,7 +482,7 @@ a{text-decoration:none;color:inherit}
 </div>
 <footer class="footer"><a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace · <a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></footer>
 ${galleryScript}
-<script>(function(){var s=Date.now(),p=location.pathname;function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+<script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>`;
 }
@@ -743,6 +778,7 @@ ${heroHtml}
 <footer class="footer">
   &copy; 2026 <a href="/index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria<br/><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/faq.html">FAQs</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
 </footer>
+<script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>`;
 }
@@ -1837,6 +1873,7 @@ try{(function(){
 })();}catch(e){}
 try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error('[PuppyPlace] Cart init error:',e);}
 </script>
+<script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>`;
 }
