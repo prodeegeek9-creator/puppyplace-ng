@@ -43,7 +43,7 @@ Content-Type: application/json
 |---|---|---|
 | `breed` | yes | Max 80 characters. |
 | `whatsapp` | yes | The number buyers will message. `0803…`, `+234 803…` and `+234 0803…` all become `+234803…`. |
-| `photos` | yes | 1–6 items. Each is an `https://` URL or a `data:image/…;base64,` URI; JPEG, PNG, WebP, GIF or AVIF, max 5 MB. Photos are copied into PuppyPlace storage, so expiring WhatsApp media links are fine as long as they are still valid when sent. |
+| `photos` | yes | 1–6 items. Each is an `https://` URL or a `data:image/…;base64,` URI; JPEG, PNG, WebP, GIF or AVIF, max 8 MB. Photos are copied into PuppyPlace storage, so expiring WhatsApp media links are fine as long as they are still valid when sent. |
 | `type` | no | `Dog` (default), `Cat`, `Bird`, `Rabbit`, `Fish`, `Guinea Pig`, `Reptile`, `Other`. |
 | `listing_type` | no | `sale` (default) or `adoption`. Adoption listings drop the price. |
 | `price` | no | Number in naira. Strings like `"₦150,000"` are accepted. |

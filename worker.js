@@ -325,7 +325,7 @@ async function handleHeroUpload(request, env) {
 const PET_TYPES = ['Dog', 'Cat', 'Bird', 'Rabbit', 'Fish', 'Guinea Pig', 'Reptile', 'Other'];
 const PHOTO_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif' };
 const MAX_PHOTOS = 6;
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // Vendwyze's own limit, so a photo it took is never refused here
 
 // Nigerian numbers become +234…; other international numbers keep their digits
 function normalizeWhatsapp(v) {
@@ -360,7 +360,7 @@ async function storeSellerPhoto(src, path, env) {
     bytes = new Uint8Array(await res.arrayBuffer());
   }
   if (!PHOTO_TYPES[type]) throw new Error('not a JPEG, PNG, WebP, GIF or AVIF image');
-  if (bytes.byteLength > MAX_PHOTO_BYTES) throw new Error('larger than 5 MB');
+  if (bytes.byteLength > MAX_PHOTO_BYTES) throw new Error('larger than 8 MB');
 
   const key = env.SUPABASE_SERVICE_KEY;
   const file = `${path}.${PHOTO_TYPES[type]}`;
