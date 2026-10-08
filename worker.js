@@ -27,6 +27,15 @@ export default {
       return handleSellerListing(request, env, ctx);
     }
 
+    // A breed guide written by the listing assistant (a draft until approved in Admin → Breed guides)
+    if (url.pathname === '/api/breed-guides' && request.method === 'POST') {
+      return handleBreedGuideSubmit(request, env);
+    }
+    // The admin's list, edits and approvals of those guides
+    if (url.pathname === '/api/breed-guides/admin' && request.method === 'POST') {
+      return handleBreedGuideAdmin(request, env);
+    }
+
     // Which of these seller listings has the store approved? Asked by Vendwyze, which tells the sellers.
     if (url.pathname === '/api/seller-listings/status' && request.method === 'GET') {
       return handleSellerListingStatus(request, url, env);
@@ -485,7 +494,97 @@ async function handleSellerListing(request, env, ctx) {
     }).catch(() => {}));
   }
 
-  return jsonResp({ ok: true, status: 'pending', id: saved.id, slug, url: `https://puppyplace.ng/pets/${slug}` }, 201);
+  // Whether this breed already has a guide (draft, approved or turned down). If not,
+  // Vendwyze writes one and sends it to /api/breed-guides.
+  let breedGuide = 'unavailable';
+  const key = breedKey(breed);
+  if (key) {
+    try {
+      const g = await fetch(`${base}/rest/v1/breed_guides?breed_key=eq.${encodeURIComponent(key)}&select=breed_key&limit=1`, { headers: h });
+      if (g.ok) breedGuide = (await g.json()).length ? 'exists' : 'missing';
+    } catch { /* the guide is a bonus: the listing is saved either way */ }
+  }
+
+  return jsonResp({ ok: true, status: 'pending', id: saved.id, slug, url: `https://puppyplace.ng/pets/${slug}`, breed_guide: breedGuide }, 201);
+}
+
+/* ── BREED GUIDES ── */
+
+// What a breed is filed under: "Cane Corso", "cane corso " and "Cane-corso" are one.
+// Nothing for "mixed", "local" and the like, which are not a breed to write about.
+const NOT_A_BREED = new Set(['mixed', 'mix', 'mixed breed', 'cross', 'crossbreed', 'cross breed', 'local', 'unknown', 'not sure', 'idk', 'none', 'nil', 'other', 'mongrel', 'ordinary', 'dog', 'puppy', 'puppies', 'cat', 'kitten', 'pet']);
+function breedKey(text) {
+  const k = String(text ?? '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+  return k.length >= 3 && k.length <= 60 && !NOT_A_BREED.has(k) ? k : '';
+}
+
+// Plain text only: no tags, no control characters, and a length that fits a card.
+function cleanGuide(text) {
+  const t = String(text ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').replace(/<[^>]*>/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  return t.length >= 20 && t.length <= 1500 ? t : null;
+}
+
+// POST /api/breed-guides  (same shared key)  { breed, summary, pet_type }
+// Files a guide as a draft. A breed that already has one is left alone, so
+// nothing the store has approved or edited is ever overwritten.
+async function handleBreedGuideSubmit(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY || !env.SELLER_API_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  const auth = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!safeEqual(auth, String(env.SELLER_API_KEY).trim())) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Body must be JSON' }, 400); }
+  const key = breedKey(b?.breed);
+  const summary = cleanGuide(b?.summary);
+  if (!key || !summary) return jsonResp({ error: 'A breed and a summary of 20 to 1500 characters are required' }, 400);
+
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/breed_guides?on_conflict=breed_key`, {
+    method: 'POST',
+    headers: { ...sbHeaders(env), Prefer: 'resolution=ignore-duplicates,return=representation' },
+    body: JSON.stringify({ breed_key: key, breed_name: String(b.breed).trim().slice(0, 60), pet_type: typeof b.pet_type === 'string' ? b.pet_type.slice(0, 20) : null, summary, status: 'draft' }),
+  });
+  if (!res.ok) {
+    console.error('breed guide insert failed:', res.status, (await res.text().catch(() => '')).slice(0, 300));
+    return jsonResp({ error: 'Breed guides are not set up on the site' }, 503);
+  }
+  const rows = await res.json();
+  return jsonResp({ ok: true, status: 'draft', created: Array.isArray(rows) && rows.length > 0 }, 201);
+}
+
+// POST /api/breed-guides/admin  { token, action: 'list' | 'approve' | 'reject' | 'save', key, summary }
+async function handleBreedGuideAdmin(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  const h = sbHeaders(env);
+  const base = `${env.SUPABASE_URL}/rest/v1/breed_guides`;
+
+  if (b.action === 'list') {
+    const res = await fetch(`${base}?select=breed_key,breed_name,pet_type,summary,status,created_at,approved_at&order=created_at.desc&limit=200`, { headers: h });
+    if (!res.ok) return jsonResp({ error: 'Breed guides are not set up on the site yet' }, 503);
+    return jsonResp({ ok: true, guides: await res.json() }, 200);
+  }
+
+  const key = breedKey(b.key);
+  if (!key || b.key !== key) return jsonResp({ error: 'A valid breed is required' }, 400);
+  let patch;
+  if (b.action === 'approve' || b.action === 'save') {
+    const summary = b.summary === undefined ? undefined : cleanGuide(b.summary);
+    if (b.summary !== undefined && !summary) return jsonResp({ error: 'The guide must be 20 to 1500 characters of plain text' }, 400);
+    patch = { ...(summary ? { summary } : {}), ...(b.action === 'approve' ? { status: 'approved', approved_at: new Date().toISOString() } : {}) };
+    if (!Object.keys(patch).length) return jsonResp({ error: 'Nothing to save' }, 400);
+  } else if (b.action === 'reject') {
+    patch = { status: 'rejected', approved_at: null };
+  } else {
+    return jsonResp({ error: 'Unknown action' }, 400);
+  }
+
+  const res = await fetch(`${base}?breed_key=eq.${encodeURIComponent(key)}`, { method: 'PATCH', headers: { ...h, Prefer: 'return=representation' }, body: JSON.stringify(patch) });
+  if (!res.ok) return jsonResp({ error: 'Could not save the guide' }, 500);
+  if (!(await res.json()).length) return jsonResp({ error: 'Guide not found' }, 404);
+  return jsonResp({ ok: true }, 200);
 }
 
 // GET /api/seller-listings/status?slugs=a,b,c  (same shared key)
@@ -580,10 +679,34 @@ async function servePetPage(slug, env) {
     );
     const rows = await res.json();
     if (!rows || !rows.length) return html(petNotFoundPage(), 404);
-    return html(renderPetPage(rows[0]), 200);
+    return html(renderPetPage(rows[0], await approvedGuide(rows[0].breed, env)), 200);
   } catch (e) {
     return html(petErrorPage('Failed to load pet.'), 500);
   }
+}
+
+// The approved guide for a breed, or null: no guide, not approved yet, or the
+// table not there. The pet page never fails because of it.
+async function approvedGuide(breed, env) {
+  const key = breedKey(breed);
+  if (!key) return null;
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/breed_guides?breed_key=eq.${encodeURIComponent(key)}&status=eq.approved&select=summary&limit=1`, { headers: sbHeaders(env) });
+    if (!res.ok) return null;
+    return (await res.json())[0]?.summary ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// "About: … / Temperament: … / Best home: …" as three short paragraphs, in its own card on the pet page.
+function renderGuide(breed, summary) {
+  const body = String(summary).split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+    const m = /^(About|Temperament|Best home):\s*(.+)$/.exec(l);
+    return m ? `<p><strong>${m[1]}:</strong> ${esc(m[2])}</p>` : `<p>${esc(l)}</p>`;
+  }).join('');
+  const book = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ed6436" stroke-width="2" stroke-linejoin="round"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5c-.8 0-1.5-.7-1.5-1.5v-13ZM20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5v-13Z"/></svg>';
+  return `<section class="card section pg-guide"><div class="sec-head">${book}<div><h2>About the ${esc(breed)}</h2><p>A general guide to the breed, not a promise about this particular pet.</p></div></div><div class="guide-body">${body}</div></section>`;
 }
 
 function petNotFoundPage() {
@@ -628,7 +751,7 @@ function petLitter(p) {
   return m ? { n: m[1], word: /kit/.test(m[2]) ? 'Kittens' : /chick/.test(m[2]) ? 'Chicks' : 'Puppies' } : null;
 }
 
-function renderPetPage(p) {
+function renderPetPage(p, guide = null) {
   const typeEmoji = {Dog:'🐕',Cat:'🐈',Bird:'🦜',Rabbit:'🐰',Fish:'🐠','Guinea Pig':'🐹',Reptile:'🦎'};
   const typeBg   = {Dog:'linear-gradient(135deg,#fdeee7,#fbd4c3)',Cat:'linear-gradient(135deg,#e8f5e9,#c8e6c9)',Bird:'linear-gradient(135deg,#e3f2fd,#bbdefb)',Rabbit:'linear-gradient(135deg,#f3e5f5,#e1bee7)',Fish:'linear-gradient(135deg,#e0f7fa,#b2ebf2)','Guinea Pig':'linear-gradient(135deg,#fff9c4,#fff59d)',Reptile:'linear-gradient(135deg,#f1f8e9,#dcedc8)'};
   const emoji = typeEmoji[p.type] || '🐾';
@@ -888,6 +1011,9 @@ svg{flex-shrink:0}
 .fact-v{font-size:16px;font-weight:500;color:var(--text)}
 .fact-ico{width:26px;display:flex;justify-content:center;margin-top:2px}
 
+.guide-body{padding:0 4px 4px 46px;font-size:14px;line-height:1.75;color:#3b3e46}
+.guide-body p+p{margin-top:10px}
+.guide-body strong{color:#111}
 .safety{margin-top:36px;padding:22px 22px 24px;margin-bottom:34px}
 .tips{display:grid;grid-template-columns:repeat(4,1fr)}
 .tip{display:flex;gap:16px;align-items:center;padding:4px 16px;font-size:12.5px;line-height:1.7;color:#3b3e46}
@@ -938,6 +1064,7 @@ svg{flex-shrink:0}
   .assure div+div{border-left:1px solid #d5efe1}
   .section,.safety{margin-top:20px;padding:18px 16px 14px}
   .sec-head h2{font-size:20px}
+  .guide-body{padding-left:0}
   .sec-head p{font-size:13px}
   .facts{grid-template-columns:1fr 1fr}
   .fact,.fact:not(:nth-child(3n+1)){padding:14px 4px 16px}
@@ -1002,6 +1129,8 @@ svg{flex-shrink:0}
     <div class="sec-head">${I.paw}<div><h2>About this pet</h2><p>Get all the important details about this ${esc(breed)} ${esc(youngWord)}.</p></div></div>
     <div class="facts">${factsHtml}</div>
   </section>
+
+  ${guide ? renderGuide(breed, guide) : ''}
 
   <section class="card safety">
     <div class="sec-head">${I.tips}<div><h2>Safety tips when buying a pet</h2><p>Keep yourself and your new pet safe with these simple tips.</p></div></div>

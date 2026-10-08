@@ -499,6 +499,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link" onclick="showPanel('blog',this)"><span class="sb-link-ico">📝</span> Blog Posts <span class="sb-badge" id="sbBlogCount">0</span></div>
         <div class="sb-link" onclick="showPanel('stats',this)"><span class="sb-link-ico">📈</span> Stats</div>
         <div class="sb-link" onclick="showPanel('pets',this)"><span class="sb-link-ico">🐾</span> Pets <span class="sb-badge" id="sbPetsCount">0</span></div>
+        <div class="sb-link" onclick="showPanel('guides',this)"><span class="sb-link-ico">📘</span> Breed guides <span class="sb-badge" id="sbGuidesCount">0</span></div>
         <div class="sb-section">Store</div>
         <div class="sb-link" onclick="showPanel('hero',this)"><span class="sb-link-ico">🖼️</span> Hero Images</div>
         <div class="sb-link" onclick="showPanel('homepage',this)"><span class="sb-link-ico">🏠</span> Homepage</div>
@@ -690,6 +691,14 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           <div id="statsContent">
             <div style="text-align:center;padding:60px;color:var(--gray)">Loading stats…</div>
           </div>
+        </div>
+
+        <div class="panel" id="panelGuides">
+          <div style="margin-bottom:18px">
+            <div style="font-size:15px;font-weight:800;color:var(--black);margin-bottom:4px">Breed guides</div>
+            <div style="font-size:13px;color:var(--gray);line-height:1.6">The listing assistant writes a short guide the first time a breed is listed. It stays hidden until you approve it, then shows on the page of every dog of that breed. Read it, fix anything wrong, and approve.</div>
+          </div>
+          <div id="guidesList"><div style="text-align:center;padding:30px;color:var(--gray)">Loading…</div></div>
         </div>
 
         <div class="panel" id="panelPets">
@@ -1266,7 +1275,7 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',pets:'Pets',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',pets:'Pets',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
   const title = titles[name]||name;
   document.getElementById('pageTitle').textContent = title;
   const mobTitle = document.getElementById('mobPageTitle');
@@ -1279,6 +1288,7 @@ function showPanel(name, el){
   if(name==='blog') loadBlogPosts();
   if(name==='stats') loadStats();
   if(name==='pets') loadPets();
+  if(name==='guides') loadGuides();
   if(name==='hero') loadHeroSettings();
   if(name==='homepage') renderHomepagePanel();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1500,6 +1510,41 @@ async function savePet() {
   closePetForm();
   loadPets();
 }
+// ── Breed guides: written by the listing assistant, shown to buyers only once approved here ──
+async function guideCall(body){
+  const res=await fetch('/api/breed-guides/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:sessionStorage.getItem('pp_token'),...body})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error||'Something went wrong');
+  return data;
+}
+async function loadGuides(){
+  const box=document.getElementById('guidesList');
+  let guides;
+  try{ guides=(await guideCall({action:'list'})).guides; }
+  catch(err){ box.innerHTML=`<div style="text-align:center;padding:30px;color:var(--red)">${escHtml(err.message)}</div>`; return; }
+  const order={draft:0,approved:1,rejected:2};
+  guides.sort((a,b)=>(order[a.status]-order[b.status])||String(b.created_at).localeCompare(String(a.created_at)));
+  document.getElementById('sbGuidesCount').textContent=guides.filter(g=>g.status==='draft').length;
+  if(!guides.length){ box.innerHTML='<div style="text-align:center;padding:30px;color:var(--gray)">No breed guides yet. One is written the first time a new breed is listed.</div>'; return; }
+  const badge={draft:'<span class="badge badge-popular">⏳ Needs review</span>',approved:'<span class="badge badge-new">✅ Showing</span>',rejected:'<span class="badge badge-none">Hidden</span>'};
+  box.innerHTML=guides.map((g,i)=>`<div class="panel-card" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px" data-key="${escHtml(g.breed_key)}">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap"><div style="font-weight:900;font-size:15px">${escHtml(g.breed_name)} <small style="font-weight:600;color:var(--gray)">${escHtml(g.pet_type||'')}</small></div>${badge[g.status]||''}</div>
+    <textarea id="guide-${i}" rows="7" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;line-height:1.6;resize:vertical">${escHtml(g.summary)}</textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="add-btn" onclick="guideAct(${i},'approve')">✅ ${g.status==='approved'?'Save & keep showing':'Approve & show'}</button>
+      <button class="act-btn" style="padding:8px 14px" onclick="guideAct(${i},'save')">💾 Save only</button>
+      ${g.status==='rejected'?'':`<button class="act-btn del" style="padding:8px 14px" onclick="guideAct(${i},'reject')">🚫 Hide</button>`}
+    </div></div>`).join('');
+}
+async function guideAct(i,action){
+  const card=document.getElementById('guide-'+i).closest('[data-key]');
+  const body={action,key:card.dataset.key};
+  if(action!=='reject') body.summary=document.getElementById('guide-'+i).value;
+  try{ await guideCall(body); }catch(err){ showToast('❌ '+err.message,'error'); return; }
+  showToast(action==='approve'?'✅ Guide approved — buyers can see it now':action==='save'?'💾 Saved':'Hidden from buyers','success');
+  loadGuides();
+}
+
 async function approvePet(id) {
   const { error }=await sbAdmin.from('pets').update({ active:true }).eq('id',id);
   if(error){ showToast('❌ '+error.message,'error'); return; }
