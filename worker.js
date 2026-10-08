@@ -455,7 +455,16 @@ async function handleSellerListing(request, env, ctx) {
     body: JSON.stringify(row),
   });
   if (!ins.ok) {
-    return jsonResp({ error: 'Could not save listing', details: [(await ins.text()).slice(0, 200)] }, 500);
+    // PostgREST answers in JSON with the useful part (message, hint) after a
+    // long "details" row dump, so a plain slice can cut the reason off.
+    const raw = await ins.text();
+    let why = raw;
+    try {
+      const j = JSON.parse(raw);
+      why = [j.message, j.hint, j.details].filter(Boolean).join(' — ') || raw;
+    } catch { /* not JSON: keep the text */ }
+    console.error('seller listing insert failed:', ins.status, raw.slice(0, 500));
+    return jsonResp({ error: 'Could not save listing', details: [why.slice(0, 300)] }, 500);
   }
   const saved = (await ins.json())[0] || {};
 
