@@ -594,6 +594,41 @@ function petErrorPage(msg) {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/><title>Error | PuppyPlace</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet"/><style>body{font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;text-align:center;padding:24px}a{color:#ed6436;font-weight:800}</style></head><body><div><h1>⚠️ ${esc(msg)}</h1><p style="color:#868686;margin-bottom:24px">Please try again later.</p><a href="/pets.html">← All Pets</a></div></body></html>`;
 }
 
+// Social profiles for the pet page footer; an entry shows as an icon once it has a URL
+const PET_FOOTER_SOCIALS = [
+  { name: 'Facebook',  url: '', icon: '<path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v7h4v-7h3l.5-4h-3.5V9c0-.6.4-1 1-1Z" fill="currentColor"/>' },
+  { name: 'Instagram', url: '', icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>' },
+  { name: 'X',         url: '', icon: '<path d="M4 4h4.5l4 5.6L17.3 4H20l-6.2 7.2L20.5 20H16l-4.4-6-5.2 6H3.7l6.6-7.7L4 4Z" fill="currentColor"/>' },
+  { name: 'YouTube',   url: '', icon: '<rect x="2.5" y="5.5" width="19" height="13" rx="4" fill="currentColor"/><path d="m10 9 5 3-5 3V9Z" fill="#1a1a18"/>' },
+];
+
+// The pets table has no gender, colour or litter-size columns; sellers put
+// them in the description ("Both sex, black, good, available, 3 pups")
+function petGender(p) {
+  const g = String(p.gender || p.sex || '').toLowerCase();
+  if (g) return g.startsWith('f') ? 'Female' : g.startsWith('m') ? 'Male' : 'Both';
+  const t = `${p.name || ''} ${p.specs || ''}`.toLowerCase();
+  if (/\b(both sex(es)?|both sexes|male (and|&) female|males? (and|&) females?|pair)\b/.test(t)) return 'Both';
+  if (/\bfemales?\b/.test(t)) return 'Female';
+  if (/\bmales?\b/.test(t)) return 'Male';
+  return '';
+}
+const PET_COLOURS = ['black', 'white', 'brown', 'tan', 'cream', 'fawn', 'brindle', 'grey', 'gray', 'golden', 'gold', 'red', 'blue', 'chocolate', 'merle', 'sable', 'apricot', 'silver', 'ginger', 'orange', 'tricolou?r', 'liver', 'champagne', 'green', 'yellow', 'albino'];
+function petColour(p) {
+  if (p.colour || p.color) return String(p.colour || p.color);
+  const t = String(p.specs || '').toLowerCase();
+  const found = [];
+  for (const m of t.matchAll(new RegExp(`\\b(${PET_COLOURS.join('|')})\\b`, 'g'))) {
+    const c = m[1] === 'gray' ? 'grey' : m[1];
+    if (!found.includes(c)) found.push(c);
+  }
+  return found.slice(0, 3).map(c => c[0].toUpperCase() + c.slice(1)).join(' & ');
+}
+function petLitter(p) {
+  const m = String(p.specs || '').toLowerCase().match(/\b(\d{1,2})\s*(pups?|puppies|kittens?|kits|chicks|babies)\b/);
+  return m ? { n: m[1], word: /kit/.test(m[2]) ? 'Kittens' : /chick/.test(m[2]) ? 'Chicks' : 'Puppies' } : null;
+}
+
 function renderPetPage(p) {
   const typeEmoji = {Dog:'🐕',Cat:'🐈',Bird:'🦜',Rabbit:'🐰',Fish:'🐠','Guinea Pig':'🐹',Reptile:'🦎'};
   const typeBg   = {Dog:'linear-gradient(135deg,#fdeee7,#fbd4c3)',Cat:'linear-gradient(135deg,#e8f5e9,#c8e6c9)',Bird:'linear-gradient(135deg,#e3f2fd,#bbdefb)',Rabbit:'linear-gradient(135deg,#f3e5f5,#e1bee7)',Fish:'linear-gradient(135deg,#e0f7fa,#b2ebf2)','Guinea Pig':'linear-gradient(135deg,#fff9c4,#fff59d)',Reptile:'linear-gradient(135deg,#f1f8e9,#dcedc8)'};
@@ -607,11 +642,14 @@ function renderPetPage(p) {
   const petUrl   = `https://puppyplace.ng/pets/${escUrl(p.slug)}`;
   const mainImg  = imgs[0] ? escUrl(imgs[0]) : '';
   const ogImg    = mainImg ? `https://puppyplace.ng/api/og-img?url=${encodeURIComponent(imgs[0])}` : '';
+  const breed    = p.breed || p.type || 'Pet';
+  const kind     = String(p.type || 'pet').toLowerCase();
+  const youngWord = {dog:'puppy', cat:'kitten', rabbit:'bunny', bird:'bird', fish:'fish'}[kind] || kind;
 
   const jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: p.breed || p.type,
+    name: breed,
     description: p.specs || '',
     image: imgs,
     url: petUrl,
@@ -624,27 +662,124 @@ function renderPetPage(p) {
     },
   }).replace(/<\//g, '<\\/');
 
-  const galleryScript = imgs.length > 1 ? `<script>
-var _imgs=${JSON.stringify(imgs)},_idx=0;
-function _show(){var img=document.getElementById('pgImg');img.src=_imgs[_idx];document.querySelectorAll('.pg-dot').forEach(function(d,i){d.style.background=i===_idx?'#ed6436':'rgba(255,255,255,.6)';});}
-function pgNav(d){_idx=(_idx+d+_imgs.length)%_imgs.length;_show();}
-document.addEventListener('DOMContentLoaded',function(){_show();});
-</script>` : '';
+  const I = {
+    back:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+    heart:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.2-9.3C1.7 7.6 3.8 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.2 0 5.3 3.1 4.2 6.2C19.5 15.4 12 20 12 20Z"/></svg>',
+    left:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+    right:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+    check:  '<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1fa463"/><path d="m7.5 12.3 3 3 6-6.3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    pin:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7.5 7.5 0 0 0-7.5 7.5C4.5 15.1 12 22 12 22s7.5-6.9 7.5-12.5A7.5 7.5 0 0 0 12 2Zm0 10.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4Z"/></svg>',
+    clock:  '<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#5b6070"/><path d="M12 7v5l3 2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    shield: '<svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2 4 5v6.5c0 5 3.4 9 8 10.5 4.6-1.5 8-5.5 8-10.5V5l-8-3Z" fill="#1fa463"/><path d="m8.5 12 2.5 2.5 4.5-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    ribbon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c25a12" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-2 8 5.5-3 5.5 3-2-8"/></svg>',
+    dog:    '<svg width="22" height="22" viewBox="0 0 24 24" fill="#5b6070"><path d="M18.5 3.5c-1 0-1.8.5-2.3 1.3L14.6 7H10l-1.8 3.2L4.6 11c-1 .2-1.6 1.1-1.6 2v1.2c0 .5.4.8.8.8H6l2.5 3.6V21h3v-3l1.5-2h3v5h3v-7.3l1.3-3.4c.5-1.2.7-2.5.7-3.8V5.8c0-1.3-1.1-2.3-2.5-2.3Z"/></svg>',
+    wa:     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3.5 20.5 4.8 16A8.5 8.5 0 1 1 8 19.3l-4.5 1.2Z" stroke-linejoin="round"/><path d="M9 8.3c.2-.5.6-.5.9-.5h.5c.2 0 .4 0 .6.5l.7 1.6c.1.2 0 .5-.1.7l-.5.6c-.1.2-.1.4 0 .5.5.9 1.3 1.7 2.2 2.2.2.1.4.1.5 0l.6-.6c.2-.2.5-.2.7-.1l1.6.8c.3.1.4.3.4.5 0 .5-.2 1.2-.7 1.5-.6.4-1.5.6-2.6.2-1.5-.5-3-1.6-4.1-3.2-.8-1.1-1.2-2.4-.9-3.3.1-.3.2-.5.2-.6Z" fill="currentColor" stroke="none"/></svg>',
+    chat:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.5c4.7 0 8.5 3.4 8.5 7.6s-3.8 7.6-8.5 7.6c-1 0-2-.2-2.9-.4L4.5 20l1.2-3.6C4.3 15 3.5 13.1 3.5 11.1 3.5 6.9 7.3 3.5 12 3.5Z"/><circle cx="8.3" cy="11.2" r="1" fill="currentColor"/><circle cx="12" cy="11.2" r="1" fill="currentColor"/><circle cx="15.7" cy="11.2" r="1" fill="currentColor"/></svg>',
+    vshield:'<svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 2 4 5v6.5c0 5 3.4 9 8 10.5 4.6-1.5 8-5.5 8-10.5V5l-8-3Z" fill="#1fa463"/><path d="m8.5 12 2.5 2.5 4.5-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    vheart: '<svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 21s-8.5-5.2-10.4-10.6C.4 6.8 2.8 3.3 6.4 3.3c2.3 0 4.1 1.2 5.6 3.4 1.5-2.2 3.3-3.4 5.6-3.4 3.6 0 6 3.5 4.8 7.1C20.5 15.8 12 21 12 21Z" fill="#1fa463"/><path d="M5.5 11.5h3.2l1.5-2.5 2.3 5 1.7-2.5h4.3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    vusers: '<svg width="30" height="30" viewBox="0 0 24 24" fill="#1fa463"><circle cx="9" cy="7.5" r="3.5"/><path d="M2 19.5c0-3.6 3.1-6 7-6s7 2.4 7 6v.5H2v-.5Z"/><circle cx="17" cy="8.5" r="2.8"/><path d="M17.5 13.2c2.6.3 4.5 2.2 4.5 5V19h-4.3c0-2.2-.8-4.2-2.3-5.6.6-.1 1.4-.2 2.1-.2Z"/></svg>',
+    paw:    '<svg width="34" height="34" viewBox="0 0 24 24" fill="#ed6436"><ellipse cx="5.5" cy="10" rx="2.2" ry="2.8"/><ellipse cx="9.5" cy="5.5" rx="2.2" ry="2.9"/><ellipse cx="14.5" cy="5.5" rx="2.2" ry="2.9"/><ellipse cx="18.5" cy="10" rx="2.2" ry="2.8"/><path d="M12 11c-3 0-6.5 4.1-6.5 6.8 0 1.8 1.3 2.7 3 2.7 1.4 0 2.3-.8 3.5-.8s2.1.8 3.5.8c1.7 0 3-.9 3-2.7C18.5 15.1 15 11 12 11Z"/></svg>',
+    tips:   '<svg width="38" height="38" viewBox="0 0 24 24"><path d="M12 2 4 5v6.5c0 5 3.4 9 8 10.5 4.6-1.5 8-5.5 8-10.5V5l-8-3Z" fill="#1fa463"/><path d="M12 2v20c-4.6-1.5-8-5.5-8-10.5V5l8-3Z" fill="#17894f"/><path d="m8.5 12 2.5 2.5 4.5-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    tick:   '<svg width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1fa463"/><path d="m7 12.3 3.2 3.2L17 8.8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    // About-this-pet icons
+    aPaw:   '<svg width="26" height="26" viewBox="0 0 24 24" fill="#5b6070"><ellipse cx="5.5" cy="10" rx="2.2" ry="2.8"/><ellipse cx="9.5" cy="5.5" rx="2.2" ry="2.9"/><ellipse cx="14.5" cy="5.5" rx="2.2" ry="2.9"/><ellipse cx="18.5" cy="10" rx="2.2" ry="2.8"/><path d="M12 11c-3 0-6.5 4.1-6.5 6.8 0 1.8 1.3 2.7 3 2.7 1.4 0 2.3-.8 3.5-.8s2.1.8 3.5.8c1.7 0 3-.9 3-2.7C18.5 15.1 15 11 12 11Z"/></svg>',
+    aCal:   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5b6070" stroke-width="2"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke-linecap="round"/></svg>',
+    aSex:   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5b6070" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="13" r="5"/><path d="M10 18v4M8 20h4M13.5 9.5 20 3M15.5 3H20v4.5"/></svg>',
+    aPal:   '<svg width="26" height="26" viewBox="0 0 24 24" fill="#5b6070"><path d="M12 2.5a9.5 9.5 0 0 0 0 19c1.3 0 2-.9 2-1.9 0-.5-.2-.9-.5-1.3-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8h2.1c2.6 0 4.6-2.1 4.6-4.6C21.5 6 17.2 2.5 12 2.5Z"/><circle cx="7" cy="11.5" r="1.5" fill="#fff"/><circle cx="9.5" cy="7.3" r="1.5" fill="#fff"/><circle cx="14.5" cy="7.3" r="1.5" fill="#fff"/><circle cx="17.3" cy="11" r="1.5" fill="#fff"/></svg>',
+    aPups:  '<svg width="26" height="26" viewBox="0 0 24 24" fill="#5b6070"><circle cx="12" cy="7" r="3"/><circle cx="5" cy="9" r="2.3"/><circle cx="19" cy="9" r="2.3"/><path d="M6.5 19c0-3.2 2.5-5.5 5.5-5.5s5.5 2.3 5.5 5.5v1h-11v-1Z"/><path d="M1 18.5c0-2.4 1.7-4.2 4-4.2.6 0 1.2.1 1.7.4A7.5 7.5 0 0 0 5 19.5H1v-1Zm22 0c0-2.4-1.7-4.2-4-4.2-.6 0-1.2.1-1.7.4a7.5 7.5 0 0 1 1.7 4.8h4v-1Z"/></svg>',
+    aHeart: '<svg width="26" height="26" viewBox="0 0 24 24" fill="#5b6070"><path d="M12 21s-8.5-5.2-10.4-10.6C.4 6.8 2.8 3.3 6.4 3.3c2.3 0 4.1 1.2 5.6 3.4 1.5-2.2 3.3-3.4 5.6-3.4 3.6 0 6 3.5 4.8 7.1C20.5 15.8 12 21 12 21Z"/></svg>',
+    aPin:   '<svg width="26" height="26" viewBox="0 0 24 24" fill="#5b6070"><path d="M12 2a7.5 7.5 0 0 0-7.5 7.5C4.5 15.1 12 22 12 22s7.5-6.9 7.5-12.5A7.5 7.5 0 0 0 12 2Zm0 10.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4Z"/></svg>',
+    aRib:   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5b6070" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-2 8 5.5-3 5.5 3-2-8"/></svg>',
+  };
 
+  // ── Gallery ──
   const galleryHtml = imgs.length
-    ? `<div class="pg-gallery">
-        <img id="pgImg" src="${esc(imgs[0])}" alt="${esc(p.breed||p.type)}" style="width:100%;max-height:520px;object-fit:contain;border-radius:12px;background:#f5f5f5;display:block;"/>
-        ${imgs.length > 1 ? `<button class="pg-nav pg-nav-l" onclick="pgNav(-1)">‹</button><button class="pg-nav pg-nav-r" onclick="pgNav(1)">›</button>
-        <div class="pg-dots">${imgs.map((_,i)=>`<span class="pg-dot" onclick="_idx=${i};_show()"></span>`).join('')}</div>` : ''}
-      </div>`
-    : `<div class="pg-gallery pg-emoji" style="background:${bg}">${emoji}</div>`;
+    ? `<div class="pg-main" id="pgMain">
+        <img id="pgImg" src="${esc(imgs[0])}" alt="${esc(breed)}"/>
+        <button class="pg-heart" id="pgHeart" aria-label="Save pet" aria-pressed="false">${I.heart}</button>
+        <span class="pg-badge${isAdopt ? ' adopt' : ''}">${isAdopt ? 'Adoption' : 'For Sale'}</span>
+        ${imgs.length > 1 ? `<button class="pg-arrow l" onclick="pgNav(-1)" aria-label="Previous photo">${I.left}</button><button class="pg-arrow r" onclick="pgNav(1)" aria-label="Next photo">${I.right}</button>` : ''}
+      </div>
+      ${imgs.length > 1 ? `<div class="pg-thumbs-row">
+        <button class="pg-tarrow" onclick="pgThumbs(-1)" aria-label="Scroll photos left">${I.left}</button>
+        <div class="pg-thumbs" id="pgThumbs">${imgs.map((u, i) => `<button class="pg-thumb${i === 0 ? ' on' : ''}" onclick="pgGo(${i})" aria-label="Photo ${i + 1}"><img src="${esc(u)}" alt="" loading="lazy"/></button>`).join('')}</div>
+        <button class="pg-tarrow" onclick="pgThumbs(1)" aria-label="Scroll photos right">${I.right}</button>
+      </div>` : ''}`
+    : `<div class="pg-main pg-emoji" style="background:${bg}">${emoji}
+        <button class="pg-heart" id="pgHeart" aria-label="Save pet" aria-pressed="false">${I.heart}</button>
+        <span class="pg-badge${isAdopt ? ' adopt' : ''}">${isAdopt ? 'Adoption' : 'For Sale'}</span>
+      </div>`;
 
-  const healthTags = [p.dewormed && 'Dewormed', p.vaccinated && 'Vaccinated'].filter(Boolean);
-  const tagHtml = [
-    p.age       ? `<span class="pg-tag">${esc(p.age)}</span>` : '',
-    p.pedigree  ? `<span class="pg-tag" style="background:#fff3e0;color:#e65100;border-color:#ffe0b2">${esc(p.pedigree==='pedigree'?'Pedigree':'Non-Pedigree')}</span>` : '',
-    ...healthTags.map(t => `<span class="pg-tag" style="background:#eafaf1;color:#2ecc71;border-color:#a9dfbf">${t}</span>`),
+  // ── Header chips and facts ──
+  const pedigreeLabel = p.pedigree ? (p.pedigree === 'pedigree' ? 'Pedigree' : 'Non-Pedigree') : '';
+  const chips = [
+    p.age ? `<span class="pg-chip">${I.clock}${esc(p.age)}</span>` : '',
+    p.dewormed ? `<span class="pg-chip ok">${I.shield}Dewormed</span>` : '',
+    p.vaccinated ? `<span class="pg-chip ok">${I.shield}Vaccinated</span>` : '',
+    p.pedigree === 'pedigree' ? `<span class="pg-chip ped">${I.ribbon}Pedigree</span>` : '',
   ].join('');
+
+  const gender = petGender(p);
+  const colour = petColour(p);
+  const litter = petLitter(p);
+  const health = [p.dewormed && 'Dewormed', p.vaccinated && 'Vaccinated'].filter(Boolean).join(' and ');
+  const facts = [
+    ['Breed', breed, I.aPaw],
+    p.age && ['Age', p.age, I.aCal],
+    gender && ['Gender', gender, I.aSex],
+    colour && ['Colour', colour, I.aPal],
+    litter && [litter.word, litter.n, I.aPups],
+    health && ['Health', health, I.aHeart],
+    pedigreeLabel && ['Pedigree', pedigreeLabel, I.aRib],
+    p.location && ['Location', p.location, I.aPin],
+  ].filter(Boolean);
+  // l3 / l2 mark the last row in the three- and two-column layouts, which drop the row rule
+  const factsHtml = facts.map(([k, v, ic], i) => `<div class="fact${i >= facts.length - (facts.length % 3 || 3) ? ' l3' : ''}${i >= facts.length - (facts.length % 2 || 2) ? ' l2' : ''}"><span class="fact-ico">${ic}</span><div><div class="fact-k">${esc(k)}</div><div class="fact-v">${esc(v)}</div></div></div>`).join('');
+
+  const seller = p.breeder || 'PuppyPlace.ng';
+  const priceHtml = isAdopt
+    ? `<div class="pg-price free">Free to adopt</div>`
+    : (p.price ? `<div class="pg-price">₦${Number(p.price).toLocaleString('en-NG')}</div>` : `<div class="pg-price ask">Price on request</div>`);
+
+  const waLink = text => `https://wa.me/${wa}?text=${encodeURIComponent(text)}`;
+  const interest = `Hi, I'm interested in the ${breed}${p.name ? ' (' + p.name + ')' : ''} listed on PuppyPlace.ng: ${petUrl}`;
+  const question = `Hi, I have a question about the ${breed}${p.name ? ' (' + p.name + ')' : ''} listed on PuppyPlace.ng: ${petUrl}`;
+  const ctaHtml = wa
+    ? `<a class="btn-wa" href="${esc(waLink(interest))}" target="_blank" rel="noopener noreferrer">${I.wa}Contact on WhatsApp</a>
+       <a class="btn-ask" href="${esc(waLink(question))}" target="_blank" rel="noopener noreferrer">${I.chat}Ask a question</a>`
+    : `<a class="btn-ask" href="/contact.html">${I.chat}Ask a question</a>`;
+
+  const socials = PET_FOOTER_SOCIALS.filter(s => s.url);
+  const year = new Date().getUTCFullYear();
+
+  const pageScript = `<script>
+(function(){
+  var imgs=${JSON.stringify(imgs).replace(/</g, '\\u003c')},idx=0;
+  var img=document.getElementById('pgImg');
+  function show(){
+    if(!img)return;
+    img.src=imgs[idx];
+    var th=document.querySelectorAll('.pg-thumb');
+    th.forEach(function(t,i){t.classList.toggle('on',i===idx);});
+    if(th[idx])th[idx].scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+  }
+  window.pgGo=function(i){idx=i;show();};
+  window.pgNav=function(d){idx=(idx+d+imgs.length)%imgs.length;show();};
+  window.pgThumbs=function(d){var t=document.getElementById('pgThumbs');if(t)t.scrollBy({left:d*t.clientWidth*0.8,behavior:'smooth'});};
+  if(imgs.length>1){
+    document.addEventListener('keydown',function(e){if(e.target.closest&&e.target.closest('input,textarea'))return;if(e.key==='ArrowLeft')pgNav(-1);if(e.key==='ArrowRight')pgNav(1);});
+    var main=document.getElementById('pgMain'),x0=null;
+    main.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;},{passive:true});
+    main.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>40)pgNav(dx<0?1:-1);x0=null;});
+  }
+  // Saved pets share the pets page's list
+  var id=${JSON.stringify(p.id ?? null)},saved=[];
+  try{saved=JSON.parse(localStorage.getItem('pp_pet_wish')||'[]');}catch(e){}
+  var h=document.getElementById('pgHeart');
+  function paint(){var on=saved.indexOf(id)>=0;h.classList.toggle('on',on);h.setAttribute('aria-pressed',on);h.setAttribute('aria-label',on?'Remove from saved':'Save pet');}
+  if(h&&id!==null){paint();h.addEventListener('click',function(){var i=saved.indexOf(id);if(i>=0)saved.splice(i,1);else saved.push(id);try{localStorage.setItem('pp_pet_wish',JSON.stringify(saved));}catch(e){}paint();});}
+})();
+</script>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -665,67 +800,232 @@ ${ogImg ? `<meta property="og:image" content="${escUrl(ogImg)}"/>` : ''}
 <meta name="twitter:card" content="summary_large_image"/>
 <script type="application/ld+json">${jsonLd}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333;min-height:100%;display:flex;flex-direction:column}
+:root{--orange:#ed6436;--orange-d:#d9541f;--green:#1fa463;--dark:#121210;--text:#1d1d1b;--gray:#6b6f7a;--light:#f6f7f9;--border:#e8eaee;--r:14px;--shadow:0 2px 12px rgba(16,24,40,.06)}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--light);color:var(--text);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 a{text-decoration:none;color:inherit}
-:root{--orange:#ed6436;--black:#0e0e0c;--gray:#868686;--light:#f1f3f5;--border:#e9ecef;--r:12px;--shadow:0 4px 20px rgba(0,0,0,.06)}
-.nav{background:#1a1a18;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.nav-logo{color:#fff;font-size:22px;font-weight:900}.nav-logo span{color:var(--orange)}
-.nav-back{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-radius:50px;padding:9px 20px;font-size:13px;font-weight:800;transition:all .3s}
-.nav-back:hover{background:var(--orange);border-color:var(--orange);color:#fff}
-.pg-wrap{max-width:900px;margin:0 auto;width:100%;padding:40px 24px 80px;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
-.pg-gallery{position:relative;border-radius:12px;overflow:hidden;background:#f5f5f5}
-.pg-emoji{height:320px;display:flex;align-items:center;justify-content:center;font-size:96px}
-.pg-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.85);border:none;border-radius:50%;width:38px;height:38px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
-.pg-nav-l{left:10px}.pg-nav-r{right:10px}
-.pg-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px}
-.pg-dot{width:8px;height:8px;border-radius:50%;cursor:pointer;display:inline-block;transition:.2s;background:rgba(255,255,255,.6)}
-.pg-detail{display:flex;flex-direction:column;gap:16px}
-.pg-badge{display:inline-block;padding:5px 14px;border-radius:50px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff;background:${isAdopt?'#2ecc71':'#ed6436'};margin-bottom:4px}
-.pg-meta{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray)}
-.pg-breed{font-size:32px;font-weight:900;color:var(--black);line-height:1.2}
-.pg-sub{font-size:14px;color:var(--gray)}
-.pg-tags{display:flex;flex-wrap:wrap;gap:6px}
-.pg-tag{border:1.5px solid var(--border);border-radius:50px;padding:4px 12px;font-size:12px;font-weight:700;color:#555;background:#fff}
-.pg-specs{font-size:15px;color:#444;line-height:1.8;white-space:pre-line;background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:16px}
-.pg-loc{font-size:14px;color:var(--gray);display:flex;align-items:center;gap:6px}
-.pg-price{font-size:30px;font-weight:900;color:var(--orange)}
-.pg-price-adopt{font-size:22px;font-weight:900;color:#2ecc71}
-.pg-cta{display:flex;gap:12px;flex-wrap:wrap}
-.btn-wa{background:#25d366;color:#fff;border:none;border-radius:50px;padding:14px 28px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .3s}
-.btn-wa:hover{background:#1ebe5d}
-.footer{background:#1a1a18;color:rgba(255,255,255,.4);text-align:center;padding:28px 24px;font-size:13px;margin-top:auto}
-.footer a{color:rgba(255,255,255,.6);font-weight:700}.footer a:hover{color:var(--orange)}
-@media(max-width:700px){.pg-wrap{grid-template-columns:1fr;padding:24px 16px 60px;gap:24px}.pg-breed{font-size:26px}.nav{padding:0 20px}}
+button{font-family:inherit}
+svg{flex-shrink:0}
+
+.nav{background:var(--dark);padding:0 40px;height:72px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-logo{font-family:'Nunito',sans-serif;color:#fff;font-size:22px;font-weight:900;display:flex;align-items:center;gap:8px}
+.nav-logo span{color:var(--orange)}
+.nav-links{display:flex;align-items:center;gap:48px;position:absolute;left:50%;transform:translateX(-50%)}
+.nav-link{color:#fff;font-size:14px;font-weight:600;height:72px;display:flex;align-items:center;position:relative;transition:color .2s}
+.nav-link:hover{color:var(--orange)}
+.nav-link.on::after{content:'';position:absolute;left:-10px;right:-10px;bottom:17px;height:2.5px;background:var(--orange);border-radius:2px}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-ico{color:#fff;display:flex;padding:4px}
+.nav-ico:hover{color:var(--orange)}
+.nav-cta{background:var(--orange);color:#fff;font-size:14px;font-weight:600;padding:10px 18px;border-radius:50px;transition:background .2s}
+.nav-cta:hover{background:var(--orange-d)}
+
+.wrap{max-width:1024px;margin:0 auto;width:100%;padding:0 40px}
+.back{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:500;color:var(--text);margin:24px 0 22px}
+.back:hover{color:var(--orange)}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+
+.top{display:grid;grid-template-columns:480px minmax(0,1fr);gap:8px;align-items:start}
+.top>*{min-width:0}
+.gallery{padding:12px}
+.pg-main{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:454/484;background:#f1f2f4;touch-action:pan-y}
+.pg-main img{width:100%;height:100%;object-fit:cover;display:block}
+.pg-emoji{display:flex;align-items:center;justify-content:center;font-size:110px}
+.pg-heart{position:absolute;top:8px;left:8px;width:40px;height:40px;border-radius:50%;border:none;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);transition:transform .15s}
+.pg-heart:hover{transform:scale(1.08)}
+.pg-heart.on{color:var(--orange)}.pg-heart.on path{fill:currentColor}
+.pg-badge{position:absolute;top:14px;right:12px;background:var(--orange);color:#fff;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;padding:5px 14px;border-radius:50px}
+.pg-badge.adopt{background:var(--green)}
+.pg-arrow{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:none;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.pg-arrow.l{left:8px}.pg-arrow.r{right:8px}
+.pg-thumbs-row{display:flex;align-items:center;gap:10px;margin-top:14px}
+.pg-tarrow{width:32px;height:32px;border-radius:50%;border:none;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);box-shadow:0 1px 6px rgba(0,0,0,.12);flex-shrink:0}
+.pg-thumbs{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;padding:2px}
+.pg-thumbs::-webkit-scrollbar{display:none}
+.pg-thumb{flex:0 0 82px;height:76px;border-radius:6px;overflow:hidden;border:2px solid transparent;padding:0;background:#f1f2f4;cursor:pointer;transition:border-color .2s}
+.pg-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.pg-thumb.on{border-color:var(--orange)}
+
+.info{padding:6px 20px 20px}
+.info-badge{display:inline-block;background:var(--orange);color:#fff;font-size:12px;font-weight:700;text-transform:uppercase;padding:5px 14px;border-radius:50px;margin-bottom:12px}
+.info-badge.adopt{background:var(--green)}
+.info-type{font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:#8a8d94;margin-bottom:2px}
+.info h1{font-size:36px;font-weight:800;line-height:1.15;letter-spacing:-.01em;color:#111;margin-bottom:12px}
+.seller{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;margin-bottom:8px}
+.avatar{width:26px;height:26px;border-radius:50%;background:#fde3d8;color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.loc{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--gray);margin-bottom:16px;padding-left:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.pg-chip{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-radius:50px;border:1px solid var(--border);background:#f8f9fb;font-size:13px;font-weight:500;color:var(--text)}
+.pg-chip.ok{background:#eefaf3;border-color:#9fdcb9;color:var(--green);font-size:12px}
+.pg-chip.ped{background:#fff6ee;border-color:#f5c9a5;color:#c25a12;font-size:12px}
+.specs{display:flex;gap:14px;align-items:flex-start;background:#f6f7f9;border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.6;color:var(--text);white-space:pre-line;margin-bottom:18px}
+.specs svg{margin-top:1px}
+.divider{height:1px;background:var(--border);margin-bottom:16px}
+.pg-price{font-size:38px;font-weight:800;color:var(--orange);letter-spacing:-.01em;margin-bottom:14px}
+.pg-price.free{color:var(--green);font-size:32px}
+.pg-price.ask{color:var(--text);font-size:26px}
+.btn-wa,.btn-ask{display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border-radius:50px;font-size:16px;font-weight:700;transition:all .2s}
+.btn-wa{background:#22c35e;color:#fff;margin-bottom:12px}
+.btn-wa:hover{background:#1aa850}
+.btn-ask{border:1.5px solid var(--orange);color:var(--orange);background:#fff;margin-bottom:22px}
+.btn-ask:hover{background:var(--orange);color:#fff}
+.assure{display:grid;grid-template-columns:auto auto auto;justify-content:space-between;background:#f0faf5;border:1px solid #d5efe1;border-radius:10px;padding:14px 8px}
+.assure div{display:flex;align-items:center;gap:9px;padding:0 10px;font-size:12px;line-height:1.6;color:var(--text);white-space:nowrap}
+.assure svg{width:27px;height:27px}
+.assure div+div{border-left:1px solid #d5efe1}
+
+.section{margin-top:36px;padding:22px 22px 18px}
+.sec-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:24px}
+.sec-head h2{font-size:24px;font-weight:800;color:#111;line-height:1.25}
+.sec-head p{font-size:14px;color:var(--gray);margin-top:6px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr)}
+.fact{display:flex;gap:16px;align-items:flex-start;padding:16px 4px 20px;position:relative;border-bottom:1px solid var(--border)}
+.fact.l3{border-bottom:none}
+.fact:not(:nth-child(3n+1))::before{content:'';position:absolute;left:-12px;top:12px;bottom:12px;width:1px;background:var(--border)}
+.fact:not(:nth-child(3n+1)){padding-left:34px}
+.fact-k{font-size:14px;color:var(--gray);margin-bottom:4px}
+.fact-v{font-size:16px;font-weight:500;color:var(--text)}
+.fact-ico{width:26px;display:flex;justify-content:center;margin-top:2px}
+
+.safety{margin-top:36px;padding:22px 22px 24px;margin-bottom:34px}
+.tips{display:grid;grid-template-columns:repeat(4,1fr)}
+.tip{display:flex;gap:16px;align-items:center;padding:4px 16px;font-size:12.5px;line-height:1.7;color:#3b3e46}
+.tip+.tip{border-left:1px solid var(--border)}
+.tip:first-child{padding-left:10px}
+
+.footer{background:var(--dark);color:rgba(255,255,255,.75);margin-top:auto;padding:24px 0 22px}
+.f-top{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.12)}
+.f-brand .nav-logo{font-size:22px}
+.f-tag{font-size:12px;color:rgba(255,255,255,.6);margin-top:4px}
+.f-links{display:flex;gap:32px;font-size:13px;font-weight:500;color:#fff}
+.f-links a:hover{color:var(--orange)}
+.f-social{display:flex;gap:12px;min-width:160px;justify-content:flex-end}
+.f-social a{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:#fff}
+.f-social a:hover{background:var(--orange)}
+.f-bot{display:flex;justify-content:space-between;gap:16px;padding-top:18px;font-size:12px;color:rgba(255,255,255,.7)}
+.flag{display:inline-flex;width:18px;height:12px;margin-left:8px;vertical-align:-1px;border-radius:1px;overflow:hidden}
+.flag i{flex:1;background:#008751}.flag i:nth-child(2){background:#fff}
+
+@media(max-width:1000px){
+  .nav{padding:0 24px}.nav-links{gap:28px}
+  .wrap{padding:0 24px}
+  .top{grid-template-columns:1fr 1fr;gap:16px}
+  .info h1{font-size:30px}
+  .assure{grid-template-columns:1fr;gap:10px;padding:12px;justify-content:stretch}
+  .assure div+div{border-left:none}
+  .tips{grid-template-columns:1fr 1fr;row-gap:16px}
+  .tip:nth-child(3){border-left:none;padding-left:10px}
+  .f-top{flex-wrap:wrap}
+}
+@media(max-width:760px){
+  .nav{height:60px;padding:0 16px}
+  .nav-links{display:none}
+  .nav-right{gap:14px}
+  .nav-cta{padding:8px 14px;font-size:12px}
+  .wrap{padding:0 16px}
+  .back{margin:16px 0 14px}
+  .top{grid-template-columns:1fr;gap:14px}
+  .gallery{padding:10px}
+  .pg-main{aspect-ratio:1/1}
+  .pg-thumb{flex-basis:70px;height:64px}
+  .info{padding:18px 16px 18px}
+  .info h1{font-size:28px}
+  .pg-price{font-size:32px}
+  .assure{grid-template-columns:1fr 1fr 1fr;gap:0;padding:12px 4px}
+  .assure div{white-space:normal}
+  .assure div{flex-direction:column;text-align:center;gap:6px;padding:0 6px;font-size:11px;line-height:1.4}
+  .assure div+div{border-left:1px solid #d5efe1}
+  .section,.safety{margin-top:20px;padding:18px 16px 14px}
+  .sec-head h2{font-size:20px}
+  .sec-head p{font-size:13px}
+  .facts{grid-template-columns:1fr 1fr}
+  .fact,.fact:not(:nth-child(3n+1)){padding:14px 4px 16px}
+  .fact::before{display:none}
+  .fact:nth-child(even){padding-left:16px;border-left:1px solid var(--border)}
+  .fact.l3{border-bottom:1px solid var(--border)}
+  .fact.l2{border-bottom:none}
+  .fact-v{font-size:15px}
+  .tips{grid-template-columns:1fr;row-gap:0}
+  .tip,.tip:first-child,.tip:nth-child(3){padding:10px 0;border-left:none}
+  .tip+.tip{border-top:1px solid var(--border);border-left:none}
+  .safety{margin-bottom:24px}
+  .f-top{flex-direction:column;align-items:flex-start;gap:16px}
+  .f-links{gap:20px;flex-wrap:wrap}
+  .f-social{justify-content:flex-start;min-width:0}
+  .f-bot{flex-direction:column;gap:6px}
+}
+@media(max-width:380px){.nav-cta{display:none}}
 </style>
 </head>
 <body>
 <nav class="nav">
-  <a class="nav-logo" href="/">Puppy<span>Place</span></a>
-  <a class="nav-back" href="/pets.html">← All Pets</a>
-</nav>
-<div class="pg-wrap">
-  ${galleryHtml}
-  <div class="pg-detail">
-    <div>
-      <span class="pg-badge">${isAdopt ? 'For Adoption' : 'For Sale'}</span>
-      <div class="pg-meta">${esc(p.type)}${p.pedigree ? ' · ' + (p.pedigree === 'pedigree' ? 'Pedigree' : 'Non-Pedigree') : ''}</div>
-      <div class="pg-breed">${esc(p.breed || p.type)}</div>
-      ${(p.name || p.breeder) ? `<div class="pg-sub">${[p.name, p.breeder ? '🏠 ' + p.breeder : ''].filter(Boolean).join(' · ')}</div>` : ''}
-    </div>
-    ${tagHtml ? `<div class="pg-tags">${tagHtml}</div>` : ''}
-    ${p.specs ? `<div class="pg-specs">${esc(p.specs)}</div>` : ''}
-    ${p.location ? `<div class="pg-loc">📍 ${esc(p.location)}</div>` : ''}
-    <div>
-      ${isAdopt ? `<div class="pg-price-adopt">Free / Adoption</div>` : `<div class="pg-price">₦${(p.price||0).toLocaleString('en-NG')}</div>`}
-    </div>
-    ${wa ? `<div class="pg-cta"><a href="https://wa.me/${wa}?text=${encodeURIComponent('Hi, I\'m interested in the ' + (p.breed||p.type) + (p.name?' ('+p.name+')':'') + ' listed on PuppyPlace.ng')}" target="_blank" rel="noopener noreferrer" class="btn-wa">💬 Contact on WhatsApp</a></div>` : ''}
+  <a class="nav-logo" href="/">🐾 Puppy<span>Place</span></a>
+  <div class="nav-links">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/shop.html">Shop</a>
+    <a class="nav-link on" href="/pets.html">Pets</a>
+    <a class="nav-link" href="/blog.html">Blog</a>
   </div>
-</div>
-<footer class="footer"><a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace · <a href="/sell-my-dog.html">Sell your dog</a> · <a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></footer>
-${galleryScript}
+  <div class="nav-right">
+    <a class="nav-ico" href="/pets.html#search" aria-label="Search pets"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
+    <a class="nav-ico" href="/pets.html#saved" aria-label="Saved pets">${I.heart.replace('width="20" height="20"', 'width="22" height="22"')}</a>
+    <a class="nav-cta" href="/contact.html">Contact Us</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <a class="back" href="/pets.html">${I.back}Back to Pets</a>
+
+  <div class="top">
+    <div class="card gallery">${galleryHtml}</div>
+    <div class="card info">
+      <span class="info-badge${isAdopt ? ' adopt' : ''}">${isAdopt ? 'For Adoption' : 'For Sale'}</span>
+      <div class="info-type">${esc(p.type || 'Pet')}</div>
+      <h1>${esc(breed)}</h1>
+      <div class="seller"><span class="avatar">${esc(seller.trim().charAt(0).toUpperCase())}</span>${esc(seller)}${I.check}</div>
+      ${p.location ? `<div class="loc">${I.pin}${esc(p.location)}</div>` : ''}
+      ${chips ? `<div class="chips">${chips}</div>` : ''}
+      ${p.specs ? `<div class="specs">${p.type === 'Dog' ? I.dog : I.aPaw.replace(/26/g, '22')}<div>${esc(p.specs)}</div></div>` : ''}
+      <div class="divider"></div>
+      ${priceHtml}
+      ${ctaHtml}
+      <div class="assure">
+        <div>${I.vshield}<span>Verified<br/>listing</span></div>
+        <div>${I.vheart}<span>Health information<br/>provided</span></div>
+        <div>${I.vusers}<span>Talk directly<br/>to seller</span></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="card section">
+    <div class="sec-head">${I.paw}<div><h2>About this pet</h2><p>Get all the important details about this ${esc(breed)} ${esc(youngWord)}.</p></div></div>
+    <div class="facts">${factsHtml}</div>
+  </section>
+
+  <section class="card safety">
+    <div class="sec-head">${I.tips}<div><h2>Safety tips when buying a pet</h2><p>Keep yourself and your new pet safe with these simple tips.</p></div></div>
+    <div class="tips">
+      <div class="tip">${I.tick}<span>Meet the seller in a safe,<br/>public location.</span></div>
+      <div class="tip">${I.tick}<span>Ask for health records<br/>and vaccination proof.</span></div>
+      <div class="tip">${I.tick}<span>Avoid paying in full<br/>before seeing the pet.</span></div>
+      <div class="tip">${I.tick}<span>Trust your instincts.<br/>If it feels off, walk away.</span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="f-top">
+      <div class="f-brand"><a class="nav-logo" href="/">🐾 Puppy<span>Place</span></a><div class="f-tag">Healthy Pets. Happy Homes.</div></div>
+      <nav class="f-links"><a href="/">Home</a><a href="/shop.html">Shop</a><a href="/pets.html">Pets</a><a href="/blog.html">Blog</a><a href="/contact.html">Contact</a></nav>
+      <div class="f-social">${socials.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}"><svg width="15" height="15" viewBox="0 0 24 24">${s.icon}</svg></a>`).join('')}</div>
+    </div>
+    <div class="f-bot"><span>© ${year} PuppyPlace. All rights reserved.</span><span>Trusted by pet lovers across Nigeria<span class="flag" aria-hidden="true"><i></i><i></i><i></i></span></span></div>
+  </div>
+</footer>
+${pageScript}
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>`;
