@@ -1137,7 +1137,7 @@ svg{flex-shrink:0}
     <div class="tips">
       <div class="tip">${I.tick}<span>Meet the seller in a safe,<br/>public location.</span></div>
       <div class="tip">${I.tick}<span>Ask for health records<br/>and vaccination proof.</span></div>
-      <div class="tip">${I.tick}<span>Avoid paying in full<br/>before seeing the pet.</span></div>
+      <div class="tip">${I.tick}<span>Don’t pay any money,<br/>not even a deposit,<br/>before seeing the pet.</span></div>
       <div class="tip">${I.tick}<span>Trust your instincts.<br/>If it feels off, walk away.</span></div>
     </div>
   </section>
