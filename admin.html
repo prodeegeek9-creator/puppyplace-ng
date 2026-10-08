@@ -1501,14 +1501,9 @@ async function savePet() {
   loadPets();
 }
 async function approvePet(id) {
-  // Through the Worker, not straight to the table: publishing also tells the seller on WhatsApp.
-  let data={};
-  try{
-    const res=await fetch('/api/pet-approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:sessionStorage.getItem('pp_token'),id})});
-    data=await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error||'Could not publish');
-  }catch(err){ showToast('❌ '+err.message,'error'); return; }
-  showToast(data.already?'Already published':data.notified?'✅ Published — seller told on WhatsApp':'✅ Published (the seller could not be reached on WhatsApp)',data.notified||data.already?'success':'warning');
+  const { error }=await sbAdmin.from('pets').update({ active:true }).eq('id',id);
+  if(error){ showToast('❌ '+error.message,'error'); return; }
+  showToast('✅ Published. A seller who listed on WhatsApp is told within a minute','success');
   loadPets();
 }
 async function deletePet(id,name) {

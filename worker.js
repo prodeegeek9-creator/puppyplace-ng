@@ -27,9 +27,9 @@ export default {
       return handleSellerListing(request, env, ctx);
     }
 
-    // The store approving a pet listing: published, and the seller told on WhatsApp
-    if (url.pathname === '/api/pet-approve' && request.method === 'POST') {
-      return handlePetApprove(request, env);
+    // Which of these seller listings has the store approved? Asked by Vendwyze, which tells the sellers.
+    if (url.pathname === '/api/seller-listings/status' && request.method === 'GET') {
+      return handleSellerListingStatus(request, url, env);
     }
 
     if (url.pathname === '/api/update-profile' && request.method === 'POST') {
@@ -488,61 +488,38 @@ async function handleSellerListing(request, env, ctx) {
   return jsonResp({ ok: true, status: 'pending', id: saved.id, slug, url: `https://puppyplace.ng/pets/${slug}` }, 201);
 }
 
-/* ── APPROVING A PET LISTING ── */
-
-// Vendwyze, which holds the seller's WhatsApp conversation. The same shared
-// key as the listings themselves; PET_LIVE_URL overrides the address.
-const DEFAULT_PET_LIVE_URL = 'https://thrift-unique.prodeegeek9.workers.dev/api/waha/pet-live';
-
-// POST /api/pet-approve  { token, id }
+// GET /api/seller-listings/status?slugs=a,b,c  (same shared key)
 //
-// The admin page's ✅. Publishes the listing, then asks Vendwyze to tell the
-// seller. Publishing never depends on the message: if it cannot be sent the
-// pet is live anyway and the admin is told the seller was not reached.
-async function handlePetApprove(request, env) {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
-
-  let b;
-  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
-  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
-  const id = String(b?.id ?? '').trim();
-  if (!id) return jsonResp({ error: 'id is required' }, 400);
-
-  const h = sbHeaders(env);
-  const base = env.SUPABASE_URL;
-  const row = `${base}/rest/v1/pets?id=eq.${encodeURIComponent(id)}`;
-
-  const found = await fetch(`${row}&select=id,slug,breed,whatsapp,listing_type,active&limit=1`, { headers: h });
-  if (!found.ok) return jsonResp({ error: 'Could not read the listing' }, 500);
-  const pet = (await found.json())[0];
-  if (!pet) return jsonResp({ error: 'Listing not found' }, 404);
-  // Already live: nothing to publish and nobody to tell twice.
-  if (pet.active) return jsonResp({ ok: true, already: true, notified: false }, 200);
-
-  const upd = await fetch(row, { method: 'PATCH', headers: { ...h, Prefer: 'return=minimal' }, body: JSON.stringify({ active: true }) });
-  if (!upd.ok) return jsonResp({ error: 'Could not publish the listing' }, 500);
-
-  let notified = false;
-  if (env.SELLER_API_KEY && pet.whatsapp) {
-    try {
-      const res = await fetch(env.PET_LIVE_URL || DEFAULT_PET_LIVE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${String(env.SELLER_API_KEY).trim()}` },
-        body: JSON.stringify({
-          whatsapp: pet.whatsapp,
-          breed: pet.breed,
-          listing_type: pet.listing_type,
-          url: pet.slug ? `https://puppyplace.ng/pets/${encodeURIComponent(pet.slug)}` : 'https://puppyplace.ng/pets.html',
-        }),
-        signal: AbortSignal.timeout(8000),
-      });
-      notified = res.ok;
-      if (!res.ok) console.error('seller notice refused:', res.status, (await res.text().catch(() => '')).slice(0, 200));
-    } catch (err) {
-      console.error('seller notice failed:', err?.message ?? err);
-    }
+// → { live: [...], pending: [...], missing: [...] }. Live is approved and
+// showing; pending is waiting for the store; missing is not there any more
+// (deleted). Vendwyze asks once a minute about the listings it sent and tells
+// each seller whose is live, however the store approved it.
+async function handleSellerListingStatus(request, url, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY || !env.SELLER_API_KEY) {
+    return jsonResp({ error: 'Server not configured' }, 503);
   }
-  return jsonResp({ ok: true, notified }, 200);
+  const auth = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!safeEqual(auth, String(env.SELLER_API_KEY).trim())) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  // Slugs are letters, digits and hyphens: anything else cannot be one of ours,
+  // and is never put into a query.
+  const slugs = [...new Set((url.searchParams.get('slugs') || '').split(',').map((x) => x.trim()).filter(Boolean))];
+  if (!slugs.length || slugs.length > 50 || slugs.some((x) => !/^[a-z0-9][a-z0-9-]{0,119}$/.test(x))) {
+    return jsonResp({ error: 'slugs must be 1 to 50 slugs, separated by commas' }, 400);
+  }
+
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/pets?slug=in.(${slugs.join(',')})&select=slug,active`, { headers: sbHeaders(env) });
+  if (!res.ok) {
+    console.error('seller listing status failed:', res.status, (await res.text().catch(() => '')).slice(0, 300));
+    return jsonResp({ error: 'Could not read the listings' }, 500);
+  }
+  const rows = await res.json();
+  const found = new Map((Array.isArray(rows) ? rows : []).map((r) => [r.slug, r.active === true]));
+  return jsonResp({
+    live: slugs.filter((x) => found.get(x) === true),
+    pending: slugs.filter((x) => found.get(x) === false),
+    missing: slugs.filter((x) => !found.has(x)),
+  }, 200);
 }
 
 function jsonResp(data, status) {

@@ -67,18 +67,22 @@ Content-Type: application/json
 - Collect breed, age, price (or "adoption"), city/area, vaccination and deworming status, and 2–6 photos, then confirm a summary with the seller before sending.
 - On 201, tell the seller their listing is being reviewed and will appear on PuppyPlace once approved.
 
-## When the store approves a listing
+## Telling the seller it is live
 
-The ✅ in Admin → Pets calls `POST /api/pet-approve` on this site (admin token
-and pet id). It publishes the listing, then asks Vendwyze to tell the seller:
+Vendwyze remembers each listing it sends (the `slug` in the 201 response) and,
+once a minute, asks this site which of the ones still waiting are live:
 
 ```
-POST <PET_LIVE_URL, default https://thrift-unique.prodeegeek9.workers.dev/api/waha/pet-live>
+GET /api/seller-listings/status?slugs=boerboel-20261008-1019-ab12,lhasa-20261008-0950-cd34
 Authorization: Bearer <SELLER_API_KEY>
-{ "whatsapp": "+2348031234567", "breed": "Lhasa", "listing_type": "sale", "url": "https://puppyplace.ng/pets/lhasa-1" }
+
+200 { "live": ["boerboel-…"], "pending": ["lhasa-…"], "missing": [] }
 ```
 
-Vendwyze sends "🎉 Your *Lhasa* is now live…" from the store's own number. The
-listing goes live whether or not that message could be sent; the admin sees
-"Published — seller told on WhatsApp" or "Published (the seller could not be
-reached)". A listing that is already live is not published or announced again.
+`live` is approved and showing, `pending` is waiting for the store, `missing`
+is no longer there (deleted). Up to 50 slugs, each letters, digits and hyphens.
+Each seller whose listing is live gets, in the same WhatsApp chat they wrote
+from, their link with a push to share it, and the link again in a message made
+to be forwarded. Because Vendwyze asks, it does not matter how the listing was
+approved (the ✅ in Admin → Pets, the edit form, the database), and this site
+never has to reach Vendwyze.
