@@ -1297,6 +1297,21 @@ function errorPage(msg) {
 </head><body><h1>⚠️ ${esc(msg)}</h1><p>Please try again later.</p><a href="/blog.html">← All Posts</a></body></html>`;
 }
 
+// slug (+ updated_at when the table has it) for every row matching filter
+async function sitemapRows(env, table, filter) {
+  for (const fields of ['slug,updated_at', 'slug']) {
+    try {
+      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}?${filter}&select=${fields}`, { headers: sbHeaders(env) });
+      if (!res.ok) { console.error(`sitemap ${table} (${fields}): ${res.status} ${(await res.text()).slice(0, 200)}`); continue; }
+      const rows = await res.json();
+      if (Array.isArray(rows)) return rows;
+    } catch (e) {
+      console.error(`sitemap ${table}:`, e.message);
+    }
+  }
+  return [];
+}
+
 async function serveSitemap(env) {
   if (!env.SUPABASE_URL) {
     return new Response('Server not configured', { status: 503 });
@@ -1322,24 +1337,14 @@ async function serveSitemap(env) {
     { loc: 'https://puppyplace.ng/careers.html', lastmod: today },
   ];
 
-  let posts = [];
-  let products = [];
-  let pets = [];
-  try {
-    const h = sbHeaders(env);
-    const base = env.SUPABASE_URL;
-    const [postRows, productsRes, petsRes] = await Promise.all([
-      getAllPosts(env).catch(() => []),
-      fetch(`${base}/rest/v1/shop_products?active=eq.true&select=slug,updated_at`, { headers: h }),
-      fetch(`${base}/rest/v1/pets?active=eq.true&select=slug,updated_at&order=created_at.desc`, { headers: h }),
-    ]);
-    posts = postRows;
-    if (productsRes.ok) { const d = await productsRes.json(); if (Array.isArray(d)) products = d; }
-    const petRows = await petsRes.json().catch(() => []);
-    (petRows || []).filter(p => p.slug).forEach(p => pets.push({ loc: `https://puppyplace.ng/pets/${p.slug}`, lastmod: (p.updated_at||today).slice(0,10) }));
-  } catch {
-    return new Response('Failed to generate sitemap', { status: 500 });
-  }
+  // Each source is fetched on its own and a failure only drops that source,
+  // so one bad query never takes the whole sitemap down
+  const [posts, products, petRows] = await Promise.all([
+    getAllPosts(env).catch(e => { console.error('sitemap posts:', e.message); return []; }),
+    sitemapRows(env, 'shop_products', 'active=eq.true'),
+    sitemapRows(env, 'pets', 'active=eq.true&order=created_at.desc'),
+  ]);
+  const pets = petRows.filter(p => p.slug).map(p => ({ loc: `https://puppyplace.ng/pets/${encodeURIComponent(p.slug)}`, lastmod: (p.updated_at || today).slice(0, 10) }));
 
   const toUrl = (loc, lastmod) =>
     `  <url>\n    <loc>${loc}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
@@ -1348,7 +1353,7 @@ async function serveSitemap(env) {
   const usedCats = new Set(posts.map(p => blogCategory(p).slug));
   const catUrls = BLOG_CATS.filter(c => usedCats.has(c.slug)).map(c => toUrl(`https://puppyplace.ng${blogCatPath(c)}`, today));
   const postUrls = posts.map(p => toUrl(`https://puppyplace.ng${postPath(p)}`, p.published_at ? p.published_at.slice(0, 10) : ''));
-  const productUrls = products.map(p => toUrl(`https://puppyplace.ng/product/${encodeURIComponent(p.slug)}.html`, p.updated_at ? p.updated_at.slice(0, 10) : ''));
+  const productUrls = products.filter(p => p.slug).map(p => toUrl(`https://puppyplace.ng/product/${encodeURIComponent(p.slug)}.html`, p.updated_at ? p.updated_at.slice(0, 10) : ''));
   const petUrls = pets.map(p => toUrl(p.loc, p.lastmod));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...catUrls, ...postUrls, ...productUrls, ...petUrls].join('\n')}\n</urlset>`;
