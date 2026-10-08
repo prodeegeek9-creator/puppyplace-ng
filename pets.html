@@ -15,66 +15,229 @@
 <meta property="og:url" content="https://puppyplace.ng/pets.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Nunito',sans-serif;background:#f8f9fa;color:#333;min-height:100vh;display:flex;flex-direction:column}
+:root{--orange:#ed6436;--orange-d:#d9541f;--green:#1fa463;--black:#141412;--dark:#121210;--text:#1d1d1b;--gray:#7a7d85;--light:#f6f7f9;--border:#e8eaee;--white:#fff;--r:14px;--shadow:0 2px 10px rgba(16,24,40,.06);--shadow2:0 12px 32px rgba(16,24,40,.12);--trans:.25s ease}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--light);color:var(--text);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 a{text-decoration:none;color:inherit}
-:root{--orange:#ed6436;--black:#0e0e0c;--gray:#868686;--light:#f1f3f5;--border:#e9ecef;--white:#fff;--r:12px;--shadow:0 4px 20px rgba(0,0,0,.06);--shadow2:0 8px 40px rgba(0,0,0,.12);--trans:.3s ease}
+button,input,select{font-family:inherit}
+svg{flex-shrink:0}
 
 /* ── NAV ── */
-.nav{background:#1a1a18;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.nav-logo{color:#fff;font-size:22px;font-weight:900;display:flex;align-items:center;gap:8px}
+.nav{background:var(--dark);padding:0 62px;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,.06)}
+.nav-logo{font-family:'Nunito',sans-serif;color:#fff;font-size:22px;font-weight:900;display:flex;align-items:center;gap:8px}
 .nav-logo span{color:var(--orange)}
-.nav-links{display:flex;align-items:center;gap:6px}
-.nav-link{color:rgba(255,255,255,.7);font-size:13px;font-weight:700;padding:8px 16px;border-radius:50px;transition:all .3s}
-.nav-link:hover,.nav-link.on{background:rgba(255,255,255,.1);color:#fff}
+.nav-links{display:flex;align-items:center;gap:48px;position:absolute;left:50%;transform:translateX(-50%)}
+.nav-link{color:#fff;font-size:14px;font-weight:500;height:68px;display:flex;align-items:center;position:relative;transition:color var(--trans)}
+.nav-link:hover{color:var(--orange)}
+.nav-link.on{font-weight:700}
+.nav-link.on::after{content:'';position:absolute;left:-14px;right:-14px;bottom:16px;height:2px;background:var(--orange);border-radius:2px}
+.nav-right{display:flex;align-items:center;gap:22px}
+.nav-ico{background:none;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;padding:4px}
+.nav-ico:hover{color:var(--orange)}
+.nav-ico.on{color:var(--orange)}
+.nav-ico .cnt{position:absolute;top:-4px;right:-6px;background:var(--orange);color:#fff;font-size:10px;font-weight:800;min-width:17px;height:17px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 4px}
+.nav-ico .cnt.show{display:flex}
+.nav-cta{background:var(--orange);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:50px;transition:background var(--trans)}
+.nav-cta:hover{background:var(--orange-d)}
 
-/* ── HERO STRIP ── */
-.page-hero{background:#1a1a18;padding:48px 40px 40px;text-align:center}
-.page-hero h1{font-size:36px;font-weight:900;color:#fff;margin-bottom:10px}
-.page-hero h1 span{color:var(--orange)}
-.page-hero p{font-size:15px;color:rgba(255,255,255,.55);max-width:480px;margin:0 auto}
+/* ── HERO ── */
+.hero{background:#151513;position:relative;overflow:hidden;min-height:311px}
+.hero-img{position:absolute;top:0;right:0;bottom:0;width:41%;background:url('/images/pets-hero-puppy.jpg') right center/cover no-repeat}
+.hero-img::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#151513 0%,rgba(21,21,19,.6) 18%,rgba(21,21,19,0) 42%)}
+.hero-arrows{position:absolute;top:66px;right:calc(41% - 90px);width:80px;height:80px;color:var(--orange);z-index:1}
+.hero-inner{position:relative;z-index:2;padding:34px 62px 30px;max-width:100%}
+.hero-eyebrow{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);margin-bottom:8px}
+.hero h1{font-size:52px;line-height:1.08;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:10px}
+.hero h1 span{color:var(--orange)}
+.hero-sub{font-size:15px;line-height:1.3;color:rgba(255,255,255,.85);max-width:450px;margin-bottom:16px}
+.hero-row{display:flex;align-items:center;gap:60px}
+.hero-search{display:flex;align-items:center;background:#fff;border-radius:50px;height:52px;width:492px;max-width:100%;padding:0 4px 0 20px;border:2px solid #fff;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.hero-search svg{color:#1d1d1b}
+.hero-search input{flex:1;min-width:0;border:none;outline:none;font-size:13px;color:var(--text);padding:0 12px;background:transparent}
+.hero-search input::placeholder{color:#8a8d94}
+.hero-search button{background:var(--orange);color:#fff;border:none;border-radius:50px;height:44px;padding:0 34px;font-size:14px;font-weight:600;cursor:pointer;transition:background var(--trans)}
+.hero-search button:hover{background:var(--orange-d)}
+.trust{display:flex;align-items:stretch}
+.trust-item{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:0 20px;color:#fff;font-size:12px;line-height:1.3;font-weight:500;border-left:1px solid rgba(255,255,255,.22)}
+.trust-item:first-child{border-left:none;padding-left:0}
+.trust-item svg{color:var(--orange)}
+.trust-item.green svg{color:#2fbf71}
 
-/* ── FILTERS ── */
-.filter-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;overflow-x:auto;white-space:nowrap}
-.filter-bar::-webkit-scrollbar{display:none}
-.filter-inner{display:inline-flex;gap:0;height:48px;align-items:center}
-.filt-tab{font-size:13px;font-weight:700;padding:0 20px;height:48px;display:inline-flex;align-items:center;gap:6px;border-bottom:3px solid transparent;color:var(--gray);cursor:pointer;transition:all .3s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'Nunito',sans-serif}
-.filt-tab:hover{color:var(--orange)}
-.filt-tab.on{color:var(--orange);border-bottom-color:var(--orange)}
+/* ── TOOLBAR ── */
+.wrap{max-width:1448px;margin:0 auto;width:100%;padding:0 58px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0 18px}
+.pills{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pills::-webkit-scrollbar{display:none}
+.pill{display:inline-flex;align-items:center;gap:9px;height:36px;padding:0 20px;background:#fff;border:1px solid var(--border);border-radius:50px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;white-space:nowrap;box-shadow:var(--shadow);transition:all var(--trans)}
+.pill .em{font-size:17px;line-height:1}
+.pill:hover{border-color:var(--orange)}
+.pill.on{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:700;padding:0 24px}
+.tools{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.sort{position:relative;display:flex;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;height:36px;padding:0 12px 0 14px;box-shadow:var(--shadow);font-size:12px;color:var(--gray)}
+.sort select{appearance:none;-webkit-appearance:none;border:none;outline:none;background:transparent;font-size:12px;font-weight:500;color:var(--text);padding:0 28px 0 4px;cursor:pointer;height:100%}
+.sort svg{position:absolute;right:10px;pointer-events:none;color:var(--text)}
+.view-toggle{display:flex;background:#fff;border:1px solid var(--border);border-radius:50px;padding:3px;box-shadow:var(--shadow)}
+.view-btn{width:40px;height:30px;border:none;background:none;border-radius:50px;display:flex;align-items:center;justify-content:center;color:#4a4d55;cursor:pointer;transition:all var(--trans)}
+.view-btn.on{background:var(--orange);color:#fff}
+.tools-r{display:flex;align-items:center;gap:10px}
+.filter-open{display:none}
+
+/* ── LAYOUT ── */
+.main{display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start;padding-bottom:70px}
+
+/* ── SIDEBAR ── */
+.sidebar{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:20px 18px 22px;box-shadow:var(--shadow);position:sticky;top:84px}
+.sb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.sb-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--text)}
+.sb-title svg{color:var(--orange)}
+.sb-reset{background:none;border:none;color:var(--orange);font-size:12px;font-weight:600;cursor:pointer}
+.sb-close{display:none;background:none;border:none;cursor:pointer;color:var(--text)}
+.sb-group{margin-bottom:22px}
+.sb-label{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px}
+.chk{display:flex;align-items:center;gap:10px;font-size:12px;color:#4a4d55;cursor:pointer;padding:3px 0}
+.chk input{appearance:none;-webkit-appearance:none;width:16px;height:16px;border:1.5px solid #c9ccd3;border-radius:4px;background:#fff;cursor:pointer;display:grid;place-items:center;transition:all .15s}
+.chk input:checked{background:var(--orange);border-color:var(--orange)}
+.chk input:checked::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.radios{display:flex;gap:18px}
+.rad{display:flex;align-items:center;gap:8px;font-size:12px;color:#4a4d55;cursor:pointer}
+.rad input{appearance:none;-webkit-appearance:none;width:16px;height:16px;border:1.5px solid #c9ccd3;border-radius:50%;background:#fff;cursor:pointer;display:grid;place-items:center}
+.rad input:checked{border-color:var(--orange);background:var(--orange)}
+.rad input:checked::after{content:'';width:6px;height:6px;border-radius:50%;background:#fff}
+.sel{position:relative;display:flex;align-items:center}
+.sel select{appearance:none;-webkit-appearance:none;width:100%;height:36px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;color:#4a4d55;padding:0 30px 0 10px;outline:none;cursor:pointer}
+.sel select:focus{border-color:var(--orange)}
+.sel.has-ico select{padding-left:32px}
+.sel .ico{position:absolute;left:10px;color:#4a4d55;pointer-events:none}
+.sel .chev{position:absolute;right:10px;color:#4a4d55;pointer-events:none}
+.price-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.apply{width:100%;height:42px;border:none;border-radius:10px;background:var(--orange);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:background var(--trans)}
+.apply:hover{background:var(--orange-d)}
+.backdrop{display:none}
 
 /* ── GRID ── */
-.wrap{max-width:1400px;margin:0 auto;width:100%;padding:0 40px}
-.grid-section{padding:40px 0 80px}
-.pet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px}
-.pet-grid-empty{grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--gray);font-size:15px}
-.pet-grid-empty .ico{font-size:56px;margin-bottom:16px}
-.sell-pill{display:inline-block;margin-top:16px;background:rgba(237,100,54,.15);border:1px solid rgba(237,100,54,.4);color:var(--orange);font-weight:800;font-size:13px;padding:8px 16px;border-radius:50px}
+.pet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.pet-grid-empty{grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--gray);font-size:15px;background:#fff;border:1px solid var(--border);border-radius:var(--r)}
+.pet-grid-empty .ico{font-size:52px;margin-bottom:14px}
+.sell-pill{display:inline-block;margin-top:16px;background:rgba(237,100,54,.1);border:1px solid rgba(237,100,54,.4);color:var(--orange);font-weight:700;font-size:13px;padding:8px 16px;border-radius:50px}
 .sell-pill:hover{background:var(--orange);color:#fff}
 
 /* ── PET CARD ── */
-.pet-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:all var(--trans);box-shadow:var(--shadow);display:block}
-.pet-card:hover{border-color:var(--orange);transform:translateY(-5px);box-shadow:var(--shadow2)}
-.pt-img{aspect-ratio:1.1;display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;overflow:hidden}
-.pt-img img{width:100%;height:100%;object-fit:cover}
-.pt-badge{position:absolute;top:12px;left:12px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:50px;color:#fff;text-transform:uppercase}
-.pt-body{padding:20px}
-.pt-breed{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-bottom:6px}
-.pt-name{font-size:20px;font-weight:900;color:var(--black);margin-bottom:10px}
-.pt-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.pt-tag{font-size:12px;padding:4px 12px;border-radius:50px;background:var(--light);color:var(--gray);font-weight:700;border:1px solid var(--border)}
-.pt-loc{font-size:13px;color:var(--gray);margin-bottom:18px}
-.pt-footer{display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid var(--border)}
-.pt-price{font-size:20px;font-weight:900;color:var(--black)}
-.pt-price-adopt{font-size:16px;font-weight:900;color:#2ecc71}
+.pet-card{position:relative;background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform var(--trans),box-shadow var(--trans)}
+.pet-card:hover{transform:translateY(-3px);box-shadow:var(--shadow2)}
+.pt-img{position:relative;aspect-ratio:1.45;display:flex;align-items:center;justify-content:center;font-size:64px;overflow:hidden;background:#f1f2f4}
+.pt-img img{width:100%;height:100%;object-fit:cover;display:block}
+.pt-badge{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;padding:4px 10px;border-radius:50px;color:#fff;text-transform:uppercase;letter-spacing:.02em;background:var(--orange)}
+.pt-badge.adopt{background:var(--green)}
+.pt-heart{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;border:none;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#1d1d1b;box-shadow:0 2px 6px rgba(0,0,0,.15);transition:transform .15s}
+.pt-heart:hover{transform:scale(1.1)}
+.pt-heart.on{color:var(--orange)}
+.pt-heart.on svg path{fill:currentColor}
+.pt-body{padding:14px 13px 13px;display:flex;flex-direction:column;flex:1}
+.pt-name{font-size:16px;font-weight:700;color:var(--text);margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-meta{display:flex;align-items:center;gap:6px 14px;flex-wrap:nowrap;overflow:hidden;font-size:10.5px;color:#8a8d94;margin-bottom:12px;min-height:14px}
+.pt-meta span{display:inline-flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-meta .hm{font-size:12px;line-height:1}
+.pt-specs{display:flex;align-items:center;gap:6px 12px;flex-wrap:nowrap;overflow:hidden;font-size:10.5px;color:#4a4d55;margin-bottom:16px}
+.pt-specs span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.pt-specs .ok{color:var(--green)}
+.pt-specs .gs{font-size:13px;line-height:1;color:#1d1d1b}
+.pt-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto}
+.pt-price{font-size:17px;font-weight:800;color:var(--text);white-space:nowrap}
+.pt-price.free{color:var(--green)}
+.pt-price.ask{font-size:13px;font-weight:700;color:var(--gray)}
+.pt-view{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;color:var(--orange);border:1px solid rgba(237,100,54,.45);border-radius:50px;padding:7px 14px;white-space:nowrap;transition:all var(--trans)}
+.pt-view:hover{background:var(--orange);color:#fff;border-color:var(--orange)}
+
+/* ── LIST VIEW ── */
+.pet-grid.list{grid-template-columns:1fr;gap:14px}
+.pet-grid.list .pet-card{flex-direction:row}
+.pet-grid.list .pt-img{width:280px;aspect-ratio:auto;min-height:190px;flex-shrink:0}
+.pet-grid.list .pt-body{padding:20px 22px;justify-content:center}
+.pet-grid.list .pt-heart{right:auto;left:242px}
+.pet-grid.list .pt-name{font-size:19px}
+.pet-grid.list .pt-meta{font-size:12px}
+.pet-grid.list .pt-specs{font-size:12px}
+.pet-grid.list .pt-price{font-size:20px}
+.pet-grid.list .pt-view{font-size:12px;padding:9px 18px}
 
 /* ── FOOTER ── */
-.footer{background:#1a1a18;color:rgba(255,255,255,.4);text-align:center;padding:28px 24px;font-size:13px;margin-top:auto}
+.footer{background:var(--dark);color:rgba(255,255,255,.4);text-align:center;padding:28px 24px;font-size:13px;margin-top:auto}
 .footer a{color:rgba(255,255,255,.6);font-weight:700}.footer a:hover{color:var(--orange)}
 
-@media(max-width:900px){.nav{padding:0 20px}.filter-bar{padding:0 20px}.wrap{padding:0 20px}.page-hero{padding:36px 20px 32px}.page-hero h1{font-size:28px}}
-@media(max-width:600px){.pt-img{font-size:56px}.pt-body{padding:12px 14px}.nav-links{display:none}.page-hero h1{font-size:22px}.pet-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}}
+@media(max-width:1280px){
+  .pet-grid{grid-template-columns:repeat(3,1fr)}
+  .hero-row{flex-direction:column;align-items:flex-start;gap:22px}
+  .hero-arrows{display:none}
+  .hero-img{width:48%;background-position:38% center}
+}
+@media(max-width:1100px){
+  .nav{padding:0 24px}.nav-links{gap:28px}
+  .wrap{padding:0 24px}
+  .hero-inner{padding:30px 24px 28px}
+  .main{grid-template-columns:1fr}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:300px;max-width:86vw;border-radius:0;z-index:200;overflow-y:auto;transform:translateX(-105%);transition:transform .3s ease;border:none}
+  .sidebar.open{transform:none}
+  .sb-close{display:flex}
+  .backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:150;opacity:0;pointer-events:none;transition:opacity .3s}
+  .backdrop.open{opacity:1;pointer-events:auto}
+  .filter-open{display:flex;align-items:center;gap:7px;height:36px;padding:0 14px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
+  .filter-open svg{color:var(--orange)}
+  .toolbar{flex-direction:column;align-items:stretch}
+  .tools{justify-content:space-between}
+  .tools-r{display:flex;align-items:center;gap:10px}
+}
+@media(max-width:760px){
+  .nav-links{display:none}
+  .nav{height:60px;padding:0 16px}
+  .nav-right{gap:14px}
+  .nav-cta{padding:8px 14px;font-size:12px}
+  .hero-img{width:62%;opacity:.5;background-position:38% center}
+  .hero-img::before{background:linear-gradient(90deg,#151513 0%,rgba(21,21,19,.4) 45%,rgba(21,21,19,0) 100%)}
+  .hero-inner{padding:26px 16px 24px}
+  .hero-eyebrow{font-size:11px}
+  .hero h1{font-size:34px;margin-bottom:12px}
+  .hero-sub{font-size:13.5px;margin-bottom:16px;max-width:320px}
+  .hero-search{height:48px;padding-left:16px}
+  .hero-search button{height:40px;padding:0 20px}
+  .trust{width:100%;justify-content:space-between}
+  .trust-item{flex:1;padding:0 6px;font-size:10.5px}
+  .trust-item:first-child{padding-left:0}
+  .wrap{padding:0 16px}
+  .toolbar{padding:16px 0 14px}
+  .pill{height:34px;padding:0 14px}
+  .sort-lbl{display:none}
+  .sort{padding:0 8px 0 10px;min-width:0}
+  .sort select{padding-right:22px;max-width:130px}
+  .tools-r{gap:8px;min-width:0}
+  .view-btn{width:36px}
+  .pill.on{padding:0 18px}
+  .pet-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .pt-img{font-size:48px}
+  .pt-body{padding:11px 10px 11px}
+  .pt-name{font-size:14px;margin-bottom:7px}
+  .pt-meta{gap:4px 10px;font-size:10px;margin-bottom:9px}
+  .pt-specs{gap:5px 8px;font-size:10px;margin-bottom:11px;flex-wrap:wrap}
+  .pt-foot{flex-direction:column;align-items:stretch;gap:8px}
+  .pt-price{font-size:15px}
+  .pt-view{justify-content:center;padding:7px 10px}
+  .pet-grid.list{gap:12px}
+  .pet-grid.list .pt-img{width:132px;min-height:0}
+  .pet-grid.list .pt-heart{left:96px;width:26px;height:26px}
+  .pet-grid.list .pt-body{padding:12px}
+  .pet-grid.list .pt-name{font-size:15px}
+  .pet-grid.list .pt-meta,.pet-grid.list .pt-specs{font-size:10.5px}
+  .pet-grid.list .pt-foot{flex-direction:row;align-items:center}
+  .pet-grid.list .pt-price{font-size:15px}
+  .pet-grid.list .pt-view{font-size:10.5px;padding:7px 12px}
+}
+@media(max-width:380px){
+  .hero h1{font-size:29px}
+  .nav-cta{display:none}
+  .pet-grid.list .pt-img{width:110px}
+  .pet-grid.list .pt-heart{left:76px}
+}
 </style>
 </head>
 <body>
@@ -87,33 +250,200 @@ a{text-decoration:none;color:inherit}
     <a class="nav-link on" href="/pets.html">Pets</a>
     <a class="nav-link" href="/blog.html">Blog</a>
   </div>
+  <div class="nav-right">
+    <button class="nav-ico" aria-label="Search pets" onclick="focusSearch()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    </button>
+    <button class="nav-ico" id="savedBtn" aria-label="Saved pets" onclick="toggleSaved()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.2-9.3C1.7 7.6 3.8 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.2 0 5.3 3.1 4.2 6.2C19.5 15.4 12 20 12 20Z"/></svg>
+      <span class="cnt" id="savedCnt">0</span>
+    </button>
+    <a class="nav-cta" href="/contact.html">Contact Us</a>
+  </div>
 </nav>
 
-<div class="page-hero">
-  <h1>Pets for <span>Sale &amp; Adoption</span> in Nigeria</h1>
-  <p>Find dogs, cats, birds, rabbits and more from trusted breeders across Nigeria.</p>
-  <a class="sell-pill" href="/sell-my-dog.html">🐶 Selling a dog? List it free →</a>
-</div>
-
-<div class="filter-bar">
-  <div class="filter-inner">
-    <button class="filt-tab on" data-filter="all" onclick="filterPets('all',this)">🐾 All</button>
-    <button class="filt-tab" data-filter="Dog" onclick="filterPets('Dog',this)">🐕 Dogs</button>
-    <button class="filt-tab" data-filter="Cat" onclick="filterPets('Cat',this)">🐈 Cats</button>
-    <button class="filt-tab" data-filter="Bird" onclick="filterPets('Bird',this)">🦜 Birds</button>
-    <button class="filt-tab" data-filter="Rabbit" onclick="filterPets('Rabbit',this)">🐰 Rabbits</button>
-    <button class="filt-tab" data-filter="Fish" onclick="filterPets('Fish',this)">🐠 Fish</button>
-    <button class="filt-tab" data-filter="other" onclick="filterPets('other',this)">🐹 Others</button>
-  </div>
-</div>
-
-<section class="grid-section">
-  <div class="wrap">
-    <div class="pet-grid" id="petGrid">
-      <div class="pet-grid-empty"><div class="ico">🐾</div><div>Loading pets…</div></div>
+<header class="hero">
+  <div class="hero-img" aria-hidden="true"></div>
+  <svg class="hero-arrows" viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M8 18 40 36"/><path d="M50 10 58 32"/><path d="M14 58 46 54"/></svg>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Healthy pets. Happy homes.</div>
+    <h1>Find Your Perfect Pet<br/>in <span>Nigeria</span></h1>
+    <p class="hero-sub">Adopt, buy or rehome healthy dogs, cats, birds, rabbits and more from trusted breeders across Nigeria.</p>
+    <div class="hero-row">
+      <form class="hero-search" onsubmit="event.preventDefault();applySearch()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="searchInput" placeholder="Search by breed, location or pet type..." aria-label="Search pets"/>
+        <button type="submit">Search</button>
+      </form>
+      <div class="trust">
+        <div class="trust-item green">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.8 8 10 4.6-1.2 8-5 8-10v-6l-8-3Z"/><path d="M12 7.5v8M8 11.5h8" stroke-linecap="round"/></svg>
+          <span>Verified<br/>Breeders</span>
+        </div>
+        <div class="trust-item green">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.2-9.3C1.7 7.6 3.8 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.2 0 5.3 3.1 4.2 6.2C19.5 15.4 12 20 12 20Z"/></svg>
+          <span>Healthy &amp;<br/>Vaccinated</span>
+        </div>
+        <div class="trust-item green">
+          <svg width="28" height="26" viewBox="0 0 26 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M2 5h13v11H2zM15 9h5l3.5 4v3H15z"/><circle cx="6.5" cy="18" r="2" fill="#151513"/><circle cx="19" cy="18" r="2" fill="#151513"/></svg>
+          <span>Safe<br/>Delivery</span>
+        </div>
+        <div class="trust-item">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 1.5-1.5 2.5-4 2.5h-2"/></svg>
+          <span>Ongoing<br/>Support</span>
+        </div>
+      </div>
     </div>
   </div>
-</section>
+</header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="pills" id="pills">
+      <button class="pill on" data-type="all"><span class="em">🐾</span>All</button>
+      <button class="pill" data-type="Dog"><span class="em">🐕</span>Dogs</button>
+      <button class="pill" data-type="Cat"><span class="em">🐱</span>Cats</button>
+      <button class="pill" data-type="Bird"><span class="em">🦜</span>Birds</button>
+      <button class="pill" data-type="Rabbit"><span class="em">🐰</span>Rabbits</button>
+      <button class="pill" data-type="Fish"><span class="em">🐠</span>Fish</button>
+      <button class="pill" data-type="other"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="3.5"/><circle cx="17" cy="7" r="3.5"/><circle cx="7" cy="17" r="3.5"/><circle cx="17" cy="17" r="3.5"/></svg>Others</button>
+    </div>
+    <div class="tools">
+      <button class="filter-open" onclick="openFilters()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5L3 4Z"/></svg>Filters
+      </button>
+      <div class="tools-r">
+        <label class="sort"><span class="sort-lbl">Sort by:</span>
+          <select id="sortSel" aria-label="Sort pets">
+            <option value="newest">Newest</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </label>
+        <div class="view-toggle" role="group" aria-label="View">
+          <button class="view-btn on" data-view="grid" aria-label="Grid view" aria-pressed="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button class="view-btn" data-view="list" aria-label="List view" aria-pressed="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r=".6" fill="currentColor"/><circle cx="4" cy="12" r=".6" fill="currentColor"/><circle cx="4" cy="18" r=".6" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <aside class="sidebar" id="sidebar" aria-label="Filter pets">
+      <div class="sb-head">
+        <div class="sb-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5L3 4Z"/></svg>Filter Pets
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="sb-reset" onclick="resetFilters()">Reset</button>
+          <button class="sb-close" onclick="closeFilters()" aria-label="Close filters"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-label">Pet Type</div>
+        <label class="chk"><input type="checkbox" name="ptype" value="Dog"/>Dogs</label>
+        <label class="chk"><input type="checkbox" name="ptype" value="Cat"/>Cats</label>
+        <label class="chk"><input type="checkbox" name="ptype" value="Bird"/>Birds</label>
+        <label class="chk"><input type="checkbox" name="ptype" value="Rabbit"/>Rabbits</label>
+        <label class="chk"><input type="checkbox" name="ptype" value="Fish"/>Fish</label>
+        <label class="chk"><input type="checkbox" name="ptype" value="other"/>Others</label>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-label">Age</div>
+        <div class="sel">
+          <select id="fAge" aria-label="Age">
+            <option value="">Any age</option>
+            <option value="0-12">Under 3 months</option>
+            <option value="12-26">3 – 6 months</option>
+            <option value="26-52">6 – 12 months</option>
+            <option value="52-9999">1 year +</option>
+          </select>
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-label">Gender</div>
+        <div class="radios">
+          <label class="rad"><input type="radio" name="gender" value="Male"/>Male</label>
+          <label class="rad"><input type="radio" name="gender" value="Female"/>Female</label>
+          <label class="rad"><input type="radio" name="gender" value="" checked/>Any</label>
+        </div>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-label">Location</div>
+        <div class="sel has-ico">
+          <svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <select id="fLoc" aria-label="Location"><option value="">Any location</option></select>
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-label">Vaccinated</div>
+        <div class="sel">
+          <select id="fVac" aria-label="Vaccinated">
+            <option value="">Any</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-label">Price Range</div>
+        <div class="price-row">
+          <div class="sel">
+            <select id="fMin" aria-label="Minimum price">
+              <option value="">Min</option>
+              <option value="0">₦0</option>
+              <option value="50000">₦50,000</option>
+              <option value="100000">₦100,000</option>
+              <option value="200000">₦200,000</option>
+              <option value="300000">₦300,000</option>
+              <option value="500000">₦500,000</option>
+              <option value="1000000">₦1,000,000</option>
+            </select>
+            <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div class="sel">
+            <select id="fMax" aria-label="Maximum price">
+              <option value="">Max</option>
+              <option value="50000">₦50,000</option>
+              <option value="100000">₦100,000</option>
+              <option value="200000">₦200,000</option>
+              <option value="300000">₦300,000</option>
+              <option value="500000">₦500,000</option>
+              <option value="1000000">₦1,000,000</option>
+              <option value="2000000">₦2,000,000</option>
+            </select>
+            <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <button class="apply" onclick="applyFilters()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5L3 4Z"/></svg>Apply Filters
+      </button>
+    </aside>
+    <div class="backdrop" id="backdrop" onclick="closeFilters()"></div>
+
+    <section>
+      <div class="pet-grid" id="petGrid">
+        <div class="pet-grid-empty"><div class="ico">🐾</div><div>Loading pets…</div></div>
+      </div>
+    </section>
+  </div>
+</div>
 
 <footer class="footer">
   <a href="/">PuppyPlace.ng</a> · Nigeria's Pet Marketplace<br/><a href="/sell-my-dog.html">Sell your dog</a> · <a href="/sell.html">List your pet</a> · <a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/faq.html">FAQs</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
@@ -126,76 +456,254 @@ const supabase = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, wind
 
 const typeEmoji = {Dog:'🐕',Cat:'🐈',Bird:'🦜',Rabbit:'🐰',Fish:'🐠','Guinea Pig':'🐹',Reptile:'🦎'};
 const typeBg    = {Dog:'linear-gradient(135deg,#fdeee7,#fbd4c3)',Cat:'linear-gradient(135deg,#e8f5e9,#c8e6c9)',Bird:'linear-gradient(135deg,#e3f2fd,#bbdefb)',Rabbit:'linear-gradient(135deg,#f3e5f5,#e1bee7)',Fish:'linear-gradient(135deg,#e0f7fa,#b2ebf2)','Guinea Pig':'linear-gradient(135deg,#fff9c4,#fff59d)',Reptile:'linear-gradient(135deg,#f1f8e9,#dcedc8)'};
-const knownTypes = ['Dog','Cat','Bird','Rabbit','Fish','Guinea Pig','Reptile'];
+const mainTypes = ['Dog','Cat','Bird','Rabbit','Fish'];
+
+const ICO = {
+  pin: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  cal: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke-linecap="round"/></svg>',
+  shield: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.8 8 10 4.6-1.2 8-5 8-10v-6l-8-3Z"/><path d="m8.5 12 2.5 2.5 4.5-5" stroke-linecap="round"/></svg>',
+  heart: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.2-9.3C1.7 7.6 3.8 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.2 0 5.3 3.1 4.2 6.2C19.5 15.4 12 20 12 20Z"/></svg>',
+  arrow: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+};
 
 let _allPets = [];
-let _activeFilter = 'all';
+let _view = 'grid';
+let _savedOnly = false;
+const state = { types: [], age: '', gender: '', loc: '', vac: '', min: '', max: '', q: '', sort: 'newest' };
+
+let _saved = [];
+try { _saved = JSON.parse(localStorage.getItem('pp_pet_wish') || '[]'); } catch (_) {}
+function persistSaved(){ try { localStorage.setItem('pp_pet_wish', JSON.stringify(_saved)); } catch (_) {} }
 
 function esc(s){
   if(!s && s!==0) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-
 function fmt(n){return '₦'+Number(n).toLocaleString('en-NG');}
+
+// Age is free text ("9 weeks", "5 months", "1.5 years"); turn it into weeks for the age filter
+function ageWeeks(a){
+  const m = String(a||'').toLowerCase().match(/(\d+(?:\.\d+)?)\s*(w|m|y|d)/);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  return {d:n/7, w:n, m:n*4.345, y:n*52}[m[2]];
+}
+
+// The pets table has no gender column yet, so read it from the listing text
+function genderOf(p){
+  const g = String(p.gender || p.sex || '').toLowerCase();
+  if (g) return g.startsWith('f') ? 'Female' : g.startsWith('m') ? 'Male' : g.startsWith('p') ? 'Pair' : '';
+  const t = `${p.name||''} ${p.specs||''}`.toLowerCase();
+  if (/\b(pair|male and female|male & female|males and females)\b/.test(t)) return 'Pair';
+  if (/\bfemale\b/.test(t)) return 'Female';
+  if (/\bmale\b/.test(t)) return 'Male';
+  return '';
+}
 
 function renderCard(p) {
   const isAdopt = p.listing_type === 'adoption';
-  const e = typeEmoji[p.type] || '🐾';
-  const bg = typeBg[p.type] || 'linear-gradient(135deg,#fafafa,#f0f0f0)';
   const img = p.image_url || (p.image_urls && p.image_urls[0]);
+  const bg = img ? '#f1f2f4' : (typeBg[p.type] || 'linear-gradient(135deg,#fafafa,#f0f0f0)');
   const imgHtml = img
-    ? `<img src="${esc(img)}" alt="${esc(p.breed||p.type)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;"/>`
-    : `<span style="font-size:58px">${e}</span>`;
-  const badgeCls = isAdopt ? 'pt-badge' : 'pt-badge';
-  const badgeStyle = isAdopt ? 'background:#2ecc71' : 'background:#ed6436';
-  const badge = isAdopt ? 'Adopt' : 'For Sale';
-  const priceHtml = isAdopt
-    ? `<span class="pt-price-adopt">Free / Adopt</span>`
-    : (p.price ? `<span class="pt-price">${fmt(p.price)}</span>` : '');
-  const healthTags = [p.dewormed && 'Dewormed', p.vaccinated && 'Vaccinated'].filter(Boolean);
+    ? `<img src="${esc(img)}" alt="${esc(p.breed||p.type)}" loading="lazy"/>`
+    : `<span>${typeEmoji[p.type] || '🐾'}</span>`;
   const href = p.slug ? `/pets/${p.slug}` : '#';
+  const saved = _saved.includes(p.id);
+  const g = genderOf(p);
+  const gSym = {Male:'♂', Female:'♀', Pair:'⚤'}[g];
+  const health = p.vaccinated ? 'Vaccinated' : (p.dewormed ? 'Dewormed' : '');
+  const price = isAdopt
+    ? '<span class="pt-price free">Free</span>'
+    : (p.price ? `<span class="pt-price">${fmt(p.price)}</span>` : '<span class="pt-price ask">Price on request</span>');
 
-  return `<a class="pet-card" href="${esc(href)}" data-type="${esc(p.type)}">
-    <div class="pt-img" style="${img ? 'background:#f5f5f5' : 'background:'+bg}">
-      <span class="${badgeCls}" style="${badgeStyle}">${badge}</span>
+  return `<article class="pet-card">
+    <a class="pt-img" href="${esc(href)}" style="background:${bg}">
       ${imgHtml}
-    </div>
+      <span class="pt-badge${isAdopt?' adopt':''}">${isAdopt?'Adoption':'For Sale'}</span>
+    </a>
+    <button class="pt-heart${saved?' on':''}" data-id="${esc(p.id)}" aria-label="${saved?'Remove from saved':'Save pet'}" aria-pressed="${saved}">${ICO.heart}</button>
     <div class="pt-body">
-      <div class="pt-breed">${esc(p.type)}${p.pedigree ? ' · '+(p.pedigree==='pedigree'?'Pedigree':'Non-Pedigree') : ''}</div>
-      <div class="pt-name">${esc(p.breed||p.type)}</div>
-      ${(p.name||p.breeder) ? `<div style="font-size:12px;color:var(--gray);margin-bottom:6px">${p.name?esc(p.name):''}${p.name&&p.breeder?' · ':''}${p.breeder?'🏠 '+esc(p.breeder):''}</div>` : ''}
-      <div class="pt-tags">
-        ${p.age ? `<span class="pt-tag">${esc(p.age)}</span>` : ''}
-        ${healthTags.map(t=>`<span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">${t}</span>`).join('')}
+      <a class="pt-name" href="${esc(href)}">${esc(p.breed||p.type)}</a>
+      <div class="pt-meta">
+        ${p.breeder ? `<span><span class="hm">🏠</span>${esc(p.breeder)}</span>` : (p.name ? `<span><span class="hm">🏠</span>${esc(p.name)}</span>` : '')}
+        ${p.location ? `<span>${ICO.pin}${esc(p.location)}</span>` : ''}
       </div>
-      ${p.location ? `<div class="pt-loc">📍 ${esc(p.location)}</div>` : ''}
-      <div class="pt-footer">
-        ${priceHtml}
-        ${p.slug ? `<span style="font-size:12px;font-weight:800;color:var(--orange)">View →</span>` : ''}
+      <div class="pt-specs">
+        ${p.age ? `<span>${ICO.cal}${esc(p.age)}</span>` : ''}
+        ${g ? `<span><span class="gs">${gSym}</span>${g}</span>` : ''}
+        ${health ? `<span class="ok">${ICO.shield}${health}</span>` : ''}
+      </div>
+      <div class="pt-foot">
+        ${price}
+        <a class="pt-view" href="${esc(href)}">View Details ${ICO.arrow}</a>
       </div>
     </div>
-  </a>`;
+  </article>`;
 }
 
-function filterPets(type, btn) {
-  _activeFilter = type;
-  document.querySelectorAll('.filt-tab').forEach(t => t.classList.remove('on'));
-  if (btn) btn.classList.add('on');
+function matches(p){
+  if (_savedOnly && !_saved.includes(p.id)) return false;
+  if (state.types.length) {
+    const t = mainTypes.includes(p.type) ? p.type : 'other';
+    if (!state.types.includes(t)) return false;
+  }
+  if (state.age) {
+    const [lo, hi] = state.age.split('-').map(Number);
+    const w = ageWeeks(p.age);
+    if (w === null || w < lo || w >= hi) return false;
+  }
+  if (state.gender) {
+    const g = genderOf(p);
+    if (g !== state.gender && g !== 'Pair') return false;
+  }
+  if (state.loc && String(p.location||'').trim().toLowerCase() !== state.loc.toLowerCase()) return false;
+  if (state.vac === 'yes' && !p.vaccinated) return false;
+  if (state.vac === 'no' && p.vaccinated) return false;
+  if (state.min !== '' || state.max !== '') {
+    const price = p.listing_type === 'adoption' ? 0 : p.price;
+    if (price == null) return false;
+    if (state.min !== '' && price < Number(state.min)) return false;
+    if (state.max !== '' && price > Number(state.max)) return false;
+  }
+  if (state.q) {
+    const hay = [p.breed, p.type, p.location, p.name, p.breeder, p.listing_type === 'adoption' ? 'adoption adopt' : 'sale'].join(' ').toLowerCase();
+    if (!state.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
 
+function render() {
   const grid = document.getElementById('petGrid');
-  let pets = _allPets;
-  if (type !== 'all') {
-    if (type === 'other') {
-      pets = _allPets.filter(p => !knownTypes.slice(0,5).includes(p.type));
-    } else {
-      pets = _allPets.filter(p => p.type === type);
-    }
+  grid.classList.toggle('list', _view === 'list');
+  let pets = _allPets.filter(matches);
+  if (state.sort !== 'newest') {
+    const val = p => p.listing_type === 'adoption' ? 0 : (p.price ?? null);
+    const dir = state.sort === 'price-asc' ? 1 : -1;
+    pets = pets.slice().sort((a, b) => {
+      const x = val(a), y = val(b);
+      if (x === null) return 1;
+      if (y === null) return -1;
+      return (x - y) * dir;
+    });
   }
   if (!pets.length) {
-    grid.innerHTML = `<div class="pet-grid-empty"><div class="ico">${typeEmoji[type]||'🐾'}</div><div>No ${type==='all'?'':type+' '}pets listed yet.</div></div>`;
+    const msg = _savedOnly ? 'You haven’t saved any pets yet. Tap the ♡ on a pet to save it.'
+      : (_allPets.length ? 'No pets match your filters.' : 'No pets listed yet. Check back soon!');
+    grid.innerHTML = `<div class="pet-grid-empty"><div class="ico">🐾</div><div>${msg}</div><a class="sell-pill" href="/sell-my-dog.html">🐶 Selling a dog? List it free →</a></div>`;
     return;
   }
   grid.innerHTML = pets.map(renderCard).join('');
+}
+
+// Pills and the Pet Type checkboxes describe the same thing, so keep them in step
+function syncTypeUI() {
+  document.querySelectorAll('input[name="ptype"]').forEach(c => { c.checked = state.types.includes(c.value); });
+  const one = state.types.length === 1 ? state.types[0] : (state.types.length ? null : 'all');
+  document.querySelectorAll('.pill').forEach(b => b.classList.toggle('on', b.dataset.type === one));
+}
+
+document.getElementById('pills').addEventListener('click', e => {
+  const b = e.target.closest('.pill');
+  if (!b) return;
+  state.types = b.dataset.type === 'all' ? [] : [b.dataset.type];
+  syncTypeUI();
+  render();
+});
+
+function applyFilters() {
+  state.types = [...document.querySelectorAll('input[name="ptype"]:checked')].map(c => c.value);
+  state.age = document.getElementById('fAge').value;
+  state.gender = document.querySelector('input[name="gender"]:checked').value;
+  state.loc = document.getElementById('fLoc').value;
+  state.vac = document.getElementById('fVac').value;
+  state.min = document.getElementById('fMin').value;
+  state.max = document.getElementById('fMax').value;
+  syncTypeUI();
+  render();
+  closeFilters();
+}
+
+function resetFilters() {
+  Object.assign(state, { types: [], age: '', gender: '', loc: '', vac: '', min: '', max: '', q: '' });
+  ['fAge','fLoc','fVac','fMin','fMax'].forEach(id => { document.getElementById(id).value = ''; });
+  document.querySelector('input[name="gender"][value=""]').checked = true;
+  document.getElementById('searchInput').value = '';
+  _savedOnly = false;
+  document.getElementById('savedBtn').classList.remove('on');
+  syncTypeUI();
+  render();
+}
+
+function applySearch() {
+  state.q = document.getElementById('searchInput').value.trim();
+  render();
+  if (state.q) document.querySelector('.toolbar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+document.getElementById('searchInput').addEventListener('input', e => { if (!e.target.value) { state.q = ''; render(); } });
+
+function focusSearch() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('searchInput').focus({ preventScroll: true });
+}
+
+document.getElementById('sortSel').addEventListener('change', e => { state.sort = e.target.value; render(); });
+
+document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', () => {
+  _view = b.dataset.view;
+  document.querySelectorAll('.view-btn').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+  render();
+}));
+
+function updateSavedCount() {
+  const c = document.getElementById('savedCnt');
+  const n = _saved.filter(id => _allPets.some(p => p.id === id)).length;
+  c.textContent = n;
+  c.classList.toggle('show', n > 0);
+}
+
+function toggleSaved() {
+  _savedOnly = !_savedOnly;
+  document.getElementById('savedBtn').classList.toggle('on', _savedOnly);
+  render();
+  document.querySelector('.toolbar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('petGrid').addEventListener('click', e => {
+  const h = e.target.closest('.pt-heart');
+  if (!h) return;
+  const id = isNaN(h.dataset.id) ? h.dataset.id : Number(h.dataset.id);
+  const i = _saved.indexOf(id);
+  if (i >= 0) _saved.splice(i, 1); else _saved.push(id);
+  persistSaved();
+  updateSavedCount();
+  if (_savedOnly) { render(); return; }
+  const on = i < 0;
+  h.classList.toggle('on', on);
+  h.setAttribute('aria-pressed', on);
+  h.setAttribute('aria-label', on ? 'Remove from saved' : 'Save pet');
+});
+
+function openFilters() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('backdrop').classList.add('open');
+}
+function closeFilters() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('backdrop').classList.remove('open');
+}
+
+function fillLocations() {
+  const seen = new Map();
+  _allPets.forEach(p => {
+    const l = String(p.location||'').trim();
+    if (l && !seen.has(l.toLowerCase())) seen.set(l.toLowerCase(), l);
+  });
+  const sel = document.getElementById('fLoc');
+  [...seen.values()].sort((a, b) => a.localeCompare(b)).forEach(l => {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = l;
+    sel.appendChild(o);
+  });
 }
 
 async function loadPets() {
@@ -209,13 +717,9 @@ async function loadPets() {
 
     if (error) throw error;
     _allPets = data || [];
-
-    if (!_allPets.length) {
-      grid.innerHTML = '<div class="pet-grid-empty"><div class="ico">🐾</div><div>No pets listed yet. Check back soon!</div></div>';
-      return;
-    }
-
-    filterPets(_activeFilter, document.querySelector('.filt-tab.on'));
+    fillLocations();
+    updateSavedCount();
+    render();
   } catch (err) {
     grid.innerHTML = `<div class="pet-grid-empty"><div class="ico">⚠️</div><div>Failed to load pets. Please refresh.</div></div>`;
     console.error('Pets load error:', err.message);
