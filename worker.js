@@ -594,12 +594,11 @@ function petErrorPage(msg) {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link rel="icon" type="image/png" href="https://fsrkzhknqonpjjkjwqlw.supabase.co/storage/v1/object/public/hero-images/851017C8-BF5F-41F8-96D2-8F191E7D2833.png"/><title>Error | PuppyPlace</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet"/><style>body{font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;text-align:center;padding:24px}a{color:#ed6436;font-weight:800}</style></head><body><div><h1>⚠️ ${esc(msg)}</h1><p style="color:#868686;margin-bottom:24px">Please try again later.</p><a href="/pets.html">← All Pets</a></div></body></html>`;
 }
 
-// Social profiles for the pet page footer; an entry shows as an icon once it has a URL
+// Social profiles shown in the pet page footer
 const PET_FOOTER_SOCIALS = [
-  { name: 'Facebook',  url: '', icon: '<path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v7h4v-7h3l.5-4h-3.5V9c0-.6.4-1 1-1Z" fill="currentColor"/>' },
-  { name: 'Instagram', url: '', icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>' },
-  { name: 'X',         url: '', icon: '<path d="M4 4h4.5l4 5.6L17.3 4H20l-6.2 7.2L20.5 20H16l-4.4-6-5.2 6H3.7l6.6-7.7L4 4Z" fill="currentColor"/>' },
-  { name: 'YouTube',   url: '', icon: '<rect x="2.5" y="5.5" width="19" height="13" rx="4" fill="currentColor"/><path d="m10 9 5 3-5 3V9Z" fill="#1a1a18"/>' },
+  { name: 'Facebook',  url: 'https://www.facebook.com/puppyplace_ng', icon: '<path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v7h4v-7h3l.5-4h-3.5V9c0-.6.4-1 1-1Z" fill="currentColor"/>' },
+  { name: 'Instagram', url: 'https://www.instagram.com/puppyplace_ng', icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>' },
+  { name: 'TikTok',    url: 'https://www.tiktok.com/@puppyplace.ng', icon: '<path d="M16.6 2h-3.4v13.4a2.9 2.9 0 1 1-2.1-2.8V9.1a6.4 6.4 0 1 0 5.5 6.3V8.6a8 8 0 0 0 4.4 1.3V6.5a4.5 4.5 0 0 1-4.4-4.5Z" fill="currentColor"/>' },
 ];
 
 // The pets table has no gender, colour or litter-size columns; sellers put
