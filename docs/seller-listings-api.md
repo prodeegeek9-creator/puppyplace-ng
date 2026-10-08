@@ -66,3 +66,19 @@ Content-Type: application/json
 - Only answer people who want to sell or rehome a pet; send buyers to <https://puppyplace.ng/pets.html>.
 - Collect breed, age, price (or "adoption"), city/area, vaccination and deworming status, and 2–6 photos, then confirm a summary with the seller before sending.
 - On 201, tell the seller their listing is being reviewed and will appear on PuppyPlace once approved.
+
+## When the store approves a listing
+
+The ✅ in Admin → Pets calls `POST /api/pet-approve` on this site (admin token
+and pet id). It publishes the listing, then asks Vendwyze to tell the seller:
+
+```
+POST <PET_LIVE_URL, default https://thrift-unique.prodeegeek9.workers.dev/api/waha/pet-live>
+Authorization: Bearer <SELLER_API_KEY>
+{ "whatsapp": "+2348031234567", "breed": "Lhasa", "listing_type": "sale", "url": "https://puppyplace.ng/pets/lhasa-1" }
+```
+
+Vendwyze sends "🎉 Your *Lhasa* is now live…" from the store's own number. The
+listing goes live whether or not that message could be sent; the admin sees
+"Published — seller told on WhatsApp" or "Published (the seller could not be
+reached)". A listing that is already live is not published or announced again.
