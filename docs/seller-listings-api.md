@@ -86,3 +86,33 @@ from, their link with a push to share it, and the link again in a message made
 to be forwarded. Because Vendwyze asks, it does not matter how the listing was
 approved (the ✅ in Admin → Pets, the edit form, the database), and this site
 never has to reach Vendwyze.
+
+## Breed guides
+
+A short "About / Temperament / Best home" text for each breed, shown on the
+pet's page ("About the Cane Corso") once approved in **Admin → Breed guides**.
+
+- The `201` response from `POST /api/seller-listings` carries `breed_guide`:
+  `"exists"` (a guide in any state, including one still waiting for approval
+  or one turned down), `"missing"` (none yet) or `"unavailable"` (no guide
+  possible: a breed such as "mixed", or the table is not set up).
+- When it is `"missing"`, Vendwyze writes one and sends it:
+
+```
+POST /api/breed-guides
+Authorization: Bearer <SELLER_API_KEY>
+{ "breed": "Cane Corso", "pet_type": "Dog", "summary": "About: …\nTemperament: …\nBest home: …" }
+
+201 { "ok": true, "status": "draft", "created": true }
+```
+
+  The summary is plain text, 20 to 1500 characters; tags are removed. It is
+  filed as a **draft** that buyers never see. A breed that already has a guide
+  is left alone (`created: false`), so nothing the store approved or edited is
+  ever overwritten. Breeds are filed by name without case, punctuation or extra
+  spaces ("Cane Corso", "cane-corso" and "cane corso " are one).
+- Admin → Breed guides lists them, drafts first. Each can be edited, **approved
+  and shown**, saved, or hidden. An approved guide shows on every dog of that
+  breed at once, including ones listed earlier.
+- Setup: run `supabase/breed_guides.sql` once in Supabase → SQL Editor. Until
+  then listings work as before and no guide is written or shown.
