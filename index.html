@@ -1441,6 +1441,7 @@ function updateBadges() {
   if(document.getElementById('mwBadge')) document.getElementById('mwBadge').textContent = wishItems.length;
 }
 
+function ppEvent(e,id,name,price){try{if(localStorage.getItem('pp_notrack'))return;var v=JSON.stringify({event:e,id:id,name:name,price:price,path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);else fetch('/api/track-event',{method:'POST',body:v,keepalive:true}).catch(function(){});}catch(x){}}
 function showToast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;border-radius:50px;padding:10px 22px;font-size:13px;font-weight:800;z-index:99999;white-space:nowrap;pointer-events:none;';
@@ -1492,6 +1493,7 @@ function addCart(id, name, emoji, cat, price, variant = '', varGroups = [], cid 
   const existing = cartItems.find(i => (i.cid || i.id) === cid);
   if (existing) { existing.qty++; }
   else { cartItems.push({ cid, id, n: name, e: emoji, cat, p: price, qty: 1, variant: variant || '', varGroups: varGroups || [] }); }
+  ppEvent('cart_add', id, name, price);
   saveCart();
   updateBadges();
   renderCartDrawer();
@@ -1598,6 +1600,7 @@ function closeCart() {
 function addWish(id, name, emoji, cat, price) {
   if (wishItems.find(i => i.id === id)) return;
   wishItems.push({ id, n: name, e: emoji, cat, p: price });
+  ppEvent('wishlist_add', id, name, price);
   saveWish();
   updateBadges();
   renderWishDrawer();
@@ -2065,6 +2068,7 @@ let coCurrentStep = 1;
 
 function openCheckout() {
   if (cartItems.length === 0) { alert('Your cart is empty!'); return; }
+  ppEvent('checkout_start', null, null, cartItems.reduce((t, i) => t + i.p * i.qty, 0));
   closeCart();
   coCurrentStep = 1;
   renderCoStep(1);

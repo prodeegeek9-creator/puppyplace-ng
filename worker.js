@@ -69,6 +69,19 @@ export default {
       return handleTrackTime(request, env);
     }
 
+    // Wishlist adds, cart adds, checkout starts and WhatsApp clicks, for the admin dashboard
+    if (url.pathname === '/api/track-event' && request.method === 'POST') {
+      return handleTrackEvent(request, url, env, ctx);
+    }
+
+    // The admin dashboard's numbers, and the order list with its status changes
+    if (url.pathname === '/api/admin/overview' && request.method === 'POST') {
+      return handleAdminOverview(request, env);
+    }
+    if (url.pathname === '/api/admin/orders' && request.method === 'POST') {
+      return handleAdminOrders(request, env);
+    }
+
     if (url.pathname === '/api/blog-posts' && request.method === 'GET') {
       return handleBlogPosts(url, env);
     }
@@ -266,6 +279,107 @@ async function handleTrackTime(request, env) {
     );
   } catch { /* non-critical */ }
   return ok;
+}
+
+// ── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
+// supabase/admin_dashboard.sql makes the shop_events table and the admin_overview
+// function these use. Until it has been run the dashboard says so, and the
+// shop carries on as before.
+
+const TRACKED_EVENTS = new Set(['wishlist_add', 'cart_add', 'checkout_start', 'whatsapp_click']);
+
+// POST /api/track-event  { event, id?, name?, price?, path? }  → 204 whatever happens
+async function handleTrackEvent(request, url, env, ctx) {
+  const ok = new Response(null, { status: 204 });
+  try {
+    if (!env.SUPABASE_URL || isLikelyBot(request)) return ok;
+    // Beacons only come from our own pages
+    const origin = request.headers.get('Origin');
+    if (origin && new URL(origin).hostname !== url.hostname) return ok;
+    const raw = await request.text();
+    if (raw.length > 2000) return ok;
+    const b = JSON.parse(raw);
+    if (!TRACKED_EVENTS.has(b?.event)) return ok;
+    const price = Number(b.price);
+    const path = cleanText(b.path, 200);
+    if (path && !shouldTrack(path)) return ok;
+    const date = new Date().toISOString().slice(0, 10);
+    const hash = await hashVisitor(request.headers.get('CF-Connecting-IP') || '', date);
+    const row = {
+      event: b.event,
+      item_id: cleanText(b.id, 80),
+      item_name: cleanText(b.name, 120),
+      price: Number.isFinite(price) && price >= 0 && price < 1e9 ? price : null,
+      path,
+      visitor_hash: hash,
+    };
+    ctx.waitUntil(
+      fetch(`${env.SUPABASE_URL}/rest/v1/shop_events`, {
+        method: 'POST',
+        headers: { ...sbHeaders(env), Prefer: 'return=minimal' },
+        body: JSON.stringify(row),
+      }).catch(() => {})
+    );
+  } catch { /* non-critical */ }
+  return ok;
+}
+
+// POST /api/admin/overview  { token, days }  → the dashboard's numbers (admin_overview)
+async function handleAdminOverview(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  const days = Math.min(90, Math.max(7, parseInt(b.days, 10) || 30));
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/admin_overview`, {
+    method: 'POST',
+    headers: sbHeaders(env),
+    body: JSON.stringify({ days }),
+  });
+  if (!res.ok) {
+    console.error('admin overview failed:', res.status, (await res.text().catch(() => '')).slice(0, 300));
+    if (res.status === 404) {
+      return jsonResp({ error: 'The dashboard is not set up yet. Run supabase/admin_dashboard.sql once in Supabase → SQL Editor.', setup: true }, 503);
+    }
+    return jsonResp({ error: 'Could not work out the numbers just now.' }, 502);
+  }
+  return jsonResp({ ok: true, overview: await res.json() }, 200);
+}
+
+const ORDER_STATUSES = ['processing', 'shipped', 'delivered', 'cancelled'];
+
+// POST /api/admin/orders  { token, action: 'list' | 'status', id, status }
+async function handleAdminOrders(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  const h = sbHeaders(env);
+  const base = `${env.SUPABASE_URL}/rest/v1/orders`;
+
+  if (b.action === 'list') {
+    const res = await fetch(`${base}?select=*&order=created_at.desc&limit=500`, { headers: h });
+    if (!res.ok) return jsonResp({ error: 'Could not read the orders' }, 500);
+    return jsonResp({ ok: true, orders: await res.json() }, 200);
+  }
+
+  if (b.action === 'status') {
+    const id = String(b.id || '');
+    if (!/^[0-9a-zA-Z-]{1,64}$/.test(id)) return jsonResp({ error: 'A valid order is required' }, 400);
+    if (!ORDER_STATUSES.includes(b.status)) return jsonResp({ error: 'Unknown status' }, 400);
+    const res = await fetch(`${base}?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { ...h, Prefer: 'return=representation' },
+      body: JSON.stringify({ status: b.status }),
+    });
+    if (!res.ok) return jsonResp({ error: 'Could not update the order' }, 500);
+    if (!(await res.json()).length) return jsonResp({ error: 'Order not found' }, 404);
+    return jsonResp({ ok: true }, 200);
+  }
+
+  return jsonResp({ error: 'Unknown action' }, 400);
 }
 
 // Returns headers using the service key when available, anon key as fallback
@@ -1522,6 +1636,7 @@ svg{flex-shrink:0}
   </div>
 </footer>
 ${pageScript}
+<script>(function(){try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="wa.me"]');if(!a)return;var v=JSON.stringify({event:'whatsapp_click',path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);},true);})();</script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
 </html>`;
@@ -2969,6 +3084,7 @@ function updateBadges(){
   var cb=document.getElementById('cBadge'),wb=document.getElementById('wBadge'),cd=document.getElementById('cartDrawerCount'),wd=document.getElementById('wishDrawerCount');
   if(cb)cb.textContent=qty;if(wb)wb.textContent=wishItems.length;if(cd)cd.textContent=qty;if(wd)wd.textContent=wishItems.length;
 }
+function ppEvent(e,id,name,price){try{if(localStorage.getItem('pp_notrack'))return;var v=JSON.stringify({event:e,id:id,name:name,price:price,path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);else fetch('/api/track-event',{method:'POST',body:v,keepalive:true}).catch(function(){});}catch(x){}}
 function showToast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2500);}
 function addToCartBtn(){
   var prod=window.__pp_prod||{};
@@ -2987,6 +3103,7 @@ function addToCartBtn(){
   var cid=variantStr?id+'||'+variantStr:id;
   var ex=cartItems.find(function(i){return (i.cid||i.id)===cid;});
   if(ex)ex.qty++;else cartItems.push({cid:cid,id:id,n:prod.n,e:prod.e,img:prod.img||null,cat:prod.cat,p:prod.p||0,qty:1,variant:variantStr,varGroups:storedGroups});
+  ppEvent('cart_add',id,prod.n,prod.p||0);
   try{saveCart();}catch(e){}
   try{updateBadges();}catch(e){}
   try{renderCartDrawer();}catch(e){console.error('[PuppyPlace] renderCartDrawer error:',e);}
@@ -3062,6 +3179,7 @@ function addToWishBtn(){
   var id=prod.id;if(!id)return;
   if(wishItems.find(function(i){return i.id===id;})){showToast('Already in wishlist!');return;}
   wishItems.push({id:id,n:prod.n,e:prod.e,img:prod.img||null,cat:prod.cat,p:prod.p||0});
+  ppEvent('wishlist_add',id,prod.n,prod.p||0);
   try{saveWish();}catch(e){}
   try{updateBadges();}catch(e){}
   try{renderWishDrawer();}catch(e){console.error('[PuppyPlace] renderWishDrawer error:',e);}
@@ -3111,6 +3229,7 @@ var coCurrentStep=1;
 function cartTotal(){return cartItems.reduce(function(s,i){return s+i.p*i.qty;},0);}
 function openCheckout(){
   if(!cartItems.length){alert('Your cart is empty!');return;}
+  ppEvent('checkout_start',null,null,cartItems.reduce(function(t,i){return t+i.p*i.qty;},0));
   closeCart();coCurrentStep=1;renderCoStep(1);
   document.getElementById('coBg').classList.add('open');document.body.style.overflow='hidden';
 }

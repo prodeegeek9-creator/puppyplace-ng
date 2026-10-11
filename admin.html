@@ -459,6 +459,75 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 .stats-table-title{font-size:13px;font-weight:800;color:var(--black);padding:14px 20px;border-bottom:1px solid var(--border);background:var(--light)}
 @media(max-width:900px){.stats-summary{grid-template-columns:1fr 1fr}.stats-tables{grid-template-columns:1fr}}
 @media(max-width:600px){.stats-summary{grid-template-columns:1fr}}
+
+/* ── DASHBOARD, ORDERS AND PET DETAIL ── */
+.dx-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.dx-h{font-size:18px;font-weight:900;color:var(--black)}
+.dx-sub{font-size:13px;color:var(--gray);margin-top:2px}
+.dx-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dx-notice{background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.35);color:#8a5a00;border-radius:var(--r);padding:12px 16px;font-size:13px;font-weight:700;line-height:1.6;margin-bottom:16px}
+.dx-attn{background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden}
+.dx-attn-h{padding:14px 18px;font-size:14px;font-weight:900;border-bottom:1px solid var(--border)}
+.dx-attn-i{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;cursor:pointer}
+.dx-attn-i:last-child{border-bottom:none}.dx-attn-i:hover{background:#fafaf8}
+.dx-attn-i small{display:block;font-weight:600;color:var(--gray);margin-top:1px}
+.dx-attn-go{color:var(--orange);font-weight:800;white-space:nowrap}
+.dx-ok{padding:14px 18px;font-size:13px;font-weight:700;color:#1e9e57}
+.dx-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;margin-bottom:22px}
+.dx-kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+.dx-kpi.link{cursor:pointer}.dx-kpi.link:hover{border-color:var(--orange)}
+.dx-kpi-l{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray)}
+.dx-kpi-v{font-size:26px;font-weight:900;color:var(--black);margin:4px 0 2px;line-height:1.1}
+.dx-kpi-d{font-size:12px;font-weight:700;color:var(--gray)}
+.dx-up{color:#1e9e57}.dx-down{color:var(--red)}
+.dx-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px;margin-bottom:22px}
+.dx-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+.dx-card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.dx-card-t{font-size:14px;font-weight:900;color:var(--black)}
+.dx-card-s{font-size:12px;color:var(--gray);font-weight:700}
+.dx-card-link{font-size:12px;font-weight:800;color:var(--orange);cursor:pointer;white-space:nowrap}
+.dx-chart{display:flex;align-items:flex-end;gap:2px;height:120px;border-bottom:1px solid var(--border)}
+.dx-col{flex:1;position:relative;height:100%;min-width:2px}
+.dx-bar{position:absolute;bottom:0;left:8%;right:8%;border-radius:3px 3px 0 0;min-height:0}
+.dx-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--gray);font-weight:700;margin-top:6px}
+.dx-legend{display:flex;gap:14px;font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;flex-wrap:wrap}
+.dx-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.dx-row{position:relative;display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:4px;font-size:13px;font-weight:700;overflow:hidden}
+.dx-row-bar{position:absolute;inset:0 auto 0 0;background:rgba(237,100,54,.12);z-index:0}
+.dx-row>span{position:relative;z-index:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx-row>span:last-child{flex-shrink:0;color:var(--black)}
+.dx-row small{font-weight:600;color:var(--gray);margin-left:6px}
+.dx-empty{font-size:13px;color:var(--gray);padding:6px 2px}
+.dx-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.dx-pill{border:1.5px solid var(--border);background:var(--white);border-radius:50px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;color:var(--black)}
+.dx-pill.on{border-color:var(--orange);background:rgba(237,100,54,.08);color:var(--orange-d)}
+.dx-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.dx-filters input[type=search]{border:1.5px solid var(--border);border-radius:50px;padding:10px 16px;font-size:13px;font-weight:700;min-width:220px;flex:1;max-width:340px;outline:none}
+.dx-filters input[type=search]:focus{border-color:var(--orange)}
+.dx-count{font-size:13px;color:var(--gray);font-weight:700;margin:0 0 10px}
+.dx-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;overflow-y:auto;padding:20px;align-items:flex-start;justify-content:center}
+.dx-modal{background:#fff;border-radius:16px;padding:26px;width:100%;max-width:640px;margin:auto;position:relative}
+.dx-modal-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.dx-modal-t{font-size:18px;font-weight:900;color:var(--black)}
+.dx-x{background:var(--light);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;flex-shrink:0}
+.dx-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:16px}
+.dx-gal a{display:block;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--light)}
+.dx-gal img{width:100%;height:100%;object-fit:cover;display:block}
+.dx-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;margin-bottom:16px}
+.dx-fact-k{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--gray)}
+.dx-fact-v{font-size:14px;font-weight:700;color:var(--black);word-break:break-word}
+.dx-warn{background:rgba(243,156,18,.1);color:#8a5a00;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;margin-bottom:8px}
+.dx-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.dx-btn{border:1.5px solid var(--border);background:var(--white);border-radius:50px;padding:9px 16px;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;color:var(--black)}
+.dx-btn:hover{border-color:var(--orange);color:var(--orange)}
+.dx-btn.del:hover{border-color:var(--red);color:var(--red)}
+.dx-items{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px}
+.dx-items td,.dx-items th{padding:8px 6px;border-bottom:1px solid var(--border);text-align:left}
+.dx-items th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray)}
+.dx-items td:last-child,.dx-items th:last-child{text-align:right}
+.dx-link{cursor:pointer;color:var(--orange-d);font-weight:800}
+.dx-status{border:1.5px solid var(--border);border-radius:50px;padding:6px 10px;font-family:inherit;font-size:12px;font-weight:800;background:var(--white)}
+@media(max-width:600px){.dx-modal{padding:18px}.dx-kpi-v{font-size:22px}}
 </style>
 </head>
 <body>
@@ -498,6 +567,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link" onclick="showPanel('products',this)"><span class="sb-link-ico">📦</span> Products <span class="sb-badge" id="sbProdCount">0</span></div>
         <div class="sb-link" onclick="showPanel('blog',this)"><span class="sb-link-ico">📝</span> Blog Posts <span class="sb-badge" id="sbBlogCount">0</span></div>
         <div class="sb-link" onclick="showPanel('stats',this)"><span class="sb-link-ico">📈</span> Stats</div>
+        <div class="sb-link" onclick="showPanel('orders',this)"><span class="sb-link-ico">🧾</span> Orders <span class="sb-badge" id="sbOrdersCount">0</span></div>
         <div class="sb-link" onclick="showPanel('pets',this)"><span class="sb-link-ico">🐾</span> Pets <span class="sb-badge" id="sbPetsCount">0</span></div>
         <div class="sb-link" onclick="showPanel('guides',this)"><span class="sb-link-ico">📘</span> Breed guides <span class="sb-badge" id="sbGuidesCount">0</span></div>
         <div class="sb-section">Store</div>
@@ -538,6 +608,21 @@ input,select,textarea{font-family:'Nunito',sans-serif}
       <div class="admin-content">
 
         <div class="panel active" id="panelDashboard">
+          <div class="dx-toolbar">
+            <div><div class="dx-h">Overview</div><div class="dx-sub" id="dxUpdated">Loading…</div></div>
+            <div class="dx-tools">
+              <select class="filter-sel" id="dxDays" onchange="loadDashboard(true)">
+                <option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option>
+              </select>
+              <button class="add-btn" onclick="loadDashboard(true)">↻ Refresh</button>
+            </div>
+          </div>
+          <div id="dxNotice"></div>
+          <div id="dxAttention"></div>
+          <div class="dx-kpis" id="dxKpis"></div>
+          <div class="dx-grid2" id="dxCharts"></div>
+          <div class="dx-grid2" id="dxSections"></div>
+          <div class="dx-h" style="margin:8px 0 14px">Catalogue</div>
           <div class="stats-grid">
             <div class="stat-card" data-ico="📦">
               <div class="stat-label">Total Products</div>
@@ -701,19 +786,64 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           <div id="guidesList"><div style="text-align:center;padding:30px;color:var(--gray)">Loading…</div></div>
         </div>
 
-        <div class="panel" id="panelPets">
-          <div class="blog-toolbar">
-            <div style="font-size:15px;font-weight:800;color:var(--black)">Pets for Sale &amp; Adoption</div>
-            <button class="add-btn" onclick="openPetForm()">＋ Add Pet</button>
+        <div class="panel" id="panelOrders">
+          <div class="dx-toolbar">
+            <div><div class="dx-h">Orders</div><div class="dx-sub" id="ordersSummary">Loading…</div></div>
+            <div class="dx-tools">
+              <button class="dx-btn" onclick="exportOrders()">⬇ Export CSV</button>
+              <button class="add-btn" onclick="loadOrders()">↻ Refresh</button>
+            </div>
           </div>
-          <div id="petsPendingNote" style="font-size:13px;font-weight:700;color:var(--orange);margin:-8px 0 14px"></div>
+          <div class="dx-pills" id="orderPills"></div>
+          <div class="dx-filters">
+            <input type="search" id="orderSearch" placeholder="Search name, email, phone, reference or item" oninput="renderOrders()"/>
+            <select class="filter-sel" id="orderRange" onchange="renderOrders()">
+              <option value="">All time</option><option value="1">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+            </select>
+            <select class="filter-sel" id="orderSort" onchange="renderOrders()">
+              <option value="new">Newest first</option><option value="old">Oldest first</option><option value="big">Biggest first</option>
+            </select>
+          </div>
+          <div class="dx-count" id="orderCount"></div>
           <div class="blog-table-wrap">
             <table class="blog-table">
-              <thead><tr><th>Photo</th><th>Name</th><th>Type</th><th>Listing</th><th>Price</th><th>Location</th><th>Actions</th></tr></thead>
-              <tbody id="petsTableBody"><tr><td colspan="7" class="empty-table"><div class="empty-table-ico">🐾</div><div>No pets yet</div></td></tr></tbody>
+              <thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+              <tbody id="ordersBody"><tr><td colspan="7" class="empty-table"><div class="empty-table-ico">🧾</div><div>No orders yet</div></td></tr></tbody>
             </table>
           </div>
         </div>
+
+        <div class="panel" id="panelPets">
+          <div class="dx-toolbar">
+            <div><div class="dx-h">Pets for Sale &amp; Adoption</div><div class="dx-sub" id="petsSummary"></div></div>
+            <div class="dx-tools">
+              <button class="dx-btn" onclick="exportPets()">⬇ Export CSV</button>
+              <button class="add-btn" onclick="openPetForm()">＋ Add Pet</button>
+            </div>
+          </div>
+          <div id="petsPendingNote" style="font-size:13px;font-weight:700;color:var(--orange);margin:-6px 0 14px"></div>
+          <div class="dx-pills" id="petPills"></div>
+          <div class="dx-filters">
+            <input type="search" id="petSearch" placeholder="Search breed, name, seller, number or place" oninput="renderPets()"/>
+            <select class="filter-sel" id="petType2" onchange="renderPets()"><option value="">All types</option></select>
+            <select class="filter-sel" id="petListing2" onchange="renderPets()"><option value="">Sale and adoption</option><option value="sale">For sale</option><option value="adoption">Adoption</option></select>
+            <select class="filter-sel" id="petSort" onchange="renderPets()">
+              <option value="review">Needs review first</option><option value="new">Newest first</option><option value="old">Oldest first</option>
+              <option value="views">Most viewed</option><option value="price">Highest price</option>
+            </select>
+          </div>
+          <div class="dx-count" id="petCount"></div>
+          <div class="blog-table-wrap">
+            <table class="blog-table">
+              <thead><tr><th>Photo</th><th>Name</th><th>Type</th><th>Listing</th><th>Price</th><th>Location &amp; seller</th><th>Photos</th><th>30 days</th><th>Added</th><th>Actions</th></tr></thead>
+              <tbody id="petsTableBody"><tr><td colspan="10" class="empty-table"><div class="empty-table-ico">🐾</div><div>No pets yet</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ORDER AND PET DETAIL -->
+        <div class="dx-modal-bg" id="orderModalBg" onclick="if(event.target===this)closeOrder()"><div class="dx-modal" id="orderModal"></div></div>
+        <div class="dx-modal-bg" id="petModalBg" onclick="if(event.target===this)closePetDetail()"><div class="dx-modal" id="petModal"></div></div>
 
         <!-- PET FORM MODAL -->
         <div class="form-bg" id="petFormBg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;overflow-y:auto;padding:20px;align-items:flex-start;justify-content:center;">
@@ -1275,7 +1405,7 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',pets:'Pets',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',orders:'Orders',pets:'Pets',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
   const title = titles[name]||name;
   document.getElementById('pageTitle').textContent = title;
   const mobTitle = document.getElementById('mobPageTitle');
@@ -1284,7 +1414,8 @@ function showPanel(name, el){
   const mbnMap = {dashboard:'mbn-dashboard',products:'mbn-products',blog:'mbn-blog',settings:'mbn-settings'};
   if(mbnMap[name]){ const btn=document.getElementById(mbnMap[name]); if(btn) btn.classList.add('on'); }
   if(name==='products') renderTable();
-  if(name==='dashboard'){ updateStats(); renderDashRecent(); }
+  if(name==='dashboard'){ updateStats(); renderDashRecent(); loadDashboard(); }
+  if(name==='orders') loadOrders();
   if(name==='blog') loadBlogPosts();
   if(name==='stats') loadStats();
   if(name==='pets') loadPets();
@@ -1432,32 +1563,406 @@ async function uploadPetImages(input) {
   input.value='';
   showToast('✅ Photos uploaded','success');
 }
+/* ── ADMIN NUMBERS (served by the Worker, which holds the database key) ── */
+async function adminApi(path, body){
+  const res=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:sessionStorage.getItem('pp_token'),...body})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok){ const e=new Error(data.error||'Something went wrong'); e.setup=!!data.setup; throw e; }
+  return data;
+}
+let _ov=null,_ovAt=0,_ovDays=0;
+async function getOverview(days,force){
+  if(!force&&_ov&&_ovDays===days&&Date.now()-_ovAt<5*60e3) return _ov;
+  const d=await adminApi('/api/admin/overview',{days});
+  _ov=d.overview; _ovAt=Date.now(); _ovDays=days;
+  return _ov;
+}
+const fmtN=n=>Number(n||0).toLocaleString('en-NG');
+const fmtMoney=n=>'₦'+Number(n||0).toLocaleString('en-NG');
+const escA=v=>escHtml(v).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+// Ids go inside inline handlers, so they are cut down to what an id can be. Free text never does.
+const sid=v=>String(v).replace(/[^0-9a-zA-Z_-]/g,'');
+const safeUrl=u=>/^https?:\/\//i.test(String(u))||String(u).startsWith('/')?u:'#';
+function fmtDay(d){ const x=new Date(String(d).slice(0,10)+'T12:00:00'); return isNaN(x)?String(d):x.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+function fmtWhen(iso){ const x=new Date(iso); return isNaN(x)?'—':x.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+', '+x.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function ago(iso){
+  const ms=Date.now()-new Date(iso).getTime(); if(!isFinite(ms)) return '';
+  const h=Math.floor(ms/36e5); if(h<1) return 'just now'; if(h<24) return h+'h ago';
+  const d=Math.floor(h/24); return d+(d===1?' day ago':' days ago');
+}
+function deltaHtml(cur,prev,days){
+  cur=Number(cur||0); prev=Number(prev||0);
+  const vs=' vs previous '+days+' days';
+  if(!prev&&!cur) return '<span class="dx-kpi-d">No change'+vs+'</span>';
+  if(!prev) return '<span class="dx-kpi-d dx-up">New'+vs+'</span>';
+  const pct=Math.round((cur-prev)/prev*100);
+  if(pct===0) return '<span class="dx-kpi-d">Same'+vs+'</span>';
+  return `<span class="dx-kpi-d ${pct>0?'dx-up':'dx-down'}">${pct>0?'▲':'▼'} ${Math.abs(pct)}%${vs}</span>`;
+}
+function kpi(label,value,sub,go){
+  return `<div class="dx-kpi${go?' link':''}"${go?` onclick="${go}"`:''}><div class="dx-kpi-l">${label}</div><div class="dx-kpi-v">${value}</div>${sub||''}</div>`;
+}
+function dxCard(title,sub,body,link){
+  return `<div class="dx-card"><div class="dx-card-h"><div><div class="dx-card-t">${title}</div>${sub?`<div class="dx-card-s">${sub}</div>`:''}</div>${link||''}</div>${body}</div>`;
+}
+// Bars per day. series[0] is drawn behind (lighter), later ones in front.
+function dxChart(days,series){
+  if(!days||!days.length) return '<div class="dx-empty">No data yet</div>';
+  const max=Math.max(1,...days.flatMap(d=>series.map(s=>Number(d[s.key]||0))));
+  const cols=days.map(d=>{
+    const tip=fmtDay(d.d)+': '+series.map(s=>(s.money?fmtMoney(d[s.key]):fmtN(d[s.key]))+' '+s.label).join(', ');
+    return `<div class="dx-col" title="${escA(tip)}">`+series.map(s=>`<div class="dx-bar" style="height:${Math.max(Number(d[s.key]||0)?3:0,Number(d[s.key]||0)/max*100)}%;background:${s.color}"></div>`).join('')+'</div>';
+  }).join('');
+  const mid=days[Math.floor(days.length/2)];
+  return `<div class="dx-legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${s.label}</span>`).join('')}</div>`+
+    `<div class="dx-chart">${cols}</div><div class="dx-axis"><span>${fmtDay(days[0].d)}</span><span>${fmtDay(mid.d)}</span><span>${fmtDay(days[days.length-1].d)}</span></div>`;
+}
+// A ranked list with a bar behind each row.
+function dxRows(items,{label,value,sub,fmt=fmtN,empty='Nothing yet'}){
+  if(!items||!items.length) return `<div class="dx-empty">${empty}</div>`;
+  const max=Math.max(1,...items.map(i=>Number(value(i)||0)));
+  return items.map(i=>`<div class="dx-row"><div class="dx-row-bar" style="width:${Number(value(i)||0)/max*100}%"></div><span>${label(i)}${sub?`<small>${sub(i)}</small>`:''}</span><span>${fmt(value(i))}</span></div>`).join('');
+}
+const sum=(a,k)=>(a||[]).reduce((t,x)=>t+Number(x[k]||0),0);
+
+async function loadDashboard(force){
+  const days=Number(document.getElementById('dxDays')?.value||30);
+  const upd=document.getElementById('dxUpdated');
+  if(!sessionStorage.getItem('pp_token')) return;
+  upd.textContent='Loading…';
+  let o;
+  try{ o=await getOverview(days,force); }
+  catch(err){
+    document.getElementById('dxNotice').innerHTML=`<div class="dx-notice">${escHtml(err.message)}${err.setup?'':' Try Refresh.'}</div>`;
+    ['dxAttention','dxKpis','dxCharts','dxSections'].forEach(id=>document.getElementById(id).innerHTML='');
+    upd.textContent='Could not load the numbers';
+    return;
+  }
+  renderDashboard(o);
+}
+
+function renderDashboard(o){
+  const days=o.days, t=o.traffic, pe=o.pets, od=o.orders, ev=o.events, cat=o.catalogue, gd=o.guides, bl=o.blog;
+  document.getElementById('dxUpdated').textContent=`${fmtDay(o.start)} to ${fmtDay(o.today)} (Lagos time) · updated ${new Date(o.generated_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
+
+  // Parts that could not be worked out, with why
+  const notes=[];
+  for(const k of ['traffic','pets','orders','catalogue']) if(!o[k]) notes.push(`${k}: ${escHtml(o[k+'_error']||'not available')}`);
+  if(!ev) notes.push('Wishlist and cart tracking: '+escHtml(o.events_error||'not available'));
+  else if(!ev.first_event) notes.push('Wishlist, cart and WhatsApp click tracking has started. Numbers appear as visitors use the site.');
+  document.getElementById('dxNotice').innerHTML=notes.length?`<div class="dx-notice">${notes.join('<br>')}</div>`:'';
+
+  if(pe) document.getElementById('sbPetsCount').textContent=pe.total;
+  if(od){ const pr=(od.by_status||[]).find(x=>x.name==='processing'); document.getElementById('sbOrdersCount').textContent=pr?pr.n:0; }
+  // Needs attention
+  const at=[];
+  if(pe&&pe.pending>0) at.push({go:"showPanel('pets',null)",t:`${pe.pending} pet listing${pe.pending===1?'':'s'} waiting for approval`,s:pe.oldest_pending?`Oldest from ${ago(pe.oldest_pending)}${pe.pending_over_day?` · ${pe.pending_over_day} waiting over a day`:''}`:''});
+  if(gd&&gd.draft>0) at.push({go:"showPanel('guides',null)",t:`${gd.draft} breed guide${gd.draft===1?'':'s'} to review`,s:'Hidden from buyers until you approve'});
+  if(od&&od.stuck>0) at.push({go:"showPanel('orders',null)",t:`${od.stuck} order${od.stuck===1?'':'s'} still processing after 2 days`,s:'Check with the customer or update the status'});
+  if(od&&od.open>0&&!od.stuck) at.push({go:"showPanel('orders',null)",t:`${od.open} open order${od.open===1?'':'s'}`,s:'Processing or shipped'});
+  if(pe&&pe.one_photo>0) at.push({go:"showPanel('pets',null)",t:`${pe.one_photo} pet${pe.one_photo===1?'':'s'} with one photo or none`,s:'Listings with more photos get more messages'});
+  document.getElementById('dxAttention').innerHTML=`<div class="dx-attn"><div class="dx-attn-h">Needs your attention</div>${
+    at.length?at.map(a=>`<div class="dx-attn-i" onclick="${a.go}"><div>${a.t}${a.s?`<small>${a.s}</small>`:''}</div><span class="dx-attn-go">Open →</span></div>`).join(''):'<div class="dx-ok">✅ Nothing waiting. All caught up.</div>'
+  }</div>`;
+
+  // Numbers
+  const k=[];
+  if(t){
+    k.push(kpi('Visits',fmtN(t.visits),deltaHtml(t.visits,t.prev_visits,days)));
+    k.push(kpi('Page views',fmtN(t.views),deltaHtml(t.views,t.prev_views,days)));
+  }
+  if(od){
+    k.push(kpi('Orders',fmtN(od.count),deltaHtml(od.count,od.prev_count,days),"showPanel('orders',null)"));
+    k.push(kpi('Revenue',fmtMoney(od.revenue),deltaHtml(od.revenue,od.prev_revenue,days)+`<div class="dx-kpi-d">Average ${fmtMoney(od.avg_order)} · cancelled not counted</div>`,"showPanel('orders',null)"));
+  }
+  if(pe){
+    k.push(kpi('New pet listings',fmtN(pe.added),deltaHtml(pe.added,pe.prev_added,days),"showPanel('pets',null)"));
+    k.push(kpi('Live pets',fmtN(pe.live),`<div class="dx-kpi-d">${fmtN(pe.pending)} awaiting approval · ${fmtN(pe.total)} in all</div>`,"showPanel('pets',null)"));
+  }
+  if(ev){
+    k.push(kpi('Added to wishlist',fmtN(ev.wishlist),deltaHtml(ev.wishlist,ev.prev_wishlist,days)));
+    k.push(kpi('Added to cart',fmtN(ev.cart),deltaHtml(ev.cart,ev.prev_cart,days)));
+    k.push(kpi('Checkouts started',fmtN(ev.checkout),deltaHtml(ev.checkout,ev.prev_checkout,days)));
+    k.push(kpi('WhatsApp clicks',fmtN(ev.whatsapp),deltaHtml(ev.whatsapp,ev.prev_whatsapp,days)+'<div class="dx-kpi-d">Contact buttons on pet pages</div>'));
+  }
+  document.getElementById('dxKpis').innerHTML=k.join('');
+
+  // Trends
+  const ch=[];
+  if(t) ch.push(dxCard('Visits and page views',`${fmtN(t.visits)} visits · ${fmtN(t.views)} views`,dxChart(t.by_day,[{key:'views',label:'Page views',color:'rgba(237,100,54,.28)'},{key:'visits',label:'Visits',color:'#ed6436'}])));
+  if(od) ch.push(dxCard('Orders and revenue',`${fmtN(od.count)} orders · ${fmtMoney(od.revenue)}`,dxChart(od.by_day,[{key:'revenue',label:'Revenue',color:'#2ecc71',money:true}]),'<span class="dx-card-link" onclick="showPanel(\'orders\',null)">All orders →</span>'));
+  if(pe) ch.push(dxCard('New pet listings',`${fmtN(pe.added)} added`,dxChart(pe.by_day,[{key:'n',label:'Listings added',color:'#3498db'}]),'<span class="dx-card-link" onclick="showPanel(\'pets\',null)">All pets →</span>'));
+  if(ev) ch.push(dxCard('Wishlist and cart adds',`${fmtN(ev.wishlist)} wishlist · ${fmtN(ev.cart)} cart`,dxChart(ev.by_day,[{key:'wishlist',label:'Wishlist',color:'rgba(231,76,60,.35)'},{key:'cart',label:'Cart',color:'#e74c3c'}])));
+  document.getElementById('dxCharts').innerHTML=ch.join('');
+
+  // Detail
+  const sc=[];
+  if(pe){
+    sc.push(dxCard('Pets',`${fmtN(pe.live)} live · ${fmtN(pe.pending)} pending`,
+      '<div class="dx-card-s" style="margin-bottom:6px">By type (live of all)</div>'+dxRows(pe.by_type,{label:i=>escHtml(i.name),value:i=>i.n,sub:i=>`${i.live} live`})+
+      '<div class="dx-card-s" style="margin:12px 0 6px">Most active sellers</div>'+dxRows(pe.sellers,{label:i=>escHtml(i.name||i.whatsapp),value:i=>i.listings,sub:i=>`${i.live} live`,fmt:n=>n+' listed',empty:'No sellers yet'})));
+    sc.push(dxCard('Top pet pages',`Views and WhatsApp clicks, last ${days} days`,
+      dxRows(pe.top_pets,{label:i=>`<a href="/pets/${escA(i.slug)}" target="_blank" rel="noopener">${escHtml(i.breed||i.slug)}</a>`,value:i=>i.views,sub:i=>`${i.clicks} WhatsApp`,fmt:n=>n+(n==1?' view':' views'),empty:'No views of pet pages yet'})));
+  }
+  if(od){
+    sc.push(dxCard('Orders',`${fmtN(od.count)} in ${days} days`,
+      '<div class="dx-card-s" style="margin-bottom:6px">By status</div>'+dxRows(od.by_status,{label:i=>escHtml(i.name),value:i=>i.n,empty:'No orders yet'})+
+      '<div class="dx-card-s" style="margin:12px 0 6px">Best sellers by revenue</div>'+dxRows(od.top_products,{label:i=>escHtml(i.name||i.id),value:i=>i.revenue,sub:i=>`${i.qty} sold`,fmt:fmtMoney,empty:'No sales yet'})));
+  }
+  if(t){
+    sc.push(dxCard('Traffic',`${t.avg_seconds?`Average ${t.avg_seconds>=60?Math.floor(t.avg_seconds/60)+'m '+(t.avg_seconds%60)+'s':t.avg_seconds+'s'} on a page`:'Last '+days+' days'}`,
+      '<div class="dx-card-s" style="margin-bottom:6px">Top pages</div>'+dxRows(t.top_pages,{label:i=>escHtml(i.path),value:i=>i.views,fmt:n=>n+(n==1?' view':' views')})+
+      '<div class="dx-card-s" style="margin:12px 0 6px">Where visitors come from</div>'+dxRows(t.top_referrers,{label:i=>escHtml(i.name),value:i=>i.views})+
+      '<div class="dx-card-s" style="margin:12px 0 6px">Countries</div>'+dxRows(t.top_countries,{label:i=>escHtml(i.name),value:i=>i.views})));
+  }
+  if(ev){
+    const visits=t?t.visits:0;
+    const step=(label,n,from)=>`<div class="dx-row"><div class="dx-row-bar" style="width:${visits?Math.min(100,n/visits*100):0}%"></div><span>${label}</span><span>${fmtN(n)}${from?` <small>${from>0?Math.round(n/from*100)+'%':'—'}</small>`:''}</span></div>`;
+    sc.push(dxCard('Wishlists and carts',`Last ${days} days`,
+      (t&&od?'<div class="dx-card-s" style="margin-bottom:6px">From visit to order</div>'+step('Visits',visits,0)+step('Added to cart',ev.cart,visits)+step('Started checkout',ev.checkout,ev.cart)+step('Orders placed',od.count,ev.checkout)+'<div class="dx-empty" style="margin-bottom:10px">Cart adds can repeat for one visitor, so read the percentages as a guide.</div>':'')+
+      '<div class="dx-card-s" style="margin:4px 0 6px">Most wishlisted</div>'+dxRows(ev.top_wishlisted,{label:i=>escHtml(i.name||i.id),value:i=>i.n,empty:'Nothing wishlisted yet'})+
+      '<div class="dx-card-s" style="margin:12px 0 6px">Most added to cart</div>'+dxRows(ev.top_carted,{label:i=>escHtml(i.name||i.id),value:i=>i.n,empty:'Nothing added to a cart yet'})));
+  }
+  const health=[];
+  if(cat) health.push(['Shop products',fmtN(cat.products)+(cat.hidden?` · ${cat.hidden} hidden`:'')]);
+  if(gd) health.push(['Breed guides',`${gd.approved} showing · ${gd.draft} to review · ${gd.rejected} hidden`]);
+  if(bl) health.push(['Blog posts',`${bl.published} published · ${bl.draft} drafts`]);
+  if(pe) health.push(['Pets with one photo or none',fmtN(pe.one_photo)]);
+  if(health.length) sc.push(dxCard('Content health','',health.map(([a,b])=>`<div class="dx-row"><span>${a}</span><span>${b}</span></div>`).join('')));
+  document.getElementById('dxSections').innerHTML=sc.join('');
+}
+
+/* ── CSV (formula-safe) ── */
+function csvCell(v){
+  let t=v==null?'':String(v);
+  // A leading = + - @ can run as a formula in a spreadsheet; plain phone-style numbers are left alone
+  if(/^[=@\t\r]/.test(t)||(/^[+-]/.test(t)&&!/^[+-]\d[\d\s().-]*$/.test(t))) t="'"+t;
+  return /[",\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;
+}
+function downloadCsv(name,rows){
+  const blob=new Blob(['﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+
+/* ── ORDERS ── */
+let _orders=[], _orderTab='';
+const ORDER_STATUS=['processing','shipped','delivered','cancelled'];
+const itemsOf=o=>Array.isArray(o.items)?o.items:[];
+async function loadOrders(){
+  const body=document.getElementById('ordersBody');
+  body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray)">Loading…</td></tr>';
+  try{ _orders=(await adminApi('/api/admin/orders',{action:'list'})).orders||[]; }
+  catch(err){ body.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--red)">${escHtml(err.message)}</td></tr>`; return; }
+  renderOrders();
+}
+function filteredOrders(){
+  const q=(document.getElementById('orderSearch')?.value||'').trim().toLowerCase();
+  const range=Number(document.getElementById('orderRange')?.value||0);
+  const sort=document.getElementById('orderSort')?.value||'new';
+  const since=range?Date.now()-(range===1?0:range)*864e5:0;
+  const startToday=new Date(); startToday.setHours(0,0,0,0);
+  let list=_orders.filter(o=>{
+    if(_orderTab&&(o.status||'processing')!==_orderTab) return false;
+    if(range===1&&new Date(o.created_at)<startToday) return false;
+    if(range>1&&new Date(o.created_at).getTime()<since) return false;
+    if(!q) return true;
+    return [o.reference,o.customer_name,o.email,o.phone,o.address,...itemsOf(o).map(i=>i.n)].join(' ').toLowerCase().includes(q);
+  });
+  list.sort((a,b)=>sort==='big'?Number(b.total||0)-Number(a.total||0):sort==='old'?String(a.created_at).localeCompare(String(b.created_at)):String(b.created_at).localeCompare(String(a.created_at)));
+  return list;
+}
+function renderOrders(){
+  const counts={}; _orders.forEach(o=>{const s=o.status||'processing';counts[s]=(counts[s]||0)+1;});
+  document.getElementById('sbOrdersCount').textContent=counts.processing||0;
+  document.getElementById('orderPills').innerHTML=[['','All',_orders.length],...ORDER_STATUS.map(s=>[s,s[0].toUpperCase()+s.slice(1),counts[s]||0])]
+    .map(([v,l,n])=>`<button class="dx-pill${_orderTab===v?' on':''}" onclick="_orderTab='${v}';renderOrders()">${l} · ${n}</button>`).join('');
+  const list=filteredOrders();
+  const revenue=list.filter(o=>o.status!=='cancelled').reduce((t,o)=>t+Number(o.total||0),0);
+  document.getElementById('ordersSummary').textContent=`${_orders.length} order${_orders.length===1?'':'s'} loaded · ${fmtMoney(revenue)} in the list below (cancelled not counted)`;
+  document.getElementById('orderCount').textContent=list.length===_orders.length?'':`Showing ${list.length} of ${_orders.length}`;
+  const body=document.getElementById('ordersBody');
+  if(!list.length){ body.innerHTML=`<tr><td colspan="7" class="empty-table"><div class="empty-table-ico">🧾</div><div>${_orders.length?'No orders match':'No orders yet'}</div></td></tr>`; return; }
+  body.innerHTML=list.map(o=>{
+    const its=itemsOf(o), first=its.slice(0,2).map(i=>`${escHtml(i.n)}${Number(i.qty)>1?' ×'+Number(i.qty):''}`).join(', ');
+    return `<tr>
+      <td style="font-weight:800">${escHtml(o.reference||String(o.id).slice(0,8))}</td>
+      <td style="white-space:nowrap">${escHtml(fmtWhen(o.created_at))}<small style="display:block;color:var(--gray)">${escHtml(ago(o.created_at))}</small></td>
+      <td style="font-weight:700">${escHtml(o.customer_name||'—')}<small style="display:block;font-weight:500;color:var(--gray)">${escHtml(o.phone||o.email||'')}</small></td>
+      <td>${first||'—'}${its.length>2?`<small style="color:var(--gray)"> +${its.length-2} more</small>`:''}</td>
+      <td style="font-weight:800">${fmtMoney(o.total)}</td>
+      <td><select class="dx-status" onchange="setOrderStatus('${sid(o.id)}',this.value)">${ORDER_STATUS.map(s=>`<option value="${s}"${(o.status||'processing')===s?' selected':''}>${s}</option>`).join('')}</select></td>
+      <td><button class="act-btn" title="Details" onclick="openOrder('${sid(o.id)}')">👁️</button></td>
+    </tr>`;
+  }).join('');
+}
+async function setOrderStatus(id,status){
+  try{ await adminApi('/api/admin/orders',{action:'status',id,status}); }
+  catch(err){ showToast('❌ '+err.message,'error'); renderOrders(); return; }
+  const o=_orders.find(x=>String(x.id)===String(id)); if(o) o.status=status;
+  showToast('Order marked '+status,'success'); renderOrders();
+  if(document.getElementById('orderModalBg').style.display==='flex') openOrder(id);
+}
+function openOrder(id){
+  const o=_orders.find(x=>String(x.id)===String(id)); if(!o) return;
+  const phone=String(o.phone||'').replace(/\D/g,'').replace(/^0/,'234');
+  const rows=itemsOf(o).map(i=>`<tr><td>${escHtml(i.e||'')} ${escHtml(i.n)}</td><td>${Number(i.qty)||1}</td><td>${fmtMoney(i.p)}</td><td>${fmtMoney((Number(i.p)||0)*(Number(i.qty)||1))}</td></tr>`).join('');
+  document.getElementById('orderModal').innerHTML=`
+    <div class="dx-modal-h"><div><div class="dx-modal-t">Order ${escHtml(o.reference||'')}</div><div class="dx-sub">${escHtml(fmtWhen(o.created_at))} · ${escHtml(ago(o.created_at))}</div></div><button class="dx-x" onclick="closeOrder()">✕</button></div>
+    <div class="dx-facts">
+      <div><div class="dx-fact-k">Customer</div><div class="dx-fact-v">${escHtml(o.customer_name||'—')}</div></div>
+      <div><div class="dx-fact-k">Phone</div><div class="dx-fact-v">${escHtml(o.phone||'—')}</div></div>
+      <div><div class="dx-fact-k">Email</div><div class="dx-fact-v">${escHtml(o.email||'—')}</div></div>
+      <div><div class="dx-fact-k">Account</div><div class="dx-fact-v">${o.user_id?'Signed-in customer':'Guest checkout'}</div></div>
+      <div style="grid-column:1/-1"><div class="dx-fact-k">Delivery address</div><div class="dx-fact-v">${escHtml(o.address||'—')}</div></div>
+      ${o.notes?`<div style="grid-column:1/-1"><div class="dx-fact-k">Customer notes</div><div class="dx-fact-v">${escHtml(o.notes)}</div></div>`:''}
+    </div>
+    <table class="dx-items"><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Line</th></tr></thead><tbody>${rows||'<tr><td colspan="4">No items recorded</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="3" style="font-weight:900">Total</td><td style="font-weight:900">${fmtMoney(o.total)}</td></tr></tfoot></table>
+    <div class="dx-fact-k" style="margin-bottom:6px">Status</div>
+    <div class="dx-acts">${ORDER_STATUS.map(s=>`<button class="dx-btn" style="${(o.status||'processing')===s?'border-color:var(--orange);color:var(--orange)':''}" onclick="setOrderStatus('${sid(o.id)}','${s}')">${s}</button>`).join('')}</div>
+    <div class="dx-acts" style="margin-top:14px">
+      ${phone?`<a class="dx-btn" href="https://wa.me/${escA(phone)}" target="_blank" rel="noopener">💬 WhatsApp customer</a>`:''}
+      ${o.phone?`<a class="dx-btn" href="tel:${escA(o.phone)}">📞 Call</a>`:''}
+      ${o.email?`<a class="dx-btn" href="mailto:${escA(o.email)}">✉️ Email</a>`:''}
+    </div>`;
+  const bg=document.getElementById('orderModalBg'); bg.style.display='flex';
+}
+function closeOrder(){ document.getElementById('orderModalBg').style.display='none'; }
+function exportOrders(){
+  const rows=[['Reference','Date','Status','Customer','Email','Phone','Address','Items','Total']];
+  filteredOrders().forEach(o=>rows.push([o.reference,o.created_at,o.status,o.customer_name,o.email,o.phone,o.address,itemsOf(o).map(i=>`${i.n} x${i.qty}`).join('; '),o.total]));
+  downloadCsv('orders-'+new Date().toISOString().slice(0,10)+'.csv',rows);
+}
+
+/* ── PETS ── */
+let _pets=[], _petTab='', _petAct={};
+function photosOf(p){
+  let a=p.image_urls;
+  if(typeof a==='string'){ try{a=JSON.parse(a);}catch{a=null;} }
+  if(Array.isArray(a)&&a.length) return a.filter(Boolean);
+  return p.image_url?[p.image_url]:[];
+}
 async function loadPets() {
   const tbody=document.getElementById('petsTableBody');
-  tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray)">Loading…</td></tr>';
+  tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray)">Loading…</td></tr>';
   const { data, error }=await sbAdmin.from('pets').select('*').order('created_at',{ascending:false});
-  if(error){ tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--red)">${error.message}</td></tr>`; return; }
-  document.getElementById('sbPetsCount').textContent=data.length;
-  // Hidden pets (including seller listings from Vendwyze awaiting review) go first
-  data.sort((a,b)=>(a.active===false?0:1)-(b.active===false?0:1));
-  const pending=data.filter(p=>p.active===false).length;
-  document.getElementById('petsPendingNote').textContent=pending?`${pending} waiting for review — check the photos and details, then tap ✅ to publish.`:'';
-  if(!data.length){ tbody.innerHTML='<tr><td colspan="7" class="empty-table"><div class="empty-table-ico">🐾</div><div>No pets yet</div></td></tr>'; return; }
-  const fmt=n=>'₦'+Number(n).toLocaleString('en-NG');
-  tbody.innerHTML=data.map(p=>`<tr>
-    <td><div style="width:48px;height:48px;border-radius:8px;overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center;">${p.image_url?`<img src="${escHtml(p.image_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>`:'🐾'}</div></td>
-    <td style="font-weight:800">${escHtml(p.breed||p.name||'—')}${p.slug?` <a href="/pets/${p.slug}" target="_blank" style="font-size:11px;color:var(--orange)">↗</a>`:''}<small style="display:block;font-weight:500;color:var(--gray)">${escHtml(p.age||'')}</small></td>
+  if(error){ tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--red)">${escHtml(error.message)}</td></tr>`; return; }
+  _pets=data||[];
+  const types=[...new Set(_pets.map(p=>p.type).filter(Boolean))].sort();
+  const sel=document.getElementById('petType2'), keep=sel.value;
+  sel.innerHTML='<option value="">All types</option>'+types.map(t=>`<option${t===keep?' selected':''}>${escHtml(t)}</option>`).join('');
+  renderPets();
+  // Views and WhatsApp clicks come from the dashboard numbers; the list works without them
+  getOverview(30).then(o=>{ _petAct=(o.pets&&o.pets.activity)||{}; renderPets(); }).catch(()=>{});
+}
+function petIssues(p){
+  const out=[];
+  if(photosOf(p).length<2) out.push(photosOf(p).length?'Only one photo':'No photos');
+  if(p.listing_type!=='adoption'&&!Number(p.price)) out.push('No price');
+  if(!p.location) out.push('No location');
+  if(!p.whatsapp) out.push('No WhatsApp number');
+  if(!p.age) out.push('No age');
+  return out;
+}
+function filteredPets(){
+  const q=(document.getElementById('petSearch')?.value||'').trim().toLowerCase();
+  const type=document.getElementById('petType2')?.value||'', lt=document.getElementById('petListing2')?.value||'';
+  const sort=document.getElementById('petSort')?.value||'review';
+  let list=_pets.filter(p=>{
+    if(_petTab==='pending'&&p.active!==false) return false;
+    if(_petTab==='live'&&p.active===false) return false;
+    if(_petTab==='issues'&&!petIssues(p).length) return false;
+    if(type&&p.type!==type) return false;
+    if(lt&&(p.listing_type||'sale')!==lt) return false;
+    if(!q) return true;
+    return [p.breed,p.name,p.breeder,p.whatsapp,p.location,p.type,p.slug,p.age].join(' ').toLowerCase().includes(q);
+  });
+  const views=p=>(_petAct[p.slug]||{}).views||0;
+  list.sort((a,b)=>{
+    if(sort==='old') return String(a.created_at).localeCompare(String(b.created_at));
+    if(sort==='views') return views(b)-views(a);
+    if(sort==='price') return Number(b.price||0)-Number(a.price||0);
+    if(sort==='new') return String(b.created_at).localeCompare(String(a.created_at));
+    return ((a.active===false?0:1)-(b.active===false?0:1))||String(b.created_at).localeCompare(String(a.created_at));
+  });
+  return list;
+}
+function renderPets(){
+  const tbody=document.getElementById('petsTableBody');
+  const pending=_pets.filter(p=>p.active===false).length, live=_pets.length-pending, issues=_pets.filter(p=>petIssues(p).length).length;
+  document.getElementById('sbPetsCount').textContent=_pets.length;
+  document.getElementById('petsSummary').textContent=`${_pets.length} in all · ${live} live · ${pending} awaiting approval`;
+  document.getElementById('petsPendingNote').textContent=pending?`${pending} waiting for review. Check the photos and details, then tap ✅ to publish.`:'';
+  document.getElementById('petPills').innerHTML=[['','All',_pets.length],['pending','Needs review',pending],['live','Live',live],['issues','Missing details',issues]]
+    .map(([v,l,n])=>`<button class="dx-pill${_petTab===v?' on':''}" onclick="_petTab='${v}';renderPets()">${l} · ${n}</button>`).join('');
+  const list=filteredPets();
+  document.getElementById('petCount').textContent=list.length===_pets.length?'':`Showing ${list.length} of ${_pets.length}`;
+  if(!_pets.length){ tbody.innerHTML='<tr><td colspan="10" class="empty-table"><div class="empty-table-ico">🐾</div><div>No pets yet</div></td></tr>'; return; }
+  if(!list.length){ tbody.innerHTML='<tr><td colspan="10" class="empty-table"><div class="empty-table-ico">🔎</div><div>No pets match</div></td></tr>'; return; }
+  tbody.innerHTML=list.map(p=>{
+    const ph=photosOf(p), act=_petAct[p.slug], iss=petIssues(p);
+    return `<tr>
+    <td><div style="width:48px;height:48px;border-radius:8px;overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="openPetDetail('${sid(p.id)}')">${ph[0]?`<img src="${escA(safeUrl(ph[0]))}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>`:'🐾'}</div></td>
+    <td style="font-weight:800"><span class="dx-link" onclick="openPetDetail('${sid(p.id)}')">${escHtml(p.breed||p.name||'—')}</span>${p.slug?` <a href="/pets/${escA(p.slug)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--orange)">↗</a>`:''}<small style="display:block;font-weight:500;color:var(--gray)">${escHtml(p.age||'')}</small></td>
     <td>${escHtml(p.type)}</td>
     <td><span class="badge ${p.listing_type==='adoption'?'badge-new':'badge-hot'}">${p.listing_type==='adoption'?'Adoption':'For Sale'}</span>${p.active===false?'<span class="badge badge-popular" style="margin-top:4px">⏳ Pending</span>':''}</td>
-    <td style="font-weight:800">${p.listing_type==='sale'&&p.price?fmt(p.price):'—'}</td>
-    <td>${escHtml(p.location||'—')}${p.active===false&&p.whatsapp?`<small style="display:block"><a href="https://wa.me/${escHtml(String(p.whatsapp).replace(/\D/g,''))}" target="_blank" rel="noopener" style="color:var(--orange);font-weight:700">${escHtml(p.whatsapp)}</a>${p.breeder?' · '+escHtml(p.breeder):''}</small>`:''}</td>
+    <td style="font-weight:800">${p.listing_type==='sale'&&p.price?fmtMoney(p.price):'—'}</td>
+    <td>${escHtml(p.location||'—')}${p.whatsapp?`<small style="display:block"><a href="https://wa.me/${escA(String(p.whatsapp).replace(/\D/g,''))}" target="_blank" rel="noopener" style="color:var(--orange);font-weight:700">${escHtml(p.whatsapp)}</a>${p.breeder?' · '+escHtml(p.breeder):''}</small>`:''}</td>
+    <td style="font-weight:800${ph.length<2?';color:var(--red)':''}">${ph.length}</td>
+    <td style="white-space:nowrap">${act?`${fmtN(act.views)} views<small style="display:block;color:var(--gray)">${fmtN(act.clicks)} WhatsApp</small>`:'<span style="color:var(--gray)">—</span>'}</td>
+    <td style="white-space:nowrap">${escHtml(fmtDay(p.created_at))}<small style="display:block;color:var(--gray)">${escHtml(ago(p.created_at))}</small>${iss.length?`<small style="display:block;color:#8a5a00" title="${escA(iss.join(', '))}">⚠ ${iss.length} to fix</small>`:''}</td>
     <td><div class="action-btns">
-      ${p.active===false?`<button class="act-btn" title="Approve and publish" onclick="approvePet('${p.id}')">✅</button>`:''}
-      <button class="act-btn" onclick="editPet('${p.id}')">✏️</button>
-      <button class="act-btn del" onclick="deletePet('${p.id}','${(p.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">🗑️</button>
+      ${p.active===false?`<button class="act-btn" title="Approve and publish" onclick="approvePet('${sid(p.id)}')">✅</button>`:''}
+      <button class="act-btn" title="Details" onclick="openPetDetail('${sid(p.id)}')">👁️</button>
+      <button class="act-btn" onclick="editPet('${sid(p.id)}')">✏️</button>
+      <button class="act-btn del" onclick="deletePetById('${sid(p.id)}')">🗑️</button>
     </div></td>
-  </tr>`).join('');
+  </tr>`;}).join('');
 }
+function openPetDetail(id){
+  const p=_pets.find(x=>String(x.id)===String(id)); if(!p) return;
+  const ph=photosOf(p), act=_petAct[p.slug]||{}, iss=petIssues(p);
+  const wa=String(p.whatsapp||'').replace(/\D/g,'');
+  const url=p.slug?`https://puppyplace.ng/pets/${p.slug}`:'';
+  const fact=(k,v)=>`<div><div class="dx-fact-k">${k}</div><div class="dx-fact-v">${v||'—'}</div></div>`;
+  document.getElementById('petModal').innerHTML=`
+    <div class="dx-modal-h"><div><div class="dx-modal-t">${escHtml(p.breed||p.name||'Pet')}${p.name&&p.breed?` <small style="font-weight:600;color:var(--gray)">${escHtml(p.name)}</small>`:''}</div>
+      <div class="dx-sub">${p.active===false?'⏳ Waiting for approval, hidden from buyers':'✅ Live on the site'} · added ${escHtml(fmtWhen(p.created_at))} (${escHtml(ago(p.created_at))})</div></div><button class="dx-x" onclick="closePetDetail()">✕</button></div>
+    ${iss.length?`<div class="dx-warn">To fix before or after publishing: ${escHtml(iss.join(' · '))}</div>`:''}
+    <div class="dx-gal">${ph.length?ph.map((u,i)=>`<a href="${escA(safeUrl(u))}" target="_blank" rel="noopener" title="Photo ${i+1}${i===0?' (main photo)':''}"><img src="${escA(safeUrl(u))}" loading="lazy" alt="Photo ${i+1}"/></a>`).join(''):'<div class="dx-empty">No photos</div>'}</div>
+    <div class="dx-facts">
+      ${fact('Type',escHtml(p.type))}${fact('Listing',p.listing_type==='adoption'?'Adoption (free)':'For sale')}
+      ${fact('Price',p.listing_type==='sale'&&p.price?fmtMoney(p.price):'')}${fact('Age',escHtml(p.age))}
+      ${fact('Location',escHtml(p.location))}${fact('Pedigree',escHtml(p.pedigree))}
+      ${fact('Vaccinated',p.vaccinated?'Yes':'No')}${fact('Dewormed',p.dewormed?'Yes':'No')}
+      ${fact('Seller',escHtml(p.breeder))}${fact('WhatsApp',wa?`<a href="https://wa.me/${escA(wa)}" target="_blank" rel="noopener" class="dx-link">${escHtml(p.whatsapp)}</a>`:'')}
+      ${fact('Views, last 30 days',p.slug&&_petAct[p.slug]?fmtN(act.views):'')}${fact('WhatsApp clicks',p.slug&&_petAct[p.slug]?fmtN(act.clicks):'')}
+      <div style="grid-column:1/-1">${fact('Description',escHtml(p.specs))}</div>
+      ${url?`<div style="grid-column:1/-1">${fact('Page',`<a href="${escA(url)}" target="_blank" rel="noopener" class="dx-link">${escHtml(url)}</a>`)}</div>`:''}
+    </div>
+    <div class="dx-acts">
+      ${p.active===false?`<button class="add-btn" onclick="approvePet('${sid(p.id)}');closePetDetail()">✅ Approve &amp; publish</button>`:`<button class="dx-btn" onclick="unpublishPet('${sid(p.id)}')">Hide from site</button>`}
+      <button class="dx-btn" onclick="closePetDetail();editPet('${sid(p.id)}')">✏️ Edit</button>
+      ${url?`<button class="dx-btn" data-t="${escA(url)}" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.dataset.t).then(()=>showToast('Link copied','success'))">🔗 Copy link</button>`:''}
+      <button class="dx-btn del" onclick="closePetDetail();deletePetById('${sid(p.id)}')">🗑️ Delete</button>
+    </div>`;
+  document.getElementById('petModalBg').style.display='flex';
+}
+function closePetDetail(){ document.getElementById('petModalBg').style.display='none'; }
+async function unpublishPet(id){
+  const { error }=await sbAdmin.from('pets').update({ active:false }).eq('id',id);
+  if(error){ showToast('❌ '+error.message,'error'); return; }
+  showToast('Hidden from the site','success'); closePetDetail(); loadPets();
+}
+function exportPets(){
+  const rows=[['Breed','Name','Type','Listing','Price','Age','Location','Seller','WhatsApp','Photos','Live','Added','Views 30d','WhatsApp clicks 30d','Page']];
+  filteredPets().forEach(p=>{const a=_petAct[p.slug]||{};rows.push([p.breed,p.name,p.type,p.listing_type,p.price,p.age,p.location,p.breeder,p.whatsapp,photosOf(p).length,p.active===false?'no':'yes',p.created_at,a.views??'',a.clicks??'',p.slug?'https://puppyplace.ng/pets/'+p.slug:'']);});
+  downloadCsv('pets-'+new Date().toISOString().slice(0,10)+'.csv',rows);
+}
+
+function deletePetById(id){ const p=_pets.find(x=>String(x.id)===String(id)); if(p) deletePet(p.id,p.breed||p.name||'this pet'); }
+
 async function editPet(id) {
   const { data }=await sbAdmin.from('pets').select('*').eq('id',id).single();
   if(!data) return;
@@ -2509,6 +3014,7 @@ async function _extendedInit() {
   if (_origInit) await _origInit();
   loadBlogPosts();
   loadHeroSettings();
+  loadDashboard();
 }
 </script>
 </body>
