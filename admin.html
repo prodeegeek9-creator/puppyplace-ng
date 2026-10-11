@@ -614,6 +614,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
               <select class="filter-sel" id="dxDays" onchange="loadDashboard(true)">
                 <option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option>
               </select>
+              <button class="dx-btn" onclick="checkTracking()">🩺 Check tracking</button>
               <button class="add-btn" onclick="loadDashboard(true)">↻ Refresh</button>
             </div>
           </div>
@@ -844,6 +845,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <!-- ORDER AND PET DETAIL -->
         <div class="dx-modal-bg" id="orderModalBg" onclick="if(event.target===this)closeOrder()"><div class="dx-modal" id="orderModal"></div></div>
         <div class="dx-modal-bg" id="petModalBg" onclick="if(event.target===this)closePetDetail()"><div class="dx-modal" id="petModal"></div></div>
+        <div class="dx-modal-bg" id="trackModalBg" onclick="if(event.target===this)this.style.display='none'"><div class="dx-modal" id="trackModal"></div></div>
 
         <!-- PET FORM MODAL -->
         <div class="form-bg" id="petFormBg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;overflow-y:auto;padding:20px;align-items:flex-start;justify-content:center;">
@@ -1959,6 +1961,41 @@ function exportPets(){
   const rows=[['Breed','Name','Type','Listing','Price','Age','Location','Seller','WhatsApp','Photos','Live','Added','Views 30d','WhatsApp clicks 30d','Page']];
   filteredPets().forEach(p=>{const a=_petAct[p.slug]||{};rows.push([p.breed,p.name,p.type,p.listing_type,p.price,p.age,p.location,p.breeder,p.whatsapp,photosOf(p).length,p.active===false?'no':'yes',p.created_at,a.views??'',a.clicks??'',p.slug?'https://puppyplace.ng/pets/'+p.slug:'']);});
   downloadCsv('pets-'+new Date().toISOString().slice(0,10)+'.csv',rows);
+}
+
+
+/* ── TRACKING CHECK: which step of wishlist and cart tracking is failing ── */
+async function checkTracking(){
+  const box=document.getElementById('trackModal'), bg=document.getElementById('trackModalBg');
+  const head='<div class="dx-modal-h"><div><div class="dx-modal-t">Tracking check</div><div class="dx-sub">Wishlist, cart, checkout and WhatsApp counts</div></div><button class="dx-x" onclick="document.getElementById(\'trackModalBg\').style.display=\'none\'">✕</button></div>';
+  box.innerHTML=head+'<div class="dx-empty">Checking…</div>'; bg.style.display='flex';
+  const line=(ok,title,detail)=>`<div class="dx-row" style="align-items:flex-start"><span style="white-space:normal">${ok===true?'✅':ok===false?'❌':'⚠️'} <strong>${title}</strong>${detail?`<small style="display:block;margin:2px 0 0 22px;white-space:normal">${detail}</small>`:''}</span></div>`;
+  const rows=[]; let c=null;
+  try{ c=(await adminApi('/api/admin/tracking-check',{})).check; }
+  catch(err){ rows.push(line(false,'Could not run the check',escHtml(err.message))); }
+  if(c){
+    rows.push(c.save.ok?line(true,'Events can be saved to the database')
+      :line(false,'Events cannot be saved to the database',`The database said (HTTP ${c.save.status}): ${escHtml(c.save.error||'no reason given')}. Run supabase/admin_dashboard.sql again in Supabase → SQL Editor and check SUPABASE_SERVICE_KEY on the Worker.`));
+    rows.push(c.filter?line(false,'This browser or network is treated as a bot, so its clicks are not counted',escHtml(c.filter)+'. Real visitors on mobile data or home Wi-Fi are not affected; try without a VPN.')
+      :line(true,'This browser and network pass the bot filter',c.network?escHtml(c.network)+(c.country?' · '+escHtml(c.country):''):''));
+  }
+  let notrack=false; try{ notrack=!!localStorage.getItem('pp_notrack'); }catch{}
+  rows.push(notrack?line(null,'This browser is excluded from counting','Opening the admin marks a browser so your own visits and clicks are not counted. Test in a private or incognito window that has never opened the admin.')
+    :line(true,'This browser is counted',''));
+  for(const page of ['/index.html','/shop.html']){
+    try{
+      const t=await (await fetch(page+'?check='+Date.now(),{cache:'no-store'})).text();
+      rows.push(t.includes('ppEvent(')?line(true,`The live ${page} sends wishlist and cart events`)
+        :line(false,`The live ${page} does not have the tracking code yet`,'The latest site version may not be deployed. Check Cloudflare → Workers → puppyplace-ng → Deployments.'));
+    }catch{ rows.push(line(null,`Could not read ${page}`,'')); }
+  }
+  if(c){
+    rows.push('<div class="dx-card-s" style="margin:14px 0 6px">Last events recorded'+(c.eventTotal!=null?` (${fmtN(c.eventTotal)} in all)`:'')+'</div>');
+    rows.push(c.events&&c.events.length?c.events.map(e=>`<div class="dx-row"><span>${escHtml(e.event.replace('_',' '))} · ${escHtml(e.item_name||e.path||'')}</span><span>${escHtml(ago(e.created_at))}</span></div>`).join('')
+      :'<div class="dx-empty">None yet. After the checks above pass, add something to the cart in a private window and run this again.</div>');
+    rows.push(`<div class="dx-empty">Last page view recorded: ${c.lastView?escHtml(c.lastView.path)+', '+escHtml(ago(c.lastView.viewed_at)):'none'}</div>`);
+  }
+  box.innerHTML=head+rows.join('');
 }
 
 function deletePetById(id){ const p=_pets.find(x=>String(x.id)===String(id)); if(p) deletePet(p.id,p.breed||p.name||'this pet'); }
