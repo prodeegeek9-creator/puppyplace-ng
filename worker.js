@@ -81,6 +81,9 @@ export default {
     if (url.pathname === '/api/admin/orders' && request.method === 'POST') {
       return handleAdminOrders(request, env);
     }
+    if (url.pathname === '/api/admin/tracking-check' && request.method === 'POST') {
+      return handleTrackingCheck(request, env);
+    }
 
     if (url.pathname === '/api/blog-posts' && request.method === 'GET') {
       return handleBlogPosts(url, env);
@@ -201,15 +204,23 @@ const BOT_UA = /bot|crawl|spider|slurp|scrap|fetch|preview|facebookexternalhit|w
 const DATACENTER_ORG = /amazon|aws|google cloud|google llc|microsoft|azure|digitalocean|linode|ovh|hetzner|vultr|contabo|leaseweb|alibaba|tencent|huawei cloud|oracle|scaleway|choopa|m247|datacamp|hostinger|ionos|hostroyale|colocrossing|psychz|quadranet|servers\.com|tzulo|g-core|cdn77|zenlayer/i;
 
 function isLikelyBot(request) {
+  return botReason(request) !== null;
+}
+
+// Why a request is taken for a bot, or null. Also shown by the admin's tracking check.
+function botReason(request) {
   const ua = request.headers.get('User-Agent') || '';
-  if (!ua || BOT_UA.test(ua)) return true;
+  if (!ua) return 'no browser name (User-Agent)';
+  const m = ua.match(BOT_UA);
+  if (m) return `the browser name contains "${m[0]}"`;
   // Every real browser sends Accept-Language; most scripts don't
-  if (!request.headers.get('Accept-Language')) return true;
+  if (!request.headers.get('Accept-Language')) return 'no Accept-Language header';
   const cf = request.cf || {};
   const bm = cf.botManagement;
-  if (bm && (bm.verifiedBot || (typeof bm.score === 'number' && bm.score < 30))) return true;
-  if (cf.asOrganization && DATACENTER_ORG.test(cf.asOrganization)) return true;
-  return false;
+  if (bm && bm.verifiedBot) return 'Cloudflare says it is a known bot';
+  if (bm && typeof bm.score === 'number' && bm.score < 30) return `Cloudflare bot score ${bm.score}`;
+  if (cf.asOrganization && DATACENTER_ORG.test(cf.asOrganization)) return `the network is a data centre or VPN (${cf.asOrganization})`;
+  return null;
 }
 
 async function handleTrackView(request, url, env, ctx) {
@@ -318,7 +329,9 @@ async function handleTrackEvent(request, url, env, ctx) {
         method: 'POST',
         headers: { ...sbHeaders(env), Prefer: 'return=minimal' },
         body: JSON.stringify(row),
-      }).catch(() => {})
+      })
+        .then(async (res) => { if (!res.ok) console.error('shop event not saved:', res.status, (await res.text()).slice(0, 300)); })
+        .catch((err) => console.error('shop event not saved:', err?.message ?? err))
     );
   } catch { /* non-critical */ }
   return ok;
@@ -345,6 +358,37 @@ async function handleAdminOverview(request, env) {
     return jsonResp({ error: 'Could not work out the numbers just now.' }, 502);
   }
   return jsonResp({ ok: true, overview: await res.json() }, 200);
+}
+
+// POST /api/admin/tracking-check  { token }
+// Saves and removes a test event, and reports what was found: whether events can
+// be saved (and the database's own error if not), whether this browser and
+// network pass the bot filter, and the last events and page view recorded.
+async function handleTrackingCheck(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured (SUPABASE_SERVICE_KEY is not set)' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  const h = sbHeaders(env);
+  const base = `${env.SUPABASE_URL}/rest/v1`;
+  const out = { filter: botReason(request), network: request.cf?.asOrganization || null, country: request.cf?.country || null };
+
+  const ins = await fetch(`${base}/shop_events`, {
+    method: 'POST',
+    headers: { ...h, Prefer: 'return=minimal' },
+    body: JSON.stringify({ event: 'checkout_start', item_id: '__selftest__', item_name: 'Tracking self-test', path: '/' }),
+  }).catch((err) => ({ ok: false, status: 0, text: async () => String(err?.message ?? err) }));
+  out.save = { ok: ins.ok, status: ins.status, error: ins.ok ? null : (await ins.text().catch(() => '')).slice(0, 300) };
+  if (ins.ok) await fetch(`${base}/shop_events?item_id=eq.__selftest__`, { method: 'DELETE', headers: h }).catch(() => {});
+
+  const recent = await fetch(`${base}/shop_events?select=event,item_name,path,created_at&order=created_at.desc&limit=10`, { headers: { ...h, Prefer: 'count=exact' } }).catch(() => null);
+  out.events = recent && recent.ok ? await recent.json() : null;
+  out.eventTotal = recent && recent.ok ? Number((recent.headers.get('Content-Range') || '').split('/')[1]) || 0 : null;
+
+  const pv = await fetch(`${base}/page_views?select=path,viewed_at&order=viewed_at.desc&limit=1`, { headers: h }).catch(() => null);
+  out.lastView = pv && pv.ok ? (await pv.json())[0] || null : null;
+  return jsonResp({ ok: true, check: out }, 200);
 }
 
 const ORDER_STATUSES = ['processing', 'shipped', 'delivered', 'cancelled'];
