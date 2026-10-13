@@ -24,6 +24,17 @@ export default {
       return handleHeroUpload(request, env);
     }
 
+    // Seller accounts: log in with a WhatsApp code or the link the assistant sends,
+    // see your listings and ask for changes (reviewed in Admin → Edit requests)
+    if (url.pathname === '/api/auth/code' && request.method === 'POST') return handleAuthCode(request, url, env);
+    if (url.pathname === '/api/auth/verify' && request.method === 'POST') return handleAuthVerify(request, url, env);
+    if (url.pathname === '/api/auth/logout' && request.method === 'POST') return handleLogout();
+    if (url.pathname === '/login-link' && (request.method === 'GET' || request.method === 'POST')) return handleLoginLink(request, url, env);
+    if (url.pathname === '/api/me' && request.method === 'GET') return handleMe(request, env);
+    if (url.pathname === '/api/me/edit' && request.method === 'POST') return handleMeEdit(request, url, env, ctx);
+    if (url.pathname === '/api/me/photo' && request.method === 'POST') return handleMePhoto(request, url, env);
+    if (url.pathname === '/api/admin/edits' && request.method === 'POST') return handleAdminEdits(request, env, ctx);
+
     // Pet listings sent in by sellers through Vendwyze; saved hidden until approved in admin
     if (url.pathname === '/api/seller-listings' && request.method === 'POST') {
       return handleSellerListing(request, env, ctx);
@@ -629,6 +640,10 @@ async function handleSellerListing(request, env, ctx) {
     vaccinated:   b.vaccinated === true,
     active:       false,
   };
+  // The WhatsApp number the listing was sent from, which WhatsApp itself has
+  // confirmed: the seller's account. Kept apart from the pets table, which the
+  // site reads openly (whatsapp above is the number buyers are given).
+  const ownerPhone = phoneDigits(b.owner_phone);
 
   const ins = await fetch(`${base}/rest/v1/pets`, {
     method: 'POST',
@@ -672,7 +687,430 @@ async function handleSellerListing(request, env, ctx) {
     } catch { /* the guide is a bonus: the listing is saved either way */ }
   }
 
-  return jsonResp({ ok: true, status: 'pending', id: saved.id, slug, url: `https://puppyplace.ng/pets/${slug}`, breed_guide: breedGuide }, 201);
+  // The seller's account, and a link to log in to it, for the chat they listed from.
+  // Before supabase/seller_accounts.sql is run this quietly does nothing.
+  let manageUrl = null;
+  if (ownerPhone && saved.id != null && env.ADMIN_TOKEN_SECRET) {
+    try {
+      const own = await sbJson(env, 'pet_owners', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pet_id: String(saved.id), phone: ownerPhone }) });
+      if (!own.ok) throw new Error(`owner not saved (${own.status})`);
+      await upsertAccount(env, ownerPhone, { name: row.breeder, seller: true, login: false });
+      manageUrl = await makeLoginLink(env, ownerPhone);
+    } catch (err) { console.warn('seller account not made:', err?.message ?? err); }
+  }
+
+  return jsonResp({ ok: true, status: 'pending', id: saved.id, slug, url: `https://puppyplace.ng/pets/${slug}`, breed_guide: breedGuide, ...(manageUrl ? { manage_url: manageUrl } : {}) }, 201);
+}
+
+/* ── SELLER ACCOUNTS ───────────────────────────────────────────────────────
+ * An account is a WhatsApp number. Sellers get one when their first listing
+ * comes in through the WhatsApp assistant, with a one-tap link to log in; anyone
+ * can log in later with a 6-digit code sent to their WhatsApp. Logged-in sellers
+ * see their listings on /my-listings.html and ask for changes, which wait in
+ * Admin → Edit requests until approved. Messages go out from the store's number
+ * through Vendwyze (/api/pet-store/send, the shared key). Tables:
+ * supabase/seller_accounts.sql.
+ */
+
+const VENDWYZE_DEFAULT = 'https://thrift-unique.prodeegeek9.workers.dev';
+const SESSION_DAYS = 30;
+const CODE_MINUTES = 10;
+const LINK_DAYS = 7;
+const SITE = 'https://puppyplace.ng';
+
+// "0803 123 4567", "+234 803…" → "2348031234567"; '' when it is not a number.
+const phoneDigits = (v) => normalizeWhatsapp(v).replace(/^\+/, '');
+
+async function sha256Hex(s) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function randomToken(bytes = 24) {
+  const b = crypto.getRandomValues(new Uint8Array(bytes));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function vendwyzeUrl(env) {
+  return String(env.VENDWYZE_URL || VENDWYZE_DEFAULT).replace(/\/+$/, '');
+}
+
+// WhatsApp somebody (or the store owner: { to: 'owner' }) from the store's number.
+async function sendWhatsApp(env, { phone, to, text }) {
+  if (!env.SELLER_API_KEY) return false;
+  try {
+    const res = await fetch(`${vendwyzeUrl(env)}/api/pet-store/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${String(env.SELLER_API_KEY).trim()}` },
+      body: JSON.stringify(to === 'owner' ? { to: 'owner', text } : { phone, text }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) console.error('whatsapp send refused:', res.status, (await res.text().catch(() => '')).slice(0, 200));
+    return res.ok;
+  } catch (err) {
+    console.error('whatsapp send failed:', err?.message ?? err);
+    return false;
+  }
+}
+
+// A session is signed like the admin's token but over a different message, so
+// one can never be used as the other.
+async function makeSession(env, accountId) {
+  const expiry = String(Date.now() + SESSION_DAYS * 864e5);
+  const sig = await hmacSign(`user|${accountId}|${expiry}`, env.ADMIN_TOKEN_SECRET);
+  return `u1.${accountId}.${expiry}.${sig}`;
+}
+
+async function readSession(request, env) {
+  if (!env.ADMIN_TOKEN_SECRET) return null;
+  const m = /(?:^|;\s*)pp_s=([^;]+)/.exec(request.headers.get('Cookie') || '');
+  if (!m) return null;
+  const parts = decodeURIComponent(m[1]).split('.');
+  if (parts.length !== 4 || parts[0] !== 'u1') return null;
+  const [, id, expiry, sig] = parts;
+  if (!/^[0-9a-f-]{36}$/.test(id) || !(Number(expiry) > Date.now())) return null;
+  const expected = await hmacSign(`user|${id}|${expiry}`, env.ADMIN_TOKEN_SECRET);
+  return safeEqual(expected, sig) ? id : null;
+}
+
+const sessionCookie = (token) => `pp_s=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`;
+const CLEAR_COOKIE = 'pp_s=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
+
+// Anything that changes state with the cookie must come from our own pages.
+function sameOrigin(request, url) {
+  const o = request.headers.get('Origin');
+  if (!o) return true;
+  try { return new URL(o).host === url.host; } catch { return false; }
+}
+
+function userJson(data, status = 200, cookie = null) {
+  const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+  if (cookie) headers['Set-Cookie'] = cookie;
+  return new Response(JSON.stringify(data), { status, headers });
+}
+
+function accountsReady(env) {
+  return env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY && env.ADMIN_TOKEN_SECRET;
+}
+
+async function sbJson(env, path, init = {}) {
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { ...sbHeaders(env), ...(init.headers || {}) } });
+  const text = await res.text();
+  let body = null;
+  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+  return { ok: res.ok, status: res.status, body };
+}
+
+async function upsertAccount(env, phone, { name, seller, login = true } = {}) {
+  const row = { phone, ...(login ? { last_login_at: new Date().toISOString() } : {}), ...(name ? { name } : {}), ...(seller ? { is_seller: true } : {}) };
+  const r = await sbJson(env, 'pp_accounts?on_conflict=phone', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(row),
+  });
+  if (!r.ok) throw new Error(`account not saved (${r.status})`);
+  return r.body[0];
+}
+
+async function accountById(env, id) {
+  const r = await sbJson(env, `pp_accounts?id=eq.${id}&select=id,phone,name,is_seller,created_at&limit=1`);
+  return r.ok ? r.body[0] || null : null;
+}
+
+// A one-tap login link for a seller, sent in the WhatsApp chat they listed from.
+async function makeLoginLink(env, phone) {
+  const token = randomToken();
+  const r = await sbJson(env, 'pp_login_links', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ token_hash: await sha256Hex(token), phone, expires_at: new Date(Date.now() + LINK_DAYS * 864e5).toISOString() }),
+  });
+  if (!r.ok) throw new Error(`link not saved (${r.status})`);
+  return `${SITE}/login-link?t=${token}`;
+}
+
+// A seller's listings: the ones listed from their WhatsApp chat (pet_owners),
+// and the ones that give their number to buyers (older listings have only that).
+async function listingsFor(env, phone, select) {
+  const own = await sbJson(env, `pet_owners?phone=eq.${phone}&select=pet_id&limit=200`);
+  const ids = own.ok ? own.body.map((r) => r.pet_id) : [];
+  const byNumber = `whatsapp.eq.${encodeURIComponent(`+${phone}`)}`;
+  const filter = ids.length ? `or=(${byNumber},id.in.(${ids.map(encodeURIComponent).join(',')}))` : byNumber.replace('.eq.', '=eq.');
+  const r = await sbJson(env, `pets?${filter}&select=${select}&order=created_at.desc&limit=200`);
+  return r.ok && Array.isArray(r.body) ? r.body : [];
+}
+
+const LISTING_FIELDS = 'id,slug,breed,name,type,listing_type,price,age,location,specs,vaccinated,dewormed,pedigree,image_urls,image_url,active,created_at';
+
+// POST /api/auth/code { phone }  → a 6-digit code on WhatsApp
+async function handleAuthCode(request, url, env) {
+  if (!accountsReady(env) || !env.SELLER_API_KEY) return userJson({ error: 'Log in is not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  let b;
+  try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
+  const phone = phoneDigits(b?.phone);
+  if (!phone) return userJson({ error: 'Enter your WhatsApp number, like 0803 123 4567.' }, 400);
+
+  const since = new Date(Date.now() - 15 * 60e3).toISOString();
+  const ipHash = await hashVisitor(request.headers.get('CF-Connecting-IP') || '', new Date().toISOString().slice(0, 10));
+  const recent = await sbJson(env, `pp_login_codes?phone=eq.${phone}&created_at=gte.${since}&select=id`);
+  if (!recent.ok) return userJson({ error: 'Log in is not set up yet' }, 503);
+  if (recent.body.length >= 3) return userJson({ error: 'Too many codes for this number. Try again in 15 minutes.' }, 429);
+  if (ipHash) {
+    const fromIp = await sbJson(env, `pp_login_codes?ip_hash=eq.${ipHash}&created_at=gte.${new Date(Date.now() - 3600e3).toISOString()}&select=id`);
+    if (fromIp.ok && fromIp.body.length >= 10) return userJson({ error: 'Too many codes. Try again later.' }, 429);
+  }
+
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, '0');
+  const saved = await sbJson(env, 'pp_login_codes', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      phone,
+      code_hash: await sha256Hex(`${phone}:${code}:${env.ADMIN_TOKEN_SECRET}`),
+      expires_at: new Date(Date.now() + CODE_MINUTES * 60e3).toISOString(),
+      ip_hash: ipHash,
+    }),
+  });
+  if (!saved.ok) return userJson({ error: 'Could not start the log in. Try again.' }, 500);
+
+  const sent = await sendWhatsApp(env, {
+    phone,
+    text: `🔐 Your PuppyPlace code is *${code}*\n\nIt works for ${CODE_MINUTES} minutes. Don't share it with anyone: PuppyPlace will never ask you for it.`,
+  });
+  if (!sent) return userJson({ error: "We couldn't send a WhatsApp message to that number. Check it and try again." }, 502);
+  return userJson({ ok: true });
+}
+
+// POST /api/auth/verify { phone, code }  → logged in (cookie)
+async function handleAuthVerify(request, url, env) {
+  if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  let b;
+  try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
+  const phone = phoneDigits(b?.phone);
+  const code = String(b?.code ?? '').replace(/\D/g, '');
+  if (!phone || code.length !== 6) return userJson({ error: 'Enter the 6-digit code from WhatsApp.' }, 400);
+
+  const now = new Date().toISOString();
+  const r = await sbJson(env, `pp_login_codes?phone=eq.${phone}&used_at=is.null&expires_at=gt.${now}&select=id,code_hash,attempts&order=created_at.desc&limit=1`);
+  const row = r.ok ? r.body[0] : null;
+  if (!row) return userJson({ error: 'That code has expired. Ask for a new one.' }, 400);
+  if (row.attempts >= 5) return userJson({ error: 'Too many tries. Ask for a new code.' }, 429);
+
+  const hash = await sha256Hex(`${phone}:${code}:${env.ADMIN_TOKEN_SECRET}`);
+  if (!safeEqual(hash, row.code_hash)) {
+    await sbJson(env, `pp_login_codes?id=eq.${row.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ attempts: row.attempts + 1 }) });
+    return userJson({ error: "That code isn't right. Check the WhatsApp message and try again." }, 400);
+  }
+  await sbJson(env, `pp_login_codes?id=eq.${row.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ used_at: now }) });
+
+  let account;
+  try { account = await upsertAccount(env, phone); } catch { return userJson({ error: 'Could not log you in. Try again.' }, 500); }
+  return userJson({ ok: true, account: { name: account.name, phone: account.phone } }, 200, sessionCookie(await makeSession(env, account.id)));
+}
+
+// GET /login-link?t=…  A page with a button: WhatsApp and others open links to
+// make previews, and a GET that logged in would spend the link on the preview.
+function loginLinkPage(token, message) {
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const body = message
+    ? `<p>${esc(message)}</p><p><a class="btn" href="/my-listings.html">Log in with your WhatsApp number</a></p>`
+    : `<p>Tap the button to open your listings on PuppyPlace.</p>
+       <form method="post" action="/login-link"><input type="hidden" name="t" value="${esc(token)}"/><button class="btn" type="submit">Open my listings</button></form>`;
+  return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/><title>My listings | PuppyPlace</title>
+<style>body{font-family:Nunito,system-ui,sans-serif;background:#f8f9fa;color:#1a1a18;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:16px}
+.card{background:#fff;border-radius:16px;padding:28px;max-width:380px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.08);text-align:center}
+h1{font-size:20px;margin:0 0 10px}p{color:#555;line-height:1.6}.btn{display:inline-block;background:#ed6436;color:#fff;border:0;border-radius:50px;padding:14px 26px;font:800 15px inherit;cursor:pointer;text-decoration:none}</style>
+</head><body><div class="card"><h1>🐾 PuppyPlace</h1>${body}</div></body></html>`, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } });
+}
+
+async function handleLoginLink(request, url, env) {
+  if (request.method === 'GET') return loginLinkPage(url.searchParams.get('t') || '', url.searchParams.get('t') ? null : 'This link is not complete.');
+  if (!accountsReady(env)) return loginLinkPage('', 'Log in is not set up yet.');
+  if (!sameOrigin(request, url)) return loginLinkPage('', 'Please open the link from WhatsApp again.');
+  const form = await request.formData().catch(() => null);
+  const token = String(form?.get('t') || '');
+  if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return loginLinkPage('', 'This link is not valid.');
+  const now = new Date().toISOString();
+  const hash = await sha256Hex(token);
+  const r = await sbJson(env, `pp_login_links?token_hash=eq.${hash}&used_at=is.null&expires_at=gt.${now}&select=phone&limit=1`);
+  const link = r.ok ? r.body[0] : null;
+  if (!link) return loginLinkPage('', 'This link has expired or was already used.');
+  await sbJson(env, `pp_login_links?token_hash=eq.${hash}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ used_at: now }) });
+  let account;
+  try { account = await upsertAccount(env, link.phone); } catch { return loginLinkPage('', 'Could not log you in. Try again.'); }
+  return new Response(null, { status: 303, headers: { Location: '/my-listings.html', 'Set-Cookie': sessionCookie(await makeSession(env, account.id)), 'Cache-Control': 'no-store' } });
+}
+
+async function handleLogout() {
+  return userJson({ ok: true }, 200, CLEAR_COOKIE);
+}
+
+// GET /api/me → the account, its listings and its change requests
+async function handleMe(request, env) {
+  if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
+  const id = await readSession(request, env);
+  const account = id ? await accountById(env, id) : null;
+  if (!account) return userJson({ error: 'Not logged in' }, 401, id ? CLEAR_COOKIE : null);
+  const listings = await listingsFor(env, account.phone, LISTING_FIELDS);
+  const e = await sbJson(env, `pet_edits?account_id=eq.${account.id}&select=id,pet_id,kind,changes,status,note,created_at,decided_at&order=created_at.desc&limit=100`);
+  return userJson({ ok: true, account: { name: account.name, phone: account.phone }, listings, edits: e.ok ? e.body : [] });
+}
+
+// What a seller may change, cleaned the way a new listing is.
+function cleanChanges(c, env) {
+  const out = {};
+  const errors = [];
+  if (!c || typeof c !== 'object') return { out, errors: ['Nothing to change'] };
+  if ('breed' in c) { const v = cleanText(c.breed, 80); v ? (out.breed = v) : errors.push('The breed cannot be empty.'); }
+  if ('name' in c) out.name = cleanText(c.name, 60);
+  if ('age' in c) out.age = cleanText(c.age, 40);
+  if ('location' in c) out.location = cleanText(c.location, 80);
+  if ('specs' in c) out.specs = cleanText(c.specs, 1500);
+  if ('listing_type' in c) { ['sale', 'adoption'].includes(c.listing_type) ? (out.listing_type = c.listing_type) : errors.push('Choose for sale or adoption.'); }
+  if ('price' in c) {
+    if (c.price === null || c.price === '') out.price = null;
+    else { const n = Number(String(c.price).replace(/[₦,\s]/g, '')); Number.isFinite(n) && n >= 0 && n <= 100_000_000 ? (out.price = Math.round(n)) : errors.push('The price must be a number in naira.'); }
+  }
+  for (const k of ['vaccinated', 'dewormed']) if (k in c) out[k] = c[k] === true;
+  if ('pedigree' in c) out.pedigree = ['pedigree', 'non-pedigree'].includes(c.pedigree) ? c.pedigree : null;
+  if ('image_urls' in c) {
+    const ours = `${env.SUPABASE_URL}/storage/v1/object/public/hero-images/`;
+    const list = Array.isArray(c.image_urls) ? c.image_urls.filter((u) => typeof u === 'string') : [];
+    if (!list.length) errors.push('Keep at least one photo.');
+    else if (list.length > MAX_PHOTOS) errors.push(`At most ${MAX_PHOTOS} photos.`);
+    else if (list.some((u) => !u.startsWith(ours))) errors.push('Photos must be uploaded here.');
+    else out.image_urls = [...new Set(list)];
+  }
+  if (out.listing_type === 'adoption') out.price = null;
+  return { out, errors };
+}
+
+const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+// POST /api/me/edit { pet_id, kind: 'edit' | 'remove', changes, note }
+async function handleMeEdit(request, url, env, ctx) {
+  if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  const id = await readSession(request, env);
+  const account = id ? await accountById(env, id) : null;
+  if (!account) return userJson({ error: 'Not logged in' }, 401);
+  let b;
+  try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
+  const pet = (await listingsFor(env, account.phone, LISTING_FIELDS)).find((p) => String(p.id) === String(b?.pet_id));
+  if (!pet) return userJson({ error: 'That listing is not yours.' }, 404);
+  const kind = b?.kind === 'remove' ? 'remove' : 'edit';
+  const note = cleanText(b?.note, 300);
+
+  let changes = {};
+  if (kind === 'edit') {
+    const { out, errors } = cleanChanges(b?.changes, env);
+    if (errors.length) return userJson({ error: errors[0], details: errors }, 400);
+    const current = { ...pet, image_urls: Array.isArray(pet.image_urls) && pet.image_urls.length ? pet.image_urls : pet.image_url ? [pet.image_url] : [] };
+    for (const [k, v] of Object.entries(out)) if (!same(v, current[k])) changes[k] = v;
+    if (!Object.keys(changes).length) return userJson({ error: 'Nothing has changed.' }, 400);
+  }
+
+  // One request per listing waits at a time: a newer one replaces it.
+  const open = await sbJson(env, `pet_edits?pet_id=eq.${encodeURIComponent(pet.id)}&status=eq.pending&select=id&limit=1`);
+  if (!open.ok) return userJson({ error: 'Editing is not set up yet' }, 503);
+  const row = { pet_id: String(pet.id), account_id: account.id, kind, changes, note, created_at: new Date().toISOString() };
+  const saved = open.body[0]
+    ? await sbJson(env, `pet_edits?id=eq.${open.body[0].id}`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(row) })
+    : await sbJson(env, 'pet_edits', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(row) });
+  if (!saved.ok) return userJson({ error: 'Could not save your request. Try again.' }, 500);
+
+  const fields = Object.keys(changes).map((k) => (k === 'image_urls' ? 'photos' : k === 'specs' ? 'description' : k === 'listing_type' ? 'sale or adoption' : k));
+  const list = fields.length > 1 ? `${fields.slice(0, -1).join(', ')} and ${fields.at(-1)}` : fields[0];
+  const what = kind === 'remove' ? 'take down their' : `change the ${list} of their`;
+  ctx.waitUntil(sendWhatsApp(env, { to: 'owner', text: `✏️ ${account.name || '+' + account.phone} asked to ${what} *${pet.breed}* listing. Review it in your site admin → Edit requests.` }));
+  return userJson({ ok: true, edit: saved.body[0] });
+}
+
+// POST /api/me/photo (multipart: file) → { url }, for a photo in a change request
+async function handleMePhoto(request, url, env) {
+  if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  const id = await readSession(request, env);
+  if (!id) return userJson({ error: 'Not logged in' }, 401);
+  const form = await request.formData().catch(() => null);
+  const file = form?.get('file');
+  if (!file || typeof file === 'string') return userJson({ error: 'No photo sent' }, 400);
+  const ext = PHOTO_TYPES[file.type];
+  if (!ext) return userJson({ error: 'Send a JPEG, PNG or WebP photo.' }, 400);
+  if (file.size > MAX_PHOTO_BYTES) return userJson({ error: 'That photo is larger than 8 MB.' }, 400);
+  const path = `seller-pets/edits/${id}/${crypto.randomUUID()}.${ext}`;
+  const key = env.SUPABASE_SERVICE_KEY;
+  const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/hero-images/${path}`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': file.type },
+    body: await file.arrayBuffer(),
+  });
+  if (!up.ok) return userJson({ error: 'Could not upload that photo. Try again.' }, 500);
+  return userJson({ ok: true, url: `${env.SUPABASE_URL}/storage/v1/object/public/hero-images/${path}` });
+}
+
+// POST /api/admin/edits { token, action: 'list' | 'approve' | 'reject', id, note }
+async function handleAdminEdits(request, env, ctx) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  if (b.action === 'list') {
+    const e = await sbJson(env, 'pet_edits?status=eq.pending&select=id,pet_id,account_id,kind,changes,note,created_at&order=created_at.asc&limit=200');
+    if (!e.ok) return jsonResp({ error: 'Edit requests are not set up yet. Run supabase/seller_accounts.sql once in Supabase → SQL Editor.', setup: true }, 503);
+    const petIds = [...new Set(e.body.map((x) => x.pet_id))];
+    const accIds = [...new Set(e.body.map((x) => x.account_id).filter(Boolean))];
+    const pets = petIds.length ? await sbJson(env, `pets?id=in.(${petIds.map(encodeURIComponent).join(',')})&select=${LISTING_FIELDS},whatsapp,breeder`) : { body: [] };
+    const accs = accIds.length ? await sbJson(env, `pp_accounts?id=in.(${accIds.join(',')})&select=id,name,phone`) : { body: [] };
+    const petMap = new Map((pets.body || []).map((p) => [String(p.id), p]));
+    const accMap = new Map((accs.body || []).map((a) => [a.id, a]));
+    return jsonResp({ ok: true, edits: e.body.map((x) => ({ ...x, pet: petMap.get(String(x.pet_id)) || null, account: accMap.get(x.account_id) || null })) }, 200);
+  }
+
+  if (!/^[0-9a-f-]{36}$/.test(String(b.id || ''))) return jsonResp({ error: 'A valid request is required' }, 400);
+  const e = await sbJson(env, `pet_edits?id=eq.${b.id}&status=eq.pending&select=id,pet_id,account_id,kind,changes&limit=1`);
+  const edit = e.ok ? e.body[0] : null;
+  if (!edit) return jsonResp({ error: 'That request is no longer waiting' }, 404);
+  const petR = await sbJson(env, `pets?id=eq.${encodeURIComponent(edit.pet_id)}&select=id,slug,breed&limit=1`);
+  const pet = petR.ok ? petR.body[0] : null;
+  const acc = edit.account_id ? await accountById(env, edit.account_id) : null;
+  const note = cleanText(b.note, 300);
+  const decided = { decided_at: new Date().toISOString() };
+
+  if (b.action === 'reject') {
+    // The reason replaces the seller's note: it is what they see on My listings.
+    await sbJson(env, `pet_edits?id=eq.${edit.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'rejected', ...decided, ...(note ? { note } : {}) }) });
+    if (acc && pet) ctx.waitUntil(sendWhatsApp(env, { phone: acc.phone, text: `Your request for your *${pet.breed}* listing wasn't approved${note ? `: ${note}` : '.'}\n\nYou can try again from ${SITE}/my-listings.html` }));
+    return jsonResp({ ok: true }, 200);
+  }
+  if (b.action !== 'approve') return jsonResp({ error: 'Unknown action' }, 400);
+  if (!pet) {
+    await sbJson(env, `pet_edits?id=eq.${edit.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'withdrawn', ...decided }) });
+    return jsonResp({ error: 'That listing no longer exists' }, 404);
+  }
+
+  if (edit.kind === 'remove') {
+    const d = await sbJson(env, `pets?id=eq.${encodeURIComponent(pet.id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    if (!d.ok) return jsonResp({ error: 'Could not take the listing down' }, 500);
+  } else {
+    const patch = { ...edit.changes };
+    if (Array.isArray(patch.image_urls)) patch.image_url = patch.image_urls[0];
+    if (patch.listing_type === 'adoption') patch.price = null;
+    const u = await sbJson(env, `pets?id=eq.${encodeURIComponent(pet.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+    if (!u.ok) return jsonResp({ error: 'Could not apply the changes' }, 500);
+  }
+  await sbJson(env, `pet_edits?id=eq.${edit.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'approved', ...decided }) });
+  if (acc) {
+    const text = edit.kind === 'remove'
+      ? `Your *${pet.breed}* listing has been taken down from PuppyPlace, as you asked.`
+      : `✅ Your changes to your *${pet.breed}* listing are approved:\n${SITE}/pets/${pet.slug}`;
+    ctx.waitUntil(sendWhatsApp(env, { phone: acc.phone, text }));
+  }
+  return jsonResp({ ok: true }, 200);
 }
 
 /* ── BREED GUIDES ── */

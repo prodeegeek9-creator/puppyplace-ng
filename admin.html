@@ -569,6 +569,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link" onclick="showPanel('stats',this)"><span class="sb-link-ico">📈</span> Stats</div>
         <div class="sb-link" onclick="showPanel('orders',this)"><span class="sb-link-ico">🧾</span> Orders <span class="sb-badge" id="sbOrdersCount">0</span></div>
         <div class="sb-link" onclick="showPanel('pets',this)"><span class="sb-link-ico">🐾</span> Pets <span class="sb-badge" id="sbPetsCount">0</span></div>
+        <div class="sb-link" onclick="showPanel('edits',this)"><span class="sb-link-ico">✏️</span> Edit requests <span class="sb-badge" id="sbEditsCount">0</span></div>
         <div class="sb-link" onclick="showPanel('guides',this)"><span class="sb-link-ico">📘</span> Breed guides <span class="sb-badge" id="sbGuidesCount">0</span></div>
         <div class="sb-section">Store</div>
         <div class="sb-link" onclick="showPanel('hero',this)"><span class="sb-link-ico">🖼️</span> Hero Images</div>
@@ -840,6 +841,14 @@ input,select,textarea{font-family:'Nunito',sans-serif}
               <tbody id="petsTableBody"><tr><td colspan="10" class="empty-table"><div class="empty-table-ico">🐾</div><div>No pets yet</div></td></tr></tbody>
             </table>
           </div>
+        </div>
+
+        <div class="panel" id="panelEdits">
+          <div class="dx-toolbar">
+            <div><div class="dx-h">Edit requests</div><div class="dx-sub">Sellers ask for changes from My listings. Nothing changes on the site until you approve it, and the seller is told on WhatsApp either way.</div></div>
+            <div class="dx-tools"><button class="add-btn" onclick="loadEdits()">↻ Refresh</button></div>
+          </div>
+          <div id="editsList"><div class="dx-empty">Loading…</div></div>
         </div>
 
         <!-- ORDER AND PET DETAIL -->
@@ -1407,7 +1416,7 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',orders:'Orders',pets:'Pets',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',orders:'Orders',pets:'Pets',edits:'Edit Requests',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
   const title = titles[name]||name;
   document.getElementById('pageTitle').textContent = title;
   const mobTitle = document.getElementById('mobPageTitle');
@@ -1418,6 +1427,7 @@ function showPanel(name, el){
   if(name==='products') renderTable();
   if(name==='dashboard'){ updateStats(); renderDashRecent(); loadDashboard(); }
   if(name==='orders') loadOrders();
+  if(name==='edits') loadEdits();
   if(name==='blog') loadBlogPosts();
   if(name==='stats') loadStats();
   if(name==='pets') loadPets();
@@ -1996,6 +2006,53 @@ async function checkTracking(){
     rows.push(`<div class="dx-empty">Last page view recorded: ${c.lastView?escHtml(c.lastView.path)+', '+escHtml(ago(c.lastView.viewed_at)):'none'}</div>`);
   }
   box.innerHTML=head+rows.join('');
+}
+
+
+/* ── EDIT REQUESTS (sellers' changes, applied when approved) ── */
+let _edits=[];
+const EDIT_LABELS={breed:'Breed',name:'Name',age:'Age',location:'Location',listing_type:'Listing',price:'Price',pedigree:'Pedigree',vaccinated:'Vaccinated',dewormed:'Dewormed',specs:'Description',image_urls:'Photos'};
+function editValue(k,v){
+  if(v===null||v===undefined||v==='') return '<span style="color:var(--gray)">—</span>';
+  if(k==='price') return fmtMoney(v);
+  if(k==='listing_type') return v==='adoption'?'Adoption':'For sale';
+  if(k==='vaccinated'||k==='dewormed') return v?'Yes':'No';
+  if(k==='image_urls') return `<div style="display:flex;gap:6px;flex-wrap:wrap">${(v||[]).map((u,i)=>`<a href="${escA(safeUrl(u))}" target="_blank" rel="noopener" style="display:block;width:64px;height:64px;border-radius:8px;overflow:hidden;background:var(--light);position:relative"><img src="${escA(safeUrl(u))}" style="width:100%;height:100%;object-fit:cover"/>${i===0?'<span style="position:absolute;left:2px;top:2px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:1px 4px;border-radius:4px">Main</span>':''}</a>`).join('')}</div>`;
+  return escHtml(v);
+}
+async function loadEdits(){
+  const box=document.getElementById('editsList');
+  box.innerHTML='<div class="dx-empty">Loading…</div>';
+  try{ _edits=(await adminApi('/api/admin/edits',{action:'list'})).edits||[]; }
+  catch(err){ box.innerHTML=`<div class="dx-notice">${escHtml(err.message)}</div>`; return; }
+  document.getElementById('sbEditsCount').textContent=_edits.length;
+  if(!_edits.length){ box.innerHTML='<div class="dx-card"><div class="dx-ok">✅ No changes waiting.</div></div>'; return; }
+  box.innerHTML=_edits.map(e=>{
+    const p=e.pet||{}, who=e.account?(e.account.name||'+'+e.account.phone):'A seller';
+    const cur={...p,image_urls:photosOf(p)};
+    const rows=e.kind==='remove'
+      ?`<div class="dx-warn">Take this listing down${e.note?` (reason: ${escHtml(e.note)})`:''}. Approving deletes it from the site.</div>`
+      :`<table class="dx-items"><thead><tr><th>What</th><th>Now</th><th>Asked for</th></tr></thead><tbody>${Object.entries(e.changes||{}).map(([k,v])=>`<tr><td style="font-weight:800">${escHtml(EDIT_LABELS[k]||k)}</td><td>${editValue(k,cur[k])}</td><td style="background:rgba(46,204,113,.06)">${editValue(k,v)}</td></tr>`).join('')}</tbody></table>${e.note?`<div class="dx-sub" style="margin-bottom:8px">Seller's note: ${escHtml(e.note)}</div>`:''}`;
+    return `<div class="dx-card" style="margin-bottom:14px">
+      <div class="dx-card-h"><div><div class="dx-card-t">${escHtml(p.breed||'Listing')} ${p.slug?`<a href="/pets/${escA(p.slug)}" target="_blank" rel="noopener" style="font-size:12px;color:var(--orange)">↗</a>`:''}</div>
+        <div class="dx-card-s">${escHtml(who)} · ${escHtml(ago(e.created_at))} · ${p.active===false?'listing not live yet':'listing is live'}</div></div>
+        <span class="badge ${e.kind==='remove'?'badge-sale':'badge-popular'}">${e.kind==='remove'?'Take down':'Changes'}</span></div>
+      ${e.pet?rows:'<div class="dx-warn">That listing no longer exists.</div>'}
+      <input class="filter-sel" style="width:100%;border-radius:10px;margin:6px 0 10px" id="enote-${sid(e.id)}" placeholder="Note for the seller (optional; sent if you turn it down)"/>
+      <div class="dx-acts">
+        <button class="add-btn" onclick="decideEdit('${sid(e.id)}','approve')">✅ ${e.kind==='remove'?'Approve and take down':'Approve and apply'}</button>
+        <button class="dx-btn del" onclick="decideEdit('${sid(e.id)}','reject')">Turn down</button>
+      </div></div>`;
+  }).join('');
+}
+async function decideEdit(id,action){
+  const e=_edits.find(x=>x.id===id);
+  if(action==='approve'&&e?.kind==='remove'&&!confirm('Delete this listing from the site?')) return;
+  const note=(document.getElementById('enote-'+id)?.value||'').trim();
+  try{ await adminApi('/api/admin/edits',{action,id,note}); }
+  catch(err){ showToast('❌ '+err.message,'error'); return; }
+  showToast(action==='approve'?'✅ Applied. The seller is told on WhatsApp':'Turned down. The seller is told on WhatsApp','success');
+  loadEdits();
 }
 
 function deletePetById(id){ const p=_pets.find(x=>String(x.id)===String(id)); if(p) deletePet(p.id,p.breed||p.name||'this pet'); }
@@ -3052,6 +3109,7 @@ async function _extendedInit() {
   loadBlogPosts();
   loadHeroSettings();
   loadDashboard();
+  adminApi('/api/admin/edits',{action:'list'}).then(d=>{document.getElementById('sbEditsCount').textContent=(d.edits||[]).length;}).catch(()=>{});
 }
 </script>
 </body>
