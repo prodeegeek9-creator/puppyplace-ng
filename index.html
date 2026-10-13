@@ -1340,7 +1340,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         <div id="pmPrice" style="font-size:22px;font-weight:900;color:var(--orange);"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <a id="pmProfile" href="/pets.html" class="btn-dark" style="padding:12px 20px;text-decoration:none;border-radius:50px;background:#1a1a18;color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;">See Full Profile →</a>
-          <a id="pmWa" href="https://wa.me/2348156740438" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding:12px 20px;text-decoration:none;">💬 WhatsApp</a>
+          <a id="pmWa" href="/pets.html" class="btn-primary" style="padding:12px 20px;text-decoration:none;">💬 WhatsApp</a>
         </div>
       </div>
     </div>
@@ -1775,7 +1775,8 @@ function openPetModal(id) {
   document.getElementById('pmLoc').textContent=p.location?'📍 '+p.location:'';
   document.getElementById('pmPrice').innerHTML=isAdopt?'<span style="color:#2ecc71">Free / Adoption</span>':`₦${(p.price||0).toLocaleString('en-NG')}`;
   const wa=(p.whatsapp||'').replace(/\D/g,'');
-  const waEl=document.getElementById('pmWa'); waEl.href=wa?`https://wa.me/${wa}`:'/pets.html'; waEl.style.display=wa?'':'none';
+  // The seller's chat opens from the pet's page, after a quick WhatsApp sign in.
+  const waEl=document.getElementById('pmWa'); waEl.href=wa&&p.slug?`/pets/${encodeURIComponent(p.slug)}?contact=whatsapp`:'/pets.html'; waEl.style.display=wa&&p.slug?'':'none';
   const profileEl=document.getElementById('pmProfile'); profileEl.href=p.slug?'/pets/'+p.slug:'/pets.html'; profileEl.style.display=p.slug?'':'none';
   document.getElementById('petModal').style.display='flex';
   document.body.style.overflow='hidden';
@@ -1832,7 +1833,7 @@ async function renderPets() {
           <div class="pt-loc">📍 ${escHtml(p.location || '')}</div>
           <div class="pt-footer">
             ${priceHtml}
-            ${wa ? `<a href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer" class="btn-primary pt-cta" onclick="event.stopPropagation()">Contact</a>` : ''}
+            ${wa && p.slug ? `<a href="/pets/${encodeURIComponent(p.slug)}?contact=whatsapp" class="btn-primary pt-cta" onclick="event.stopPropagation()">Contact</a>` : ''}
           </div>
         </div>
       </div>`;

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="robots" content="noindex, nofollow"/>
+<title>Messages | PuppyPlace</title>
+<link rel="canonical" href="https://puppyplace.ng/messages.html"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{--orange:#ed6436;--orange-d:#c9530a;--black:#0e0e0c;--gray:#6b6b6b;--light:#f1f3f5;--border:#e9ecef;--green:#1e9e57;--red:#d63c2f;--amber:#8a5a00}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:#f8f9fa;color:#1a1a18;min-height:100vh}
+a{color:inherit}
+.top{background:#1a1a18;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-weight:900;font-size:18px;text-decoration:none}.logo span{color:var(--orange)}
+.top-r{display:flex;gap:10px;align-items:center;font-size:13px;flex-wrap:wrap;justify-content:flex-end}
+.top-r a{text-decoration:none;font-weight:800}
+.wrap{max-width:760px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:24px;font-weight:900;margin-bottom:6px}
+.sub{color:var(--gray);font-size:14px;line-height:1.6;margin-bottom:20px}
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 4px 20px rgba(0,0,0,.05)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--orange);color:#fff;border:0;border-radius:50px;padding:13px 22px;font:800 14px 'Nunito',sans-serif;cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--orange-d)}.btn[disabled]{opacity:.6;cursor:wait}
+.btn.ghost{background:#fff;color:var(--black);border:1.5px solid var(--border)}.btn.ghost:hover{border-color:var(--orange);color:var(--orange)}
+.btn.small{padding:8px 14px;font-size:13px}
+.link{background:none;border:0;color:var(--orange);font:800 13px 'Nunito',sans-serif;cursor:pointer;padding:0}
+.empty{text-align:center;padding:40px 20px;color:var(--gray);line-height:1.7}
+.threads{display:grid;gap:10px}
+.th{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;text-decoration:none;padding:14px}
+.th img,.ph0{width:56px;height:56px;border-radius:12px;object-fit:cover;background:var(--light);display:block}
+.th-t{font-weight:900;font-size:15px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.th-p{color:var(--gray);font-size:13.5px;line-height:1.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.th.unread .th-p{color:var(--black);font-weight:800}
+.th-m{min-width:0}
+.th-r{text-align:right;font-size:12px;color:var(--gray);display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.dot{background:var(--orange);color:#fff;border-radius:50px;font-size:11px;font-weight:900;padding:2px 8px}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:50px;text-transform:uppercase;letter-spacing:.04em;background:var(--light);color:var(--gray)}
+.tag.sell{background:rgba(30,158,87,.12);color:var(--green)}
+.tag.flag{background:rgba(214,60,47,.1);color:var(--red)}
+.conv-h{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.conv-h img,.conv-h .ph0{width:52px;height:52px}
+.conv-h .t{font-weight:900;font-size:17px}
+.conv-h .s{font-size:13px;color:var(--gray)}
+.warn{background:rgba(243,156,18,.12);color:var(--amber);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;line-height:1.5;margin-bottom:14px}
+.warn.red{background:rgba(214,60,47,.08);color:var(--red)}
+.msgs{display:flex;flex-direction:column;gap:8px;padding:6px 0 14px;min-height:120px}
+.b{max-width:82%;padding:10px 13px;border-radius:14px;font-size:15px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.b.them{background:#fff;border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px}
+.b.me{background:var(--orange);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.b small{display:block;font-size:11px;opacity:.7;margin-top:4px}
+.day{align-self:center;font-size:11.5px;color:var(--gray);font-weight:800;margin:6px 0}
+.compose{display:flex;gap:8px;align-items:flex-end;position:sticky;bottom:0;background:#f8f9fa;padding:10px 0}
+.compose textarea{flex:1;border:1.5px solid var(--border);border-radius:14px;padding:11px 13px;font:600 15px 'Nunito',sans-serif;min-height:46px;max-height:160px;resize:none;outline:none}
+.compose textarea:focus{border-color:var(--orange)}
+.err{color:var(--red);font-size:13px;font-weight:700;margin-top:6px}
+.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="logo" href="/">Puppy<span>Place</span></a>
+  <div class="top-r" id="topRight"></div>
+</div>
+
+<div class="wrap" id="app"><div class="empty">Loading…</div></div>
+
+<script src="/pp-auth.js"></script>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = ppAuth.esc;
+const app = $('#app');
+const api = (path, body) => ppAuth.api(path, body);
+let poll = null;
+
+function when(iso) {
+  const d = new Date(iso), now = new Date();
+  const mins = (now - d) / 60000;
+  if (mins < 1) return 'now';
+  if (mins < 60) return Math.round(mins) + 'm';
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' });
+  if (mins < 7 * 1440) return d.toLocaleDateString('en-NG', { weekday: 'short' });
+  return d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+}
+const photo = (u) => (u ? `<img src="${esc(u)}" alt="" loading="lazy"/>` : '<div class="ph0"></div>');
+
+function topBar(account) {
+  $('#topRight').innerHTML = account
+    ? `<a href="/messages.html">Messages</a><a href="/my-listings.html">My listings</a><button class="btn ghost small" id="out">Log out</button>`
+    : '';
+  if (account) $('#out').onclick = async () => { await ppAuth.logout(); signedOut(); };
+}
+
+function signedOut() {
+  clearInterval(poll);
+  topBar(null);
+  app.innerHTML = `<div class="card" style="max-width:420px;margin:40px auto;text-align:center">
+    <h1>Messages</h1>
+    <p class="sub">Sign in with your WhatsApp number to see your conversations with buyers and sellers.</p>
+    <button class="btn" id="in">Sign in with WhatsApp</button></div>`;
+  $('#in').onclick = async () => { if (await ppAuth.login({ why: 'Sign in to see your messages.' })) route(); };
+}
+
+async function route() {
+  clearInterval(poll);
+  const id = new URLSearchParams(location.search).get('t');
+  return id ? openThread(id) : list();
+}
+
+/* ── INBOX ── */
+async function list() {
+  let d;
+  try { d = await api('/api/dm/threads'); }
+  catch (e) { if (e.status === 401) return signedOut(); app.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  topBar(await ppAuth.me());
+  const T = d.threads || [];
+  app.innerHTML = `<h1>Messages</h1>
+    <p class="sub">Conversations about pets on PuppyPlace. You get a WhatsApp message when someone writes to you.</p>
+    ${T.length ? `<div class="threads">${T.map((t) => `
+      <a class="card th${t.unread ? ' unread' : ''}" href="/messages.html?t=${encodeURIComponent(t.id)}">
+        ${photo(t.photo)}
+        <div class="th-m">
+          <div class="th-t">${esc(t.breed || 'Pet')} <span class="tag${t.role === 'seller' ? ' sell' : ''}">${t.role === 'seller' ? 'Your listing' : 'Buying'}</span>${t.flagged ? '<span class="tag flag">Check carefully</span>' : ''}</div>
+          <div class="th-p">${esc(t.with)}${t.last ? ': ' + (t.last.sender === t.role ? 'You: ' : '') + esc(t.last.body) : ''}</div>
+        </div>
+        <div class="th-r">${t.last_message_at ? esc(when(t.last_message_at)) : ''}${t.unread ? `<span class="dot">${t.unread}</span>` : ''}</div>
+      </a>`).join('')}</div>`
+    : `<div class="card empty">No messages yet.<br/>Find a pet you like and tap <strong>Send a message</strong>.<br/><a class="btn" style="margin-top:14px" href="/pets.html">Browse pets</a></div>`}`;
+}
+
+/* ── ONE CONVERSATION ── */
+let current = null;
+async function openThread(id, quiet = false) {
+  let d;
+  try { d = await api('/api/dm/thread?id=' + encodeURIComponent(id)); }
+  catch (e) {
+    if (e.status === 401) return signedOut();
+    if (!quiet) app.innerHTML = `<div class="card empty">${esc(e.message)}<br/><a class="btn" style="margin-top:14px" href="/messages.html">All messages</a></div>`;
+    return;
+  }
+  const changed = !current || current.thread.id !== d.thread.id || current.messages.length !== d.messages.length;
+  current = d;
+  if (quiet && !changed) return;
+  if (!quiet) topBar(await ppAuth.me());
+  const t = d.thread;
+  const draft = $('#reply')?.value || '';
+  let lastDay = '';
+  const bubbles = d.messages.map((m) => {
+    const day = new Date(m.created_at).toLocaleDateString('en-NG', { weekday: 'short', day: 'numeric', month: 'short' });
+    const sep = day !== lastDay ? `<div class="day">${esc(day)}</div>` : '';
+    lastDay = day;
+    return `${sep}<div class="b ${m.mine ? 'me' : 'them'}">${esc(m.body)}<small>${new Date(m.created_at).toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })}</small></div>`;
+  }).join('');
+  app.innerHTML = `
+    <p style="margin-bottom:12px"><a class="link" href="/messages.html">← All messages</a></p>
+    <div class="conv-h">${photo(t.photo)}<div><div class="t">${esc(t.breed || 'Pet')}</div>
+      <div class="s">${t.role === 'seller' ? 'A buyer, ' + esc(t.with) + ', about your listing' : 'With ' + esc(t.with)}${t.slug && t.live ? ` · <a class="link" href="/pets/${encodeURIComponent(t.slug)}">View listing</a>` : t.live ? '' : ' · listing no longer live'}</div></div></div>
+    ${t.role === 'buyer'
+      ? '<div class="warn">🛡️ Never pay a deposit or transfer money before you\'ve seen the pet in person. If a seller insists, report the conversation.</div>'
+      : '<div class="warn">🛡️ Only share your address once you\'re comfortable. Meet buyers in a safe, public place if you can.</div>'}
+    ${t.flagged ? '<div class="warn red">⚠️ This conversation mentions payment details. PuppyPlace never asks you to pay anyone in advance.</div>' : ''}
+    <div class="msgs" id="msgs">${bubbles || '<div class="day">No messages yet</div>'}</div>
+    <div class="compose"><textarea id="reply" maxlength="1000" rows="1" placeholder="Write a reply…" aria-label="Reply"></textarea><button class="btn" id="send">Send</button></div>
+    <div class="err" id="err"></div>
+    <div class="foot"><span class="sub" style="margin:0">They get a WhatsApp message with a link here. Your number stays private.</span>
+      ${t.reported ? '<span class="sub" style="margin:0">Reported. We\'re looking into it.</span>' : '<button class="link" id="report">🚩 Report</button>'}</div>`;
+  const ta = $('#reply');
+  ta.value = draft;
+  ta.oninput = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'; };
+  ta.onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); };
+  $('#send').onclick = send;
+  if ($('#report')) $('#report').onclick = report;
+  window.scrollTo(0, document.body.scrollHeight);
+  if (!quiet) {
+    clearInterval(poll);
+    poll = setInterval(() => { if (document.visibilityState === 'visible' && !$('#reply')?.value) openThread(t.id, true); }, 20000);
+  }
+}
+
+async function send() {
+  const ta = $('#reply'), btn = $('#send'), err = $('#err');
+  const body = ta.value.trim();
+  if (!body) return;
+  btn.disabled = true; err.textContent = '';
+  try {
+    await api('/api/dm/send', { thread_id: current.thread.id, body });
+    ta.value = '';
+    await openThread(current.thread.id, true);
+  } catch (e) {
+    if (e.status === 401) return signedOut();
+    err.textContent = e.message;
+  }
+  const b = $('#send'); if (b) b.disabled = false;
+}
+
+async function report() {
+  const reason = prompt('What went wrong? (for example: asked for a deposit, rude, fake listing)');
+  if (reason === null) return;
+  try { await api('/api/dm/report', { thread_id: current.thread.id, reason }); }
+  catch (e) { $('#err').textContent = e.message; return; }
+  current = null;
+  openThread(new URLSearchParams(location.search).get('t'));
+}
+
+route();
+</script>
+</body>
+</html>
