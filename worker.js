@@ -1486,19 +1486,25 @@ async function handleImage(request, url, env, ctx) {
  */
 const STORE_WIDTH = 1600;
 const SHRINK_MIN_BYTES = 300 * 1024;
+// The site logo doubles as the browser-tab icon, which should stay a real PNG.
+const SITE_ICON = '851017C8-BF5F-41F8-96D2-8F191E7D2833.png';
 
 // "seller-pets/x.jpg", or its public link → replaced in place by a 1600px copy.
 // Returns { before, after } in bytes, or { skipped } with the reason.
 async function shrinkStoredPhoto(env, fileOrUrl) {
   const file = String(fileOrUrl).replace(/^.*\/storage\/v1\/object\/public\/hero-images\//, '');
   if (!IMG_RESIZABLE.test(file)) return { skipped: 'not a JPEG, PNG or WebP' };
+  if (file === SITE_ICON) return { skipped: 'the site icon' };
   const original = `${env.SUPABASE_URL}/storage/v1/object/public/${IMG_BUCKET}/${file}`;
   const head = await fetch(original, { method: 'HEAD' });
   const before = Number(head.headers.get('Content-Length')) || 0;
   if (!head.ok) return { skipped: `not found (${head.status})` };
   if (before && before < SHRINK_MIN_BYTES) return { skipped: 'already small', before };
-  // Each file keeps its format, so its name and type still agree.
-  const fmt = /\.jpe?g$/i.test(file) ? 'jpg' : /\.png$/i.test(file) ? 'png' : 'webp';
+  // JPEGs stay JPEG. PNGs become WebP: a photo saved as PNG is several times the
+  // size it needs to be, re-saving it as PNG barely helps, and WebP keeps
+  // see-through backgrounds. The file keeps its name and link; it is served with
+  // its real type, which every current browser reads.
+  const fmt = /\.jpe?g$/i.test(file) ? 'jpg' : 'webp';
   const r = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(original)}&w=${STORE_WIDTH}&we&q=82&output=${fmt}`, { signal: AbortSignal.timeout(25000) });
   if (!r.ok) return { skipped: `resize failed (${r.status})`, before };
   const bytes = new Uint8Array(await r.arrayBuffer());
@@ -1507,7 +1513,7 @@ async function shrinkStoredPhoto(env, fileOrUrl) {
   const key = env.SUPABASE_SERVICE_KEY;
   const put = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${IMG_BUCKET}/${file}`, {
     method: 'POST',
-    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[fmt], 'x-upsert': 'true' },
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': fmt === 'jpg' ? 'image/jpeg' : 'image/webp', 'x-upsert': 'true' },
     body: bytes,
   });
   if (!put.ok) return { skipped: `save failed (${put.status})`, before };
