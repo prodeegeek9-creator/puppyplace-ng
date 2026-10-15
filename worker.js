@@ -21,8 +21,10 @@ export default {
 
     // Hero image upload proxy — uses service key server-side so RLS is bypassed
     if (url.pathname === '/api/hero-upload' && request.method === 'POST') {
-      return handleHeroUpload(request, env);
+      return handleHeroUpload(request, url, env);
     }
+    if (url.pathname === '/api/pets' && request.method === 'GET') return handlePublicPets(env);
+    if (url.pathname === '/api/admin/pets' && request.method === 'POST') return handleAdminPets(request, env);
 
     // Seller accounts: log in with a WhatsApp code or the link the assistant sends,
     // see your listings and ask for changes (reviewed in Admin → Edit requests)
@@ -37,6 +39,7 @@ export default {
     if (url.pathname === '/api/contact' && request.method === 'GET') return handleContact(request, url, env, ctx);
     if (url.pathname === '/api/dm/send' && request.method === 'POST') return handleDmSend(request, url, env, ctx);
     if (url.pathname === '/api/dm/threads' && request.method === 'GET') return handleDmThreads(request, env);
+    if (url.pathname === '/api/dm/unread' && request.method === 'GET') return handleDmUnread(request, env);
     if (url.pathname === '/api/dm/thread' && request.method === 'GET') return handleDmThread(request, url, env);
     if (url.pathname === '/api/dm/report' && request.method === 'POST') return handleDmReport(request, url, env, ctx);
     if (url.pathname === '/api/admin/messages' && request.method === 'POST') return handleAdminMessages(request, env);
@@ -225,7 +228,10 @@ function isLikelyBot(request) {
 }
 
 // Why a request is taken for a bot, or null. Also shown by the admin's tracking check.
-function botReason(request) {
+// { vpnOk: true } lets data centre and VPN networks through: used for wishlist,
+// cart and checkout events, which only a person tapping a button sends, while
+// page views from those networks are mostly crawlers.
+function botReason(request, { vpnOk = false } = {}) {
   const ua = request.headers.get('User-Agent') || '';
   if (!ua) return 'no browser name (User-Agent)';
   const m = ua.match(BOT_UA);
@@ -236,7 +242,7 @@ function botReason(request) {
   const bm = cf.botManagement;
   if (bm && bm.verifiedBot) return 'Cloudflare says it is a known bot';
   if (bm && typeof bm.score === 'number' && bm.score < 30) return `Cloudflare bot score ${bm.score}`;
-  if (cf.asOrganization && DATACENTER_ORG.test(cf.asOrganization)) return `the network is a data centre or VPN (${cf.asOrganization})`;
+  if (!vpnOk && cf.asOrganization && DATACENTER_ORG.test(cf.asOrganization)) return `the network is a data centre or VPN (${cf.asOrganization})`;
   return null;
 }
 
@@ -320,7 +326,7 @@ const TRACKED_EVENTS = new Set(['wishlist_add', 'cart_add', 'checkout_start', 'w
 async function handleTrackEvent(request, url, env, ctx) {
   const ok = new Response(null, { status: 204 });
   try {
-    if (!env.SUPABASE_URL || isLikelyBot(request)) return ok;
+    if (!env.SUPABASE_URL || botReason(request, { vpnOk: true }) !== null) return ok;
     // Beacons only come from our own pages
     const origin = request.headers.get('Origin');
     if (origin && new URL(origin).hostname !== url.hostname) return ok;
@@ -389,7 +395,7 @@ async function handleTrackingCheck(request, env) {
 
   const h = sbHeaders(env);
   const base = `${env.SUPABASE_URL}/rest/v1`;
-  const out = { filter: botReason(request), network: request.cf?.asOrganization || null, country: request.cf?.country || null };
+  const out = { filter: botReason(request), eventFilter: botReason(request, { vpnOk: true }), network: request.cf?.asOrganization || null, country: request.cf?.country || null };
 
   const ins = await fetch(`${base}/shop_events`, {
     method: 'POST',
@@ -462,9 +468,15 @@ function sbKeyHeaders(key) {
   return h;
 }
 
-async function handleHeroUpload(request, env) {
+// Admin only (the token from /api/admin-login, as "Authorization: Bearer …"),
+// and only into hero-images.
+async function handleHeroUpload(request, url, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
     return jsonResp({ error: 'Server not configured' }, 503);
+  }
+  const bearer = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!sameOrigin(request, url) || !(await verifyToken(bearer, env))) {
+    return jsonResp({ error: 'Unauthorized. Log in to the admin again.' }, 401);
   }
 
   let formData;
@@ -475,7 +487,7 @@ async function handleHeroUpload(request, env) {
   }
 
   const file   = formData.get('file');
-  const bucket = formData.get('bucket') || 'hero-images';
+  const bucket = 'hero-images';
 
   if (!file || typeof file === 'string') {
     return jsonResp({ error: 'No file provided' }, 400);
@@ -489,8 +501,8 @@ async function handleHeroUpload(request, env) {
     return jsonResp({ error: 'File too large — max 5 MB' }, 400);
   }
 
-  const ext  = file.name.split('.').pop().toLowerCase();
-  const path = `upload-${Date.now()}.${ext}`;
+  const ext  = PHOTO_TYPES[file.type];
+  const path = `upload-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const key  = env.SUPABASE_SERVICE_KEY;
 
   const uploadRes = await fetch(
@@ -501,7 +513,6 @@ async function handleHeroUpload(request, env) {
         'apikey':        key,
         'Authorization': `Bearer ${key}`,
         'Content-Type':  file.type,
-        'x-upsert':      'true',
       },
       body: file.stream(),
       // Cloudflare Workers requires duplex for streaming uploads
@@ -977,7 +988,12 @@ async function handleMe(request, env) {
   if (!account) return userJson({ error: 'Not logged in' }, 401, id ? CLEAR_COOKIE : null);
   const listings = await listingsFor(env, account.phone, LISTING_FIELDS);
   const e = await sbJson(env, `pet_edits?account_id=eq.${account.id}&select=id,pet_id,kind,changes,status,note,created_at,decided_at&order=created_at.desc&limit=100`);
-  return userJson({ ok: true, account: { name: account.name, phone: account.phone }, listings, edits: e.ok ? e.body : [] });
+  // Views, WhatsApp chats and messages per listing (supabase/private_pets.sql); left out until it is set up.
+  const st = listings.length
+    ? await sbJson(env, 'rpc/pet_stats', { method: 'POST', body: JSON.stringify({ p_ids: listings.map((p) => String(p.id)) }) })
+    : { ok: false };
+  const stats = st.ok && Array.isArray(st.body) ? Object.fromEntries(st.body.map(({ pet_id, ...n }) => [pet_id, n])) : null;
+  return userJson({ ok: true, account: { name: account.name, phone: account.phone }, listings, edits: e.ok ? e.body : [], stats });
 }
 
 // What a seller may change, cleaned the way a new listing is.
@@ -1319,6 +1335,19 @@ async function handleDmThreads(request, env) {
   });
 }
 
+// GET /api/dm/unread → { count } of conversations with something new for me (the
+// message icon's badge). Free for visitors who aren't signed in: no cookie, no lookup.
+async function handleDmUnread(request, env) {
+  if (!accountsReady(env) || !/(?:^|;\s*)pp_s=/.test(request.headers.get('Cookie') || '')) return userJson({ count: 0 });
+  const me = await sessionAccount(request, env);
+  if (!me) return userJson({ count: 0, signedIn: false });
+  const myPets = (await listingsFor(env, me.phone, 'id')).map((p) => encodeURIComponent(p.id));
+  const or = [`buyer_id.eq.${me.id}`, `seller_phone.eq.${me.phone}`, ...(myPets.length ? [`pet_id.in.(${myPets.join(',')})`] : [])].join(',');
+  const t = await sbJson(env, `pet_threads?or=(${or})&select=buyer_id,buyer_unread,seller_unread&order=last_message_at.desc&limit=200`);
+  const count = t.ok ? t.body.filter((x) => (x.buyer_id === me.id ? x.buyer_unread : x.seller_unread) > 0).length : 0;
+  return userJson({ count, signedIn: true });
+}
+
 // GET /api/dm/thread?id=… → the messages, and marks them read for me
 async function handleDmThread(request, url, env) {
   if (!accountsReady(env)) return userJson({ error: 'Not set up yet' }, 503);
@@ -1379,6 +1408,66 @@ async function handleAdminMessages(request, env) {
   const rank = (x) => (x.reported_at ? 0 : x.flagged ? 1 : 2);
   const threads = t.body.map((x) => ({ ...x, buyer: who.get(x.buyer_id) || null })).sort((a, z) => rank(a) - rank(z));
   return jsonResp({ ok: true, threads }, 200);
+}
+
+/* ── PETS FOR THE BROWSER AND THE ADMIN ──────────────────────────────────
+ * The browser no longer reads the pets table from Supabase: the home page gets
+ * live pets from /api/pets, without sellers' numbers (contact goes through the
+ * pet page's sign in), and the admin reads and changes pets through
+ * /api/admin/pets with its token. supabase/private_pets.sql then closes the
+ * table to the public key.
+ */
+
+// GET /api/pets → live pets for the home page; "contact" says whether the seller can be reached
+async function handlePublicPets(env) {
+  if (!env.SUPABASE_URL) return jsonResp({ error: 'Server not configured' }, 503);
+  const r = await sbJson(env, `pets?active=eq.true&order=created_at.desc&limit=500&select=${PET_LIST_FIELDS},created_at,whatsapp`);
+  if (!r.ok) return jsonResp({ error: 'Could not load pets' }, 502);
+  const pets = r.body.map(({ whatsapp, ...p }) => ({ ...p, contact: Boolean(String(whatsapp || '').replace(/\D/g, '')) }));
+  return new Response(JSON.stringify({ pets }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
+}
+
+const ADMIN_PET_FIELDS = ['breed', 'name', 'breeder', 'type', 'listing_type', 'pedigree', 'price', 'age', 'specs', 'location', 'whatsapp', 'image_urls', 'image_url', 'dewormed', 'vaccinated', 'active'];
+
+// POST /api/admin/pets { token, action: 'list' | 'get' | 'save' | 'set_active' | 'delete', id, pet, active }
+async function handleAdminPets(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+  const id = b.id == null ? '' : encodeURIComponent(String(b.id));
+  const fail = (r, what) => jsonResp({ error: `${what} (${r.status}): ${typeof r.body === 'object' ? r.body?.message || '' : r.body || ''}`.trim() }, 500);
+
+  if (b.action === 'list') {
+    const r = await sbJson(env, 'pets?select=*&order=created_at.desc&limit=2000');
+    return r.ok ? jsonResp({ ok: true, pets: r.body }, 200) : fail(r, 'Could not load pets');
+  }
+  if (!['get', 'save', 'set_active', 'delete'].includes(b.action)) return jsonResp({ error: 'Unknown action' }, 400);
+  if (b.action !== 'save' && !id) return jsonResp({ error: 'Which pet?' }, 400);
+
+  if (b.action === 'get') {
+    const r = await sbJson(env, `pets?id=eq.${id}&select=*&limit=1`);
+    if (!r.ok) return fail(r, 'Could not load the pet');
+    return r.body[0] ? jsonResp({ ok: true, pet: r.body[0] }, 200) : jsonResp({ error: 'Pet not found' }, 404);
+  }
+  if (b.action === 'set_active') {
+    const r = await sbJson(env, `pets?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ active: b.active === true }) });
+    return r.ok ? jsonResp({ ok: true }, 200) : fail(r, 'Could not change the pet');
+  }
+  if (b.action === 'delete') {
+    const r = await sbJson(env, `pets?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    return r.ok ? jsonResp({ ok: true }, 200) : fail(r, 'Could not delete the pet');
+  }
+
+  // save: only the fields the admin form edits
+  const pet = {};
+  for (const k of ADMIN_PET_FIELDS) if (b.pet && k in b.pet) pet[k] = b.pet[k];
+  if (!cleanText(pet.breed, 80)) return jsonResp({ error: 'Breed is required' }, 400);
+  if (pet.image_urls !== undefined && !Array.isArray(pet.image_urls)) return jsonResp({ error: 'Photos must be a list' }, 400);
+  const r = id
+    ? await sbJson(env, `pets?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(pet) })
+    : await sbJson(env, 'pets', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ ...pet, slug: cleanText(b.pet?.slug, 160) || null }) });
+  return r.ok ? jsonResp({ ok: true }, 200) : fail(r, 'Could not save the pet');
 }
 
 /* ── BREED GUIDES ── */
@@ -2165,7 +2254,8 @@ svg{flex-shrink:0}
 .nav-link:hover{color:var(--orange)}
 .nav-link.on::after{content:'';position:absolute;left:-10px;right:-10px;bottom:17px;height:2.5px;background:var(--orange);border-radius:2px}
 .nav-right{display:flex;align-items:center;gap:20px}
-.nav-ico{color:#fff;display:flex;padding:4px}
+.nav-ico{color:#fff;display:flex;padding:4px;position:relative}
+.nav-cnt{position:absolute;top:-4px;right:-6px;background:var(--orange);color:#fff;font:800 10px/17px 'Nunito',sans-serif;min-width:17px;height:17px;border-radius:9px;align-items:center;justify-content:center;padding:0 4px}
 .nav-ico:hover{color:var(--orange)}
 .nav-cta{background:var(--orange);color:#fff;font-size:14px;font-weight:600;padding:10px 18px;border-radius:50px;transition:background .2s}
 .nav-cta:hover{background:var(--orange-d)}
@@ -2315,6 +2405,7 @@ svg{flex-shrink:0}
   .f-social{justify-content:flex-start;min-width:0}
   .f-bot{flex-direction:column;gap:6px}
 }
+@media(max-width:480px){.nav-logo{font-size:18px;white-space:nowrap;gap:6px}.nav-right{gap:10px}.nav-cta{padding:7px 11px;white-space:nowrap}}
 @media(max-width:380px){.nav-cta{display:none}}
 </style>
 </head>
@@ -2330,6 +2421,7 @@ svg{flex-shrink:0}
   <div class="nav-right">
     <a class="nav-ico" href="/pets.html#search" aria-label="Search pets"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
     <a class="nav-ico" href="/pets.html#saved" aria-label="Saved pets">${I.heart.replace('width="20" height="20"', 'width="22" height="22"')}</a>
+    <a class="nav-ico" href="/messages.html" data-pp-inbox aria-label="Messages"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-cnt" data-pp-inbox-count style="display:none">0</span></a>
     <a class="nav-cta" href="/contact.html">Contact Us</a>
   </div>
 </nav>
@@ -2389,7 +2481,7 @@ svg{flex-shrink:0}
   </div>
 </footer>
 ${pageScript}
-<script src="/pp-auth.js" defer></script><script src="/pp-contact.js" defer></script>
+<script src="/pp-auth.js" defer></script><script src="/pp-contact.js" defer></script><script src="/pp-inbox.js" defer></script>
 <script>(function(){try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="wa.me"]');if(!a)return;var v=JSON.stringify({event:'whatsapp_click',path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);},true);})();</script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
@@ -3447,6 +3539,7 @@ a{text-decoration:none;color:inherit}
 .nav-icons{display:flex;align-items:center;gap:8px}
 .nav-ico{position:relative;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-radius:50px;padding:9px 16px;font-size:14px;cursor:pointer;font-weight:800}
 .nav-ico:hover{background:var(--orange);border-color:var(--orange);color:#fff}
+a.nav-ico{text-decoration:none}
 .nav-badge{position:absolute;top:-5px;right:-5px;background:var(--orange);color:#fff;font-size:10px;font-weight:900;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1}
 /* DRAWERS */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;backdrop-filter:blur(4px)}
@@ -3597,7 +3690,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 .mob-atc-bar a,.mob-atc-bar button{font-size:13px}
 @media(max-width:768px){
   .nav{padding:0 12px;height:56px}
-  .nav-back{padding:7px 12px;font-size:12px}
+  .nav-back{padding:7px 12px;font-size:12px;white-space:nowrap}
   .nav-ico{padding:7px 11px;font-size:13px}
   .page{padding:24px 16px}
   .product-grid{grid-template-columns:1fr;gap:20px}
@@ -3608,6 +3701,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   .mob-search-bar{display:block}
   body{padding-bottom:74px}
 }
+@media(max-width:420px){.nav-icons{gap:5px}.nav-ico{padding:7px 9px}.nav-back{padding:7px 10px}.nav-logo{font-size:18px}}
 </style>
 </head>
 <body>
@@ -3616,6 +3710,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
   <div class="nav-icons">
     <a href="/shop.html" class="nav-back" style="margin-right:4px">← Shop</a>
     <div class="nav-ico" onclick="openWishlist()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;display:block"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="nav-badge" id="wBadge">0</span></div>
+    <a class="nav-ico" href="/messages.html" data-pp-inbox aria-label="Messages"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-badge" data-pp-inbox-count style="display:none">0</span></a>
     <div class="nav-ico" onclick="openCart()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;display:block"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="nav-badge" id="cBadge">0</span></div>
     <a href="/account.html" class="nav-ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;display:block"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
   </div>
@@ -4112,6 +4207,7 @@ try{(function(){
 try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error('[PuppyPlace] Cart init error:',e);}
 </script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+<script src="/pp-inbox.js" defer></script>
 </body>
 </html>`;
 }

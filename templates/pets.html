@@ -269,6 +269,7 @@ svg{flex-shrink:0}
   .pet-grid.list .pt-price{font-size:15px}
   .pet-grid.list .pt-view{font-size:10.5px;padding:7px 12px}
 }
+@media(max-width:480px){.nav-logo{font-size:18px;white-space:nowrap;gap:6px}.nav-right{gap:10px}.nav-cta{padding:7px 11px;white-space:nowrap}}
 @media(max-width:380px){
   .hero h1{font-size:29px}
   .nav-cta{display:none}
@@ -295,6 +296,10 @@ svg{flex-shrink:0}
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.2-9.3C1.7 7.6 3.8 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.2 0 5.3 3.1 4.2 6.2C19.5 15.4 12 20 12 20Z"/></svg>
       <span class="cnt" id="savedCnt">0</span>
     </button>
+    <a class="nav-ico" href="/messages.html" data-pp-inbox aria-label="Messages">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="cnt" data-pp-inbox-count style="display:none">0</span>
+    </a>
     <a class="nav-cta" href="/contact.html">Contact Us</a>
   </div>
 </nav>
@@ -680,5 +685,6 @@ if (location.hash === '#saved') toggleSaved();
 </script>
 <script>(function(){try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="wa.me"]');if(!a)return;var v=JSON.stringify({event:'whatsapp_click',path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);},true);})();</script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+<script src="/pp-inbox.js" defer></script>
 </body>
 </html>

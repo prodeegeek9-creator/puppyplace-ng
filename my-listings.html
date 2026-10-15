@@ -42,6 +42,8 @@ textarea{resize:vertical;min-height:90px}
 .b-live{background:rgba(30,158,87,.12);color:var(--green)}.b-wait{background:rgba(243,156,18,.15);color:var(--amber)}.b-no{background:rgba(214,60,47,.1);color:var(--red)}
 .pet-m{font-size:14px;color:var(--gray);line-height:1.6}
 .pet-n{font-size:13px;font-weight:700;margin-top:6px;line-height:1.5}
+.stats{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:13px;color:var(--gray)}
+.stats b{color:var(--black);font-weight:900}.stats small{font-size:12px}.stats a{color:inherit;text-decoration:none}.stats a b{color:var(--orange)}
 .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .empty{text-align:center;padding:40px 20px;color:var(--gray);line-height:1.7}
 .bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;overflow-y:auto;padding:16px;align-items:flex-start;justify-content:center}
@@ -60,6 +62,8 @@ textarea{resize:vertical;min-height:90px}
 .ph .ctl button{background:rgba(255,255,255,.92);border:0;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:13px}
 .add{display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:10px;aspect-ratio:1;cursor:pointer;color:var(--gray);font-weight:800;font-size:13px;text-align:center}
 .note{background:rgba(243,156,18,.1);color:var(--amber);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;margin:10px 0}
+@media(max-width:480px){.top-r>span{display:none}}
+.top-r .btn{white-space:nowrap}
 @media(max-width:560px){.grid2{grid-template-columns:1fr}.pet{grid-template-columns:72px 1fr}.pet img{width:72px;height:72px}}
 </style>
 </head>
@@ -135,10 +139,14 @@ function showLogin(step = 'phone', phone = '') {
   }
 }
 
+// Tells the message icon on other pages that this browser is signed in.
+const setIn = (on) => { try { on ? localStorage.setItem('pp_in', '1') : localStorage.removeItem('pp_in'); } catch { /* private mode */ } };
+
 /* ── MY LISTINGS ── */
 async function load() {
   try { me = await api('/api/me'); }
-  catch (e) { if (e.status === 401) return showLogin(); app.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  catch (e) { if (e.status === 401) { setIn(false); return showLogin(); } app.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  setIn(true);
   render();
 }
 
@@ -149,13 +157,26 @@ const latestEdit = (p) => (me.edits || []).find((e) => String(e.pet_id) === Stri
 
 function render() {
   $('#topRight').innerHTML = `<span>${esc(me.account.name || '+' + me.account.phone)}</span><a href="/messages.html" style="font-weight:800;text-decoration:none">Messages</a><button class="btn ghost small" id="out">Log out</button>`;
-  $('#out').onclick = async () => { await api('/api/auth/logout', { method: 'POST' }).catch(() => {}); showLogin(); };
+  $('#out').onclick = async () => { await api('/api/auth/logout', { method: 'POST' }).catch(() => {}); setIn(false); showLogin(); };
   const L = me.listings || [];
   app.innerHTML = `<h1>My listings</h1>
     <p class="sub">Changes you make are checked by PuppyPlace before they show on the site, usually within a day. You'll get a WhatsApp message when they're approved.</p>
     ${L.length ? `<div class="list">${L.map(card).join('')}</div>` : `<div class="card empty">You have no listings on this number yet.<br/><a class="btn" style="margin-top:14px" href="/sell-my-dog.html">List a pet for free</a></div>`}`;
   app.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openEdit(b.dataset.edit)));
   app.querySelectorAll('[data-remove]').forEach((b) => (b.onclick = () => openRemove(b.dataset.remove)));
+}
+
+// Views, WhatsApp chats and messages for a listing, when the site has them.
+function statsLine(p) {
+  const n = me.stats && me.stats[String(p.id)];
+  if (!n || p.active === false) return '';
+  const k = (v) => Number(v || 0).toLocaleString('en-NG');
+  const bits = [
+    `<span title="Times the listing's page was opened">👀 <b>${k(n.views)}</b> view${n.views == 1 ? '' : 's'}${n.views_week ? ` <small>(${k(n.views_week)} this week)</small>` : ''}</span>`,
+    `<span title="Buyers who opened a WhatsApp chat with you">🟢 <b>${k(n.whatsapp)}</b> WhatsApp chat${n.whatsapp == 1 ? '' : 's'}</span>`,
+    `<span title="Buyers who messaged you on PuppyPlace">✉️ ${n.messages ? `<a href="/messages.html"><b>${k(n.messages)}</b> message${n.messages == 1 ? '' : 's'}</a>` : '<b>0</b> messages'}</span>`,
+  ];
+  return `<div class="stats">${bits.join('')}</div>`;
 }
 
 function card(p) {
@@ -171,6 +192,7 @@ function card(p) {
     <div>
       <div class="pet-h"><span class="pet-t">${esc(p.breed || p.name || 'Pet')}</span>${status}</div>
       <div class="pet-m">${[p.age, p.listing_type === 'adoption' ? 'For adoption' : p.price ? money(p.price) : 'Price on request', p.location].filter(Boolean).map(esc).join(' · ')}<br/>${photosOf(p).length} photo${photosOf(p).length === 1 ? '' : 's'}</div>
+      ${statsLine(p)}
       ${req}
       <div class="acts">
         ${p.active !== false && p.slug ? `<a class="btn ghost small" href="/pets/${encodeURIComponent(p.slug)}" target="_blank" rel="noopener">View page</a>` : ''}

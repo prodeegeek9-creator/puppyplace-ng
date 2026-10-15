@@ -791,6 +791,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
   </a>
   <div class="mob-right">
     <div class="mob-ico" onclick="openWishlist()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="mob-badge" id="mwBadge">0</span></div>
+    <a class="mob-ico" href="/messages.html" data-pp-inbox aria-label="Messages" style="color:inherit;text-decoration:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="mob-badge" data-pp-inbox-count style="display:none">0</span></a>
     <div class="mob-ico" onclick="openCart()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="mob-badge" id="mcBadge">0</span></div>
     <button class="mob-ham" onclick="openMobNav()">
       <span></span><span></span><span></span>
@@ -857,6 +858,10 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
         <div class="hico-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="hico-badge" id="wBadge">0</span></div>
         <div class="hico-label">Wishlist</div>
       </div>
+      <a class="hico" href="/messages.html" data-pp-inbox aria-label="Messages" style="color:inherit;text-decoration:none">
+        <div class="hico-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="hico-badge" data-pp-inbox-count style="display:none">0</span></div>
+        <div class="hico-label">Messages</div>
+      </a>
       <div class="hico" onclick="openCart()">
         <div class="hico-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="hico-badge" id="cBadge">0</span></div>
         <div class="hico-label">Cart</div>
@@ -1774,7 +1779,7 @@ function openPetModal(id) {
   document.getElementById('pmTags').innerHTML=tags.join('');
   document.getElementById('pmLoc').textContent=p.location?'📍 '+p.location:'';
   document.getElementById('pmPrice').innerHTML=isAdopt?'<span style="color:#2ecc71">Free / Adoption</span>':`₦${(p.price||0).toLocaleString('en-NG')}`;
-  const wa=(p.whatsapp||'').replace(/\D/g,'');
+  const wa=p.contact;
   // The seller's chat opens from the pet's page, after a quick WhatsApp sign in.
   const waEl=document.getElementById('pmWa'); waEl.href=wa&&p.slug?`/pets/${encodeURIComponent(p.slug)}?contact=whatsapp`:'/pets.html'; waEl.style.display=wa&&p.slug?'':'none';
   const profileEl=document.getElementById('pmProfile'); profileEl.href=p.slug?'/pets/'+p.slug:'/pets.html'; profileEl.style.display=p.slug?'':'none';
@@ -1788,9 +1793,10 @@ async function renderPets() {
   const sec = g ? g.closest('.sec') : null;
   g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)">Loading...</div>';
   try {
-    const { data, error } = await supabase.from('pets').select('*').eq('active', true).order('created_at', { ascending: false });
-    if (error) throw error;
-    _pets = data || [];
+    // From the site's own server: live pets without the sellers' numbers.
+    const res = await fetch('/api/pets');
+    if (!res.ok) throw new Error('Could not load pets');
+    _pets = (await res.json()).pets || [];
     const pets = _pets;
     if (!pets.length) { if (sec) sec.style.display = 'none'; g.innerHTML = ''; return; }
     if (sec) sec.style.display = '';
@@ -1813,7 +1819,7 @@ async function renderPets() {
         ? `<span class="pt-price" style="color:#2ecc71">Free / Adoption</span>`
         : `<span class="pt-price">${fmt(p.price)}</span>`;
       const healthTags = [p.dewormed && 'Dewormed', p.vaccinated && 'Vaccinated'].filter(Boolean);
-      const wa = (p.whatsapp || '').replace(/\D/g, '');
+      const wa = p.contact;
       const imgHtml = p.image_url
         ? `<img src="${escHtml(p.image_url)}" alt="${escHtml(p.breed || p.type)}" style="width:100%;height:100%;object-fit:cover;"/>`
         : `<span style="font-size:58px">${e}</span>`;
@@ -3395,5 +3401,6 @@ function toggleFc(h) {
 })();
 </script>
 
+<script src="/pp-inbox.js" defer></script>
 </body>
 </html>
