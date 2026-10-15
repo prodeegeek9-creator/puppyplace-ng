@@ -42,6 +42,12 @@ create policy "Public read" on public.store_settings for select to anon, authent
 -- 5. Page views are counted by the server; the browser doesn't need to add them.
 drop policy if exists "allow_insert" on public.page_views;
 
+-- 6. Files: only the site's server and n8n upload (both use the secret key,
+--    which these rules don't affect). Added 15 Oct 2026.
+drop policy if exists "Allow public uploads" on storage.objects;
+drop policy if exists "Service video upload" on storage.objects;
+alter policy "Service insert" on public.video_posts to service_role;
+
 -- Check: tables still fully open (no row level security), and every policy left,
 -- including the storage (file) ones.
 select 'table' as kind, c.relname as name, 'OPEN: no row level security' as detail

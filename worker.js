@@ -21,11 +21,12 @@ export default {
 
     // Hero image upload proxy — uses service key server-side so RLS is bypassed
     if (url.pathname === '/api/hero-upload' && request.method === 'POST') {
-      return handleHeroUpload(request, url, env);
+      return handleHeroUpload(request, url, env, ctx);
     }
     if (url.pathname === '/api/pets' && request.method === 'GET') return handlePublicPets(env);
     if (url.pathname.startsWith('/img/') && (request.method === 'GET' || request.method === 'HEAD')) return handleImage(request, url, env, ctx);
     if (url.pathname === '/api/admin/data' && request.method === 'POST') return handleAdminData(request, env);
+    if (url.pathname === '/api/admin/shrink-photos' && request.method === 'POST') return handleAdminShrink(request, env);
     if (url.pathname === '/api/admin/pets' && request.method === 'POST') return handleAdminPets(request, env);
 
     // Seller accounts: log in with a WhatsApp code or the link the assistant sends,
@@ -36,7 +37,7 @@ export default {
     if (url.pathname === '/login-link' && (request.method === 'GET' || request.method === 'POST')) return handleLoginLink(request, url, env);
     if (url.pathname === '/api/me' && request.method === 'GET') return handleMe(request, env);
     if (url.pathname === '/api/me/edit' && request.method === 'POST') return handleMeEdit(request, url, env, ctx);
-    if (url.pathname === '/api/me/photo' && request.method === 'POST') return handleMePhoto(request, url, env);
+    if (url.pathname === '/api/me/photo' && request.method === 'POST') return handleMePhoto(request, url, env, ctx);
     if (url.pathname === '/api/admin/edits' && request.method === 'POST') return handleAdminEdits(request, env, ctx);
     if (url.pathname === '/api/contact' && request.method === 'GET') return handleContact(request, url, env, ctx);
     if (url.pathname === '/api/dm/send' && request.method === 'POST') return handleDmSend(request, url, env, ctx);
@@ -472,7 +473,7 @@ function sbKeyHeaders(key) {
 
 // Admin only (the token from /api/admin-login, as "Authorization: Bearer …"),
 // and only into hero-images.
-async function handleHeroUpload(request, url, env) {
+async function handleHeroUpload(request, url, env, ctx) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
     return jsonResp({ error: 'Server not configured' }, 503);
   }
@@ -528,6 +529,7 @@ async function handleHeroUpload(request, url, env) {
   }
 
   const publicUrl = `${env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+  shrinkLater(ctx, env, [path]);
   return jsonResp({ url: publicUrl }, 200);
 }
 
@@ -639,6 +641,7 @@ async function handleSellerListing(request, env, ctx) {
       return jsonResp({ error: 'Invalid listing', details: [`photo ${i + 1}: ${e.message}`] }, 400);
     }
   }
+  shrinkLater(ctx, env, imageUrls);
 
   const row = {
     slug,
@@ -1069,7 +1072,7 @@ async function handleMeEdit(request, url, env, ctx) {
 }
 
 // POST /api/me/photo (multipart: file) → { url }, for a photo in a change request
-async function handleMePhoto(request, url, env) {
+async function handleMePhoto(request, url, env, ctx) {
   if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
   if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
   const id = await readSession(request, env);
@@ -1088,6 +1091,7 @@ async function handleMePhoto(request, url, env) {
     body: await file.arrayBuffer(),
   });
   if (!up.ok) return userJson({ error: 'Could not upload that photo. Try again.' }, 500);
+  shrinkLater(ctx, env, [path]);
   return userJson({ ok: true, url: `${env.SUPABASE_URL}/storage/v1/object/public/hero-images/${path}` });
 }
 
@@ -1426,22 +1430,45 @@ const SUPABASE_IMG = /https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/pu
 // Supabase photo links in a page or JSON → the cached ones on our domain.
 const viaCdn = (text) => String(text).replace(SUPABASE_IMG, 'https://puppyplace.ng/img/');
 
+// Photos are sent resized: ?w= one of IMG_WIDTHS (cards ask for 600; anything
+// else gets 1200), as WebP when the browser takes it. The resizing is done by
+// wsrv.nl (also used for link previews) from the Supabase original; if it fails
+// the original is sent and kept for a day only, so the next visit tries again.
+const IMG_WIDTHS = [200, 400, 600, 800, 1200, 1600];
+const IMG_DEFAULT_WIDTH = 1200;
+const IMG_RESIZABLE = /\.(jpe?g|png|webp)$/i;
+
 async function handleImage(request, url, env, ctx) {
   const path = url.pathname.slice('/img/'.length);
   if (!env.SUPABASE_URL || !path || path.includes('..') || !/^[\w\-./%@()+ ]+$/.test(decodeURIComponent(path))) {
     return new Response('Not found', { status: 404 });
   }
+  const asked = Number(url.searchParams.get('w'));
+  const width = IMG_WIDTHS.includes(asked) ? asked : IMG_DEFAULT_WIDTH;
+  const webp = IMG_RESIZABLE.test(path) && /image\/webp/.test(request.headers.get('Accept') || '');
+  const variant = webp ? `w${width}.webp` : 'original';
+
   const cache = caches.default;
-  const key = new Request(`https://puppyplace.ng/img/${path}`);
+  const key = new Request(`https://puppyplace.ng/img/${path}?v=${variant}`);
   const hit = await cache.match(key);
   if (hit) return request.method === 'HEAD' ? new Response(null, { headers: hit.headers }) : hit;
 
-  const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/public/${IMG_BUCKET}/${path}`, { cf: { cacheEverything: true, cacheTtl: IMG_CACHE_SECONDS } });
+  const original = `${env.SUPABASE_URL}/storage/v1/object/public/${IMG_BUCKET}/${path}`;
+  let up = null, resized = false;
+  if (webp) {
+    try {
+      const r = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(original)}&w=${width}&we&q=80&output=webp`, { signal: AbortSignal.timeout(15000) });
+      if (r.ok && /^image\//.test(r.headers.get('Content-Type') || '')) { up = r; resized = true; }
+    } catch { /* fall back to the original */ }
+  }
+  if (!up) up = await fetch(original, { cf: { cacheEverything: true, cacheTtl: IMG_CACHE_SECONDS } });
   if (!up.ok) return new Response('Not found', { status: up.status === 404 || up.status === 400 ? 404 : 502, headers: { 'Cache-Control': 'public, max-age=60' } });
+  const keep = webp && !resized ? 86400 : IMG_CACHE_SECONDS;
   const res = new Response(up.body, {
     headers: {
       'Content-Type': up.headers.get('Content-Type') || 'application/octet-stream',
-      'Cache-Control': `public, max-age=${IMG_CACHE_SECONDS}`,
+      'Cache-Control': `public, max-age=${keep}`,
+      'Vary': 'Accept',
       'Access-Control-Allow-Origin': '*',
       'X-Content-Type-Options': 'nosniff',
       ...(up.headers.get('Content-Length') ? { 'Content-Length': up.headers.get('Content-Length') } : {}),
@@ -1449,6 +1476,91 @@ async function handleImage(request, url, env, ctx) {
   });
   ctx.waitUntil(cache.put(key, res.clone()));
   return request.method === 'HEAD' ? new Response(null, { headers: res.headers }) : res;
+}
+
+/* ── SMALLER STORED PHOTOS ──────────────────────────────────────────────
+ * Photos are kept at most STORE_WIDTH wide: new ones are shrunk right after
+ * they are saved, and Admin → Settings → "Shrink stored photos" does the ones
+ * already there. The stored file keeps its name and link; it is only replaced
+ * when the smaller copy saves at least a fifth of its size.
+ */
+const STORE_WIDTH = 1600;
+const SHRINK_MIN_BYTES = 300 * 1024;
+
+// "seller-pets/x.jpg", or its public link → replaced in place by a 1600px copy.
+// Returns { before, after } in bytes, or { skipped } with the reason.
+async function shrinkStoredPhoto(env, fileOrUrl) {
+  const file = String(fileOrUrl).replace(/^.*\/storage\/v1\/object\/public\/hero-images\//, '');
+  if (!IMG_RESIZABLE.test(file)) return { skipped: 'not a JPEG, PNG or WebP' };
+  const original = `${env.SUPABASE_URL}/storage/v1/object/public/${IMG_BUCKET}/${file}`;
+  const head = await fetch(original, { method: 'HEAD' });
+  const before = Number(head.headers.get('Content-Length')) || 0;
+  if (!head.ok) return { skipped: `not found (${head.status})` };
+  if (before && before < SHRINK_MIN_BYTES) return { skipped: 'already small', before };
+  // Each file keeps its format, so its name and type still agree.
+  const fmt = /\.jpe?g$/i.test(file) ? 'jpg' : /\.png$/i.test(file) ? 'png' : 'webp';
+  const r = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(original)}&w=${STORE_WIDTH}&we&q=82&output=${fmt}`, { signal: AbortSignal.timeout(25000) });
+  if (!r.ok) return { skipped: `resize failed (${r.status})`, before };
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  const known = before || bytes.byteLength * 2;
+  if (!bytes.byteLength || bytes.byteLength > known * 0.8) return { skipped: 'not much smaller', before, after: bytes.byteLength };
+  const key = env.SUPABASE_SERVICE_KEY;
+  const put = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${IMG_BUCKET}/${file}`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[fmt], 'x-upsert': 'true' },
+    body: bytes,
+  });
+  if (!put.ok) return { skipped: `save failed (${put.status})`, before };
+  return { before, after: bytes.byteLength };
+}
+
+// Shrinking right after a save, without holding up the answer.
+const shrinkLater = (ctx, env, files) => ctx.waitUntil(
+  Promise.all(files.map((f) => shrinkStoredPhoto(env, f).catch((err) => console.error('shrink failed:', f, err?.message ?? err))))
+);
+
+// Every photo file in hero-images: [{ name, size }], folders followed.
+async function listStoredPhotos(env) {
+  const key = env.SUPABASE_SERVICE_KEY;
+  const out = [];
+  const folders = [''];
+  for (let n = 0; folders.length && n < 40; n++) {
+    const prefix = folders.shift();
+    for (let offset = 0; ; offset += 1000) {
+      const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/list/${IMG_BUCKET}`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefix, limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } }),
+      });
+      if (!r.ok) throw new Error(`could not list photos (${r.status})`);
+      const items = await r.json();
+      for (const it of items) {
+        const name = prefix ? `${prefix}/${it.name}` : it.name;
+        if (!it.id) folders.push(name); // a folder
+        else if (it.name !== '.emptyFolderPlaceholder') out.push({ name, size: Number(it.metadata?.size) || 0 });
+      }
+      if (items.length < 1000) break;
+    }
+  }
+  return out;
+}
+
+// POST /api/admin/shrink-photos { token, action: 'list' } → the photos worth shrinking
+//                               { token, action: 'shrink', names: [...up to 8] } → results
+async function handleAdminShrink(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+  if (b.action === 'list') {
+    const all = await listStoredPhotos(env);
+    const big = all.filter((f) => f.size >= SHRINK_MIN_BYTES && IMG_RESIZABLE.test(f.name));
+    return jsonResp({ ok: true, total: all.length, totalBytes: all.reduce((n, f) => n + f.size, 0), big }, 200);
+  }
+  if (b.action !== 'shrink') return jsonResp({ error: 'Unknown action' }, 400);
+  const names = (Array.isArray(b.names) ? b.names : []).filter((n) => typeof n === 'string' && !n.includes('..')).slice(0, 8);
+  const results = await Promise.all(names.map(async (name) => ({ name, ...(await shrinkStoredPhoto(env, name).catch((err) => ({ skipped: err?.message || 'failed' }))) })));
+  return jsonResp({ ok: true, results }, 200);
 }
 
 /* ── ADMIN DATA ─────────────────────────────────────────────────────────

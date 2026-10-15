@@ -40,6 +40,13 @@ export function genderOf(p) {
   return '';
 }
 
+// Cards show a 600px copy: the site's photo links (Supabase's, which pages turn
+// into /img/ ones, or /img/ already) take ?w= (see /img in worker.js).
+function cardSize(u) {
+  const s = String(u);
+  return /(\/storage\/v1\/object\/public\/hero-images\/|^(https:\/\/puppyplace\.ng)?\/img\/)/.test(s) && !s.includes('?') ? `${s}?w=600` : s;
+}
+
 export function renderPetCard(p, saved = false, eager = false) {
   const isAdopt = p.listing_type === 'adoption';
   const img = p.image_url || (p.image_urls && p.image_urls[0]);
@@ -47,7 +54,7 @@ export function renderPetCard(p, saved = false, eager = false) {
   const name = p.breed || p.type;
   const alt = `${name} ${isAdopt ? 'for adoption' : 'for sale'}${p.location ? ' in ' + p.location : ''}`;
   const imgHtml = img
-    ? `<img src="${esc(img)}" alt="${esc(alt)}"${eager ? '' : ' loading="lazy"'}/>`
+    ? `<img src="${esc(cardSize(img))}" alt="${esc(alt)}"${eager ? '' : ' loading="lazy"'}/>`
     : `<span>${TYPE_EMOJI[p.type] || '🐾'}</span>`;
   const href = p.slug ? `/pets/${encodeURIComponent(p.slug)}` : '#';
   const g = genderOf(p);

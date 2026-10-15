@@ -744,6 +744,15 @@ input,select,textarea{font-family:'Nunito',sans-serif}
                 </label>
               </div>
             </div>
+            <div class="settings-card">
+              <h3>🗜️ Shrink stored photos</h3>
+              <p>Replaces photos over 300 KB with a copy at most 1,600 px wide. They look the same on the site, take far less of the 1 GB Supabase storage, and download faster. Links don't change. The full-size originals are not kept.</p>
+              <div id="shrinkStatus" style="background:#f1f3f5;border-radius:10px;padding:14px;font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">Press “Check” to see how many photos can be made smaller.</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="settings-save" id="shrinkCheckBtn" onclick="shrinkCheck()">🔍 Check</button>
+                <button class="settings-save" id="shrinkRunBtn" onclick="shrinkRun()" style="display:none">🗜️ Shrink them</button>
+              </div>
+            </div>
           </div>
           <div class="danger-zone">
             <h3>⚠️ Danger Zone</h3>
@@ -2130,6 +2139,41 @@ async function openMessages(id){
     ${t.reported_at?`<div class="dx-warn">🚩 Reported ${escHtml(ago(t.reported_at))}: ${escHtml(t.report_reason||'')}</div>`:''}
     <div style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;padding:4px 0">${msgs.map(x=>`<div style="align-self:${x.sender==='buyer'?'flex-start':'flex-end'};max-width:80%;background:${x.sender==='buyer'?'var(--light)':'rgba(237,100,54,.1)'};border-radius:12px;padding:8px 12px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere${x.flagged?';border:1.5px solid #e67e22':''}"><div style="font-size:11px;font-weight:800;color:var(--gray);margin-bottom:2px">${x.sender==='buyer'?'Buyer':'Seller'} · ${escHtml(fmtWhen(x.created_at))}${x.flagged?' · ⚠️ payment words':''}</div>${escHtml(x.body)}</div>`).join('')||'<div class="dx-empty">No messages</div>'}</div>
     <div class="dx-acts" style="margin-top:12px">${t.buyer?`<a class="dx-btn" href="https://wa.me/${escA(t.buyer.phone)}" target="_blank" rel="noopener">💬 WhatsApp buyer</a>`:''}<a class="dx-btn" href="https://wa.me/${escA(t.seller_phone)}" target="_blank" rel="noopener">💬 WhatsApp seller</a></div>`;
+}
+
+// ── Shrink stored photos: one batch of 8 at a time, so it can run as long as it needs ──
+let _shrinkList=[];
+const fmtMB=b=>(b/1e6).toFixed(b<1e7?1:0)+' MB';
+async function shrinkCheck(){
+  const st=document.getElementById('shrinkStatus'), run=document.getElementById('shrinkRunBtn');
+  st.textContent='Looking through the photos…'; run.style.display='none';
+  try{
+    const d=await adminApi('/api/admin/shrink-photos',{action:'list'});
+    _shrinkList=d.big||[];
+    const bigBytes=_shrinkList.reduce((n,f)=>n+f.size,0);
+    st.innerHTML=`<strong>${fmtN(d.total)}</strong> photos use <strong>${fmtMB(d.totalBytes)}</strong>. `+
+      (_shrinkList.length?`<strong>${fmtN(_shrinkList.length)}</strong> are over 300 KB (${fmtMB(bigBytes)} together) and can be made smaller.`:'None need shrinking. ✅');
+    run.style.display=_shrinkList.length?'':'none';
+  }catch(err){ st.textContent='❌ '+err.message; }
+}
+async function shrinkRun(){
+  if(!_shrinkList.length) return;
+  if(!confirm(`Replace ${_shrinkList.length} photos with smaller copies? The full-size originals are not kept.`)) return;
+  const st=document.getElementById('shrinkStatus'), run=document.getElementById('shrinkRunBtn'), chk=document.getElementById('shrinkCheckBtn');
+  run.disabled=chk.disabled=true;
+  let done=0, saved=0, shrunk=0, skipped=0;
+  const total=_shrinkList.length;
+  for(let i=0;i<total;i+=8){
+    const names=_shrinkList.slice(i,i+8).map(f=>f.name);
+    try{
+      const d=await adminApi('/api/admin/shrink-photos',{action:'shrink',names});
+      for(const r of d.results||[]){ if(r.after&&!r.skipped){ shrunk++; saved+=Math.max(0,(r.before||0)-r.after); } else skipped++; }
+    }catch(err){ skipped+=names.length; }
+    done=Math.min(total,i+8);
+    st.innerHTML=`Working… ${fmtN(done)} of ${fmtN(total)} · <strong>${fmtN(shrunk)}</strong> made smaller · <strong>${fmtMB(saved)}</strong> saved`+(skipped?` · ${fmtN(skipped)} left as they were`:'');
+  }
+  st.innerHTML=`✅ Done. <strong>${fmtN(shrunk)}</strong> photos made smaller, <strong>${fmtMB(saved)}</strong> saved.`+(skipped?` ${fmtN(skipped)} were left as they were (already small enough, or could not be resized; you can run it again later).`:'');
+  run.disabled=chk.disabled=false; run.style.display='none'; _shrinkList=[];
 }
 
 function deletePetById(id){ const p=_pets.find(x=>String(x.id)===String(id)); if(p) deletePet(p.id,p.breed||p.name||'this pet'); }

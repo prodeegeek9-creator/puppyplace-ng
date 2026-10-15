@@ -803,6 +803,8 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
 <script>
+// Card-sized photos: /img/ links take ?w= (see /img in worker.js).
+const ppSize = (u, w) => (typeof u === 'string' && /^(https:\/\/puppyplace\.ng)?\/img\//.test(u) && !u.includes('?')) ? `${u}?w=${w}` : u;
 // Photo links from the database point at Cloudflare's cached copies (/img/) rather
 // than Supabase, so visitors' downloads don't use up the Supabase plan.
 const ppCdnFetch = (input, init) => fetch(input, init).then(async (res) => {
@@ -958,7 +960,7 @@ function loadMore() {
       <div class="pc-thumb">
         ${p.tag ? `<span class="pc-badge ${lblMap[p.tag]||'lbl-sale'}">${escHtml(lblText[p.tag]||p.tag)}</span>` : ''}
         <button class="pc-wish" onclick="event.stopPropagation();addWishFromCard(this,'${escHtml(p.id)}')">♡</button>
-        ${p.img ? `<img src="${escHtml(p.img)}" alt="${escHtml(p.n)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${escHtml(p.e)}</span>`}
+        ${p.img ? `<img src="${escHtml(ppSize(p.img, 600))}" alt="${escHtml(p.n)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${escHtml(p.e)}</span>`}
         <div class="pc-actions">
           <div class="pa-cart-wrap" data-pid="${escHtml(p.id)}"><button class="pa-btn" onclick="event.stopPropagation();addCartFromCard(this.closest('[data-pid]'))">🛒 Add to Cart</button></div>
           <span class="pa-icon" onclick="event.stopPropagation();window.location.href='${escHtml(pUrl)}'">👁</span>
@@ -1073,7 +1075,7 @@ function renderCartDrawer(){
     const cid=escHtml(i.cid||i.id);
     const prod=allProds.find(x=>x.id===i.id);
     const thumb=prod?.img||'';
-    const thumbHtml=thumb?`<img src="${escHtml(thumb)}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--rxs);" onerror="this.style.display='none'">`:`<span style="font-size:26px">${escHtml(i.e||'📦')}</span>`;
+    const thumbHtml=thumb?`<img src="${escHtml(ppSize(thumb, 200))}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--rxs);" onerror="this.style.display='none'">`:`<span style="font-size:26px">${escHtml(i.e||'📦')}</span>`;
     const varHtml=(i.varGroups&&i.varGroups.length)?`<div style="margin:6px 0;">${i.varGroups.map(g=>`<div style="margin-bottom:6px;"><div style="font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;margin-bottom:4px;">${escHtml(g.label)}</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${g.values.map(v=>`<button style="border:${v===g.selected?'1.5px solid var(--orange)':'1px solid var(--border)'};border-radius:50px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;background:${v===g.selected?'var(--orange)':'#fff'};color:${v===g.selected?'#fff':'inherit'};" onclick="changeCartVariant('${cid}','${escHtml(g.label)}','${escHtml(v)}')">${escHtml(v)}</button>`).join('')}</div></div>`).join('')}</div>`:'';
     return `<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;">
     <div style="width:56px;height:56px;background:var(--light);border-radius:var(--rxs);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${thumbHtml}</div>
@@ -1106,7 +1108,7 @@ function renderWishDrawer(){
   el.innerHTML=wishItems.map(i=>{
     const wProd=allProds.find(x=>x.id===i.id);
     const wThumb=wProd?.img||'';
-    const wThumbHtml=wThumb?`<img src="${escHtml(wThumb)}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--rxs);" onerror="this.style.display='none'">`:`<span style="font-size:26px">${escHtml(i.e||'📦')}</span>`;
+    const wThumbHtml=wThumb?`<img src="${escHtml(ppSize(wThumb, 200))}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--rxs);" onerror="this.style.display='none'">`:`<span style="font-size:26px">${escHtml(i.e||'📦')}</span>`;
     return `<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;">
     <div style="width:64px;height:64px;background:var(--light);border-radius:var(--rxs);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">${wThumbHtml}</div>
     <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:800;">${escHtml(i.n)}</div>
