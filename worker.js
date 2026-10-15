@@ -24,6 +24,8 @@ export default {
       return handleHeroUpload(request, url, env);
     }
     if (url.pathname === '/api/pets' && request.method === 'GET') return handlePublicPets(env);
+    if (url.pathname.startsWith('/img/') && (request.method === 'GET' || request.method === 'HEAD')) return handleImage(request, url, env, ctx);
+    if (url.pathname === '/api/admin/data' && request.method === 'POST') return handleAdminData(request, env);
     if (url.pathname === '/api/admin/pets' && request.method === 'POST') return handleAdminPets(request, env);
 
     // Seller accounts: log in with a WhatsApp code or the link the assistant sends,
@@ -116,7 +118,7 @@ export default {
     // Image proxy for OG tags — re-serves Supabase images through Cloudflare
     // so social crawlers (WhatsApp etc.) hit a fast, trusted origin with clean headers
     if (url.pathname === '/api/og-img') {
-      return handleOgImageProxy(request, url, env);
+      return handleOgImageProxy(request, url, env, ctx);
     }
 
     const petsPage = matchPetsPage(url.pathname);
@@ -1410,6 +1412,97 @@ async function handleAdminMessages(request, env) {
   return jsonResp({ ok: true, threads }, 200);
 }
 
+/* ── IMAGES THROUGH CLOUDFLARE ───────────────────────────────────────────
+ * Every photo on the site is in Supabase storage (hero-images), and the free
+ * plan allows 5 GB of downloads a month. /img/<path> serves the same file from
+ * Cloudflare's cache, which costs nothing: Supabase sends each photo once per
+ * Cloudflare location a month instead of once per visitor. Pages, the pet and
+ * blog APIs and the home and shop pages' product data all point here.
+ */
+const IMG_BUCKET = 'hero-images';
+const IMG_CACHE_SECONDS = 30 * 86400;
+const SUPABASE_IMG = /https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/hero-images\//g;
+
+// Supabase photo links in a page or JSON → the cached ones on our domain.
+const viaCdn = (text) => String(text).replace(SUPABASE_IMG, 'https://puppyplace.ng/img/');
+
+async function handleImage(request, url, env, ctx) {
+  const path = url.pathname.slice('/img/'.length);
+  if (!env.SUPABASE_URL || !path || path.includes('..') || !/^[\w\-./%@()+ ]+$/.test(decodeURIComponent(path))) {
+    return new Response('Not found', { status: 404 });
+  }
+  const cache = caches.default;
+  const key = new Request(`https://puppyplace.ng/img/${path}`);
+  const hit = await cache.match(key);
+  if (hit) return request.method === 'HEAD' ? new Response(null, { headers: hit.headers }) : hit;
+
+  const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/public/${IMG_BUCKET}/${path}`, { cf: { cacheEverything: true, cacheTtl: IMG_CACHE_SECONDS } });
+  if (!up.ok) return new Response('Not found', { status: up.status === 404 || up.status === 400 ? 404 : 502, headers: { 'Cache-Control': 'public, max-age=60' } });
+  const res = new Response(up.body, {
+    headers: {
+      'Content-Type': up.headers.get('Content-Type') || 'application/octet-stream',
+      'Cache-Control': `public, max-age=${IMG_CACHE_SECONDS}`,
+      'Access-Control-Allow-Origin': '*',
+      'X-Content-Type-Options': 'nosniff',
+      ...(up.headers.get('Content-Length') ? { 'Content-Length': up.headers.get('Content-Length') } : {}),
+    },
+  });
+  ctx.waitUntil(cache.put(key, res.clone()));
+  return request.method === 'HEAD' ? new Response(null, { headers: res.headers }) : res;
+}
+
+/* ── ADMIN DATA ─────────────────────────────────────────────────────────
+ * The admin's products, blog posts and store settings go through here with the
+ * admin token, so the public key needs no write access to them
+ * (supabase/lock_tables.sql). admin.html sends the same calls it used to make to
+ * Supabase directly: { table, method, select, filters, order, limit, single, body, upsert }.
+ */
+const ADMIN_DATA_TABLES = new Set(['shop_products', 'blog_posts', 'store_settings']);
+
+async function handleAdminData(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+  const q = b.q || {};
+  if (!ADMIN_DATA_TABLES.has(q.table)) return jsonResp({ error: 'Not allowed' }, 403);
+  const method = ['GET', 'POST', 'PATCH', 'DELETE'].includes(q.method) ? q.method : null;
+  if (!method) return jsonResp({ error: 'Not allowed' }, 400);
+
+  const params = [];
+  const col = (c) => (/^[a-z_][a-z0-9_]*$/i.test(String(c)) ? c : null);
+  for (const [c, op, v] of Array.isArray(q.filters) ? q.filters : []) {
+    if (!col(c) || !['eq', 'neq', 'in'].includes(op)) return jsonResp({ error: 'Bad filter' }, 400);
+    const val = op === 'in'
+      ? `(${(Array.isArray(v) ? v : []).map((x) => `"${String(x).replace(/["\\]/g, '\\$&')}"`).join(',')})`
+      : String(v);
+    params.push(`${c}=${op}.${encodeURIComponent(val)}`);
+  }
+  if ((method === 'PATCH' || method === 'DELETE') && !params.length) return jsonResp({ error: 'A filter is required' }, 400);
+  const select = q.select == null ? null : String(q.select).replace(/\s+/g, '');
+  if (select && !/^(\*|[a-z_][a-z0-9_]*)(,[a-z_][a-z0-9_]*)*$/i.test(select)) return jsonResp({ error: 'Bad select' }, 400);
+  if (method === 'GET') params.push(`select=${select || '*'}`);
+  for (const [c, dir] of Array.isArray(q.order) ? q.order : []) {
+    if (!col(c)) return jsonResp({ error: 'Bad order' }, 400);
+    params.push(`order=${c}.${dir === 'desc' ? 'desc' : 'asc'}`);
+  }
+  if (Number.isInteger(q.limit) && q.limit > 0) params.push(`limit=${Math.min(q.limit, 5000)}`);
+
+  const prefer = method === 'GET' ? null : [q.upsert ? 'resolution=merge-duplicates' : null, 'return=representation'].filter(Boolean).join(',');
+  const r = await sbJson(env, `${q.table}?${params.join('&')}`, {
+    method,
+    ...(prefer ? { headers: { Prefer: prefer } } : {}),
+    ...(method === 'POST' || method === 'PATCH' ? { body: JSON.stringify(q.body ?? {}) } : {}),
+  });
+  if (!r.ok) return jsonResp({ error: (r.body && r.body.message) || `Database error (${r.status})` }, r.status >= 400 && r.status < 500 ? 400 : 502);
+  let data = r.body;
+  if (q.single) {
+    data = Array.isArray(data) ? data[0] ?? null : data;
+    if (data === null && q.single !== 'maybe') return jsonResp({ error: 'Not found' }, 404);
+  }
+  return jsonResp({ ok: true, data }, 200);
+}
+
 /* ── PETS FOR THE BROWSER AND THE ADMIN ──────────────────────────────────
  * The browser no longer reads the pets table from Supabase: the home page gets
  * live pets from /api/pets, without sellers' numbers (contact goes through the
@@ -1424,7 +1517,7 @@ async function handlePublicPets(env) {
   const r = await sbJson(env, `pets?active=eq.true&order=created_at.desc&limit=500&select=${PET_LIST_FIELDS},created_at,whatsapp`);
   if (!r.ok) return jsonResp({ error: 'Could not load pets' }, 502);
   const pets = r.body.map(({ whatsapp, ...p }) => ({ ...p, contact: Boolean(String(whatsapp || '').replace(/\D/g, '')) }));
-  return new Response(JSON.stringify({ pets }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
+  return new Response(viaCdn(JSON.stringify({ pets })), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
 }
 
 const ADMIN_PET_FIELDS = ['breed', 'name', 'breeder', 'type', 'listing_type', 'pedigree', 'price', 'age', 'specs', 'location', 'whatsapp', 'image_urls', 'image_url', 'dewormed', 'vaccinated', 'active'];
@@ -1593,12 +1686,16 @@ function jsonResp(data, status) {
   });
 }
 
-async function handleOgImageProxy(request, url, env) {
+async function handleOgImageProxy(request, url, env, ctx) {
   const imgUrl = url.searchParams.get('url');
   const supabaseHost = env.SUPABASE_URL ? new URL(env.SUPABASE_URL).host : null;
   if (!imgUrl || !supabaseHost || !imgUrl.startsWith(`https://${supabaseHost}/storage/`)) {
     return new Response('Forbidden', { status: 403 });
   }
+  // WhatsApp and Facebook fetch these often: answer from Cloudflare's cache.
+  const cacheKey = new Request(`https://puppyplace.ng/api/og-img?url=${encodeURIComponent(imgUrl)}`);
+  const cached = await caches.default.match(cacheKey);
+  if (cached) return cached;
 
   // Route through wsrv.nl to resize/compress on the fly — works on any Supabase plan.
   // Resizes to max 1200px wide, converts to JPEG at q=82, falls back to original.
@@ -1619,7 +1716,7 @@ async function handleOgImageProxy(request, url, env) {
   const imageData = await upstream.arrayBuffer();
   const ct = upstream.headers.get('Content-Type') || 'image/jpeg';
 
-  return new Response(imageData, {
+  const res = new Response(imageData, {
     headers: {
       'Content-Type':                ct,
       'Content-Length':              String(imageData.byteLength),
@@ -1630,6 +1727,8 @@ async function handleOgImageProxy(request, url, env) {
       'X-Robots-Tag':                'noindex',
     },
   });
+  ctx.waitUntil(caches.default.put(cacheKey, res.clone()));
+  return res;
 }
 
 /* ── PETS LISTING PAGES ── */
@@ -2750,7 +2849,7 @@ async function handleBlogPosts(url, env) {
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit'), 10) || 100));
   try {
     const posts = await getBlogPosts(env, { limit });
-    return new Response(JSON.stringify(posts), {
+    return new Response(viaCdn(JSON.stringify(posts)), {
       headers: {
         'Content-Type':  'application/json; charset=utf-8',
         'Cache-Control': 'public, max-age=300',
@@ -2766,7 +2865,7 @@ async function handleBlogPosts(url, env) {
 }
 
 function html(body, status) {
-  return new Response(body, {
+  return new Response(viaCdn(body), {
     status,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });

@@ -1279,7 +1279,31 @@ input,select,textarea{font-family:'Nunito',sans-serif}
 <script>
 // Stop counting the site owner's own visits in Page Analytics on this device
 try { localStorage.setItem('pp_notrack', '1'); } catch (e) {}
-const sbAdmin = window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON);
+// The admin's database calls go through the site's server with the admin log-in
+// (/api/admin/data), so the public key can't change products, posts or settings.
+// This stands in for the Supabase client: the same calls, sent to the server.
+function adminQuery(table){
+  const q={table,method:'GET',filters:[],order:[],select:null,limit:null,single:false,body:null,upsert:false};
+  const b={
+    select(cols){ q.select=cols||'*'; return b; },
+    insert(rows){ q.method='POST'; q.body=rows; return b; },
+    upsert(rows){ q.method='POST'; q.upsert=true; q.body=rows; return b; },
+    update(row){ q.method='PATCH'; q.body=row; return b; },
+    delete(){ q.method='DELETE'; return b; },
+    eq(c,v){ q.filters.push([c,'eq',v]); return b; },
+    neq(c,v){ q.filters.push([c,'neq',v]); return b; },
+    in(c,vs){ q.filters.push([c,'in',vs]); return b; },
+    order(c,o){ q.order.push([c,o&&o.ascending===false?'desc':'asc']); return b; },
+    limit(n){ q.limit=n; return b; },
+    single(){ q.single=true; return b; },
+    maybeSingle(){ q.single='maybe'; return b; },
+    then(ok,fail){
+      return adminApi('/api/admin/data',{q}).then(d=>({data:d.data,error:null}),e=>({data:null,error:{message:e.message}})).then(ok,fail);
+    },
+  };
+  return b;
+}
+const sbAdmin = { from: adminQuery };
 let _cachedProducts = [];
 
 function rowToApp(row){
