@@ -56,9 +56,17 @@ Run `supabase/messages.sql` once in Supabase → SQL Editor (after
 `seller_accounts.sql`). Until then, sending a message shows "Messages are not
 set up yet". The WhatsApp button keeps working either way.
 
-## Limits of this version
+## Numbers stay private
 
-The gate is soft. The site's public pets data (what the browser loads from
-Supabase for the home page) still includes each listing's WhatsApp number, so
-someone determined can find it. Removing it means changing how the home page and
-the admin read pets, which is a separate change.
+The home page gets pets from the site's own server (`/api/pets`), which leaves
+the sellers' numbers out, and the admin reads and changes pets through the
+server with its log-in (`/api/admin/pets`). `supabase/private_pets.sql` then
+closes the pets table to the public key, so nobody can read a number (or change
+a listing) from the browser. Run it once the new version is live.
+
+## Message icon
+
+Every page with a wishlist icon (home, shop, pet pages, pet listings, product
+pages) has a message icon next to it that opens `/messages.html`. In a browser
+that has signed in, it shows how many conversations have something new
+(`/api/dm/unread`). Other visitors' browsers never ask, so it costs nothing.

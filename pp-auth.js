@@ -31,10 +31,13 @@
       });
   }
 
+  // "pp_in" tells pp-inbox.js this browser is signed in, so it can show unread messages.
+  function flag(on) { try { on ? localStorage.setItem('pp_in', '1') : localStorage.removeItem('pp_in'); } catch (e) { /* private mode */ } }
+
   var cached;
   function me(fresh) {
     if (cached && !fresh) return cached;
-    cached = api('/api/me').then(function (d) { return d.account; }, function () { return null; });
+    cached = api('/api/me').then(function (d) { flag(true); return d.account; }, function () { flag(false); return null; });
     return cached;
   }
 
@@ -98,6 +101,7 @@
           var name = box.querySelector('#ppa-name').value.trim();
           return api('/api/auth/verify', { phone: phone, code: c, name: name }).then(function (d) {
             cached = Promise.resolve(d.account);
+            flag(true);
             close(d.account);
           });
         }, '#ppa-code');
@@ -121,6 +125,7 @@
 
   function logout() {
     cached = Promise.resolve(null);
+    flag(false);
     return api('/api/auth/logout', {}).catch(function () {});
   }
 

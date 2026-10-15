@@ -24,4 +24,4 @@ Until it is run the dashboard says so and the rest of the admin works as before.
 | `POST /api/admin/overview` | `{ token, days }` | `{ ok, overview }`; 503 with `setup: true` when the SQL has not been run |
 | `POST /api/admin/orders` | `{ token, action: 'list' }` | `{ ok, orders }`, newest 500 |
 | `POST /api/admin/orders` | `{ token, action: 'status', id, status }` | `{ ok }` |
-| `POST /api/track-event` | `{ event, id?, name?, price?, path? }` | 204 always; `event` is `wishlist_add`, `cart_add`, `checkout_start` or `whatsapp_click`; bots and other origins are ignored |
+| `POST /api/track-event` | `{ event, id?, name?, price?, path? }` | 204 always; `event` is `wishlist_add`, `cart_add`, `checkout_start` or `whatsapp_click`; bots and other origins are ignored; data centre and VPN networks are counted here (a button tap is a person), though their page views are not |

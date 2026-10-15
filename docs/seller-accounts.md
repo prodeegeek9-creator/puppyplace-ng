@@ -31,3 +31,10 @@ A seller's account is their WhatsApp number. Nobody fills in a sign-up form.
 | `POST /api/me/edit` `{ pet_id, kind: 'edit' \| 'remove', changes, note }` | Sends a change or take-down for review |
 | `POST /api/me/photo` (multipart `file`) | Uploads a photo for a change request |
 | `POST /api/admin/edits` `{ token, action: 'list' \| 'approve' \| 'reject', id, note }` | Admin review |
+
+## Numbers on My listings
+
+Each live listing shows its page views (all time and this week), how many
+buyers opened a WhatsApp chat, and how many sent a message, linking to
+Messages. They come from `pet_stats` in `supabase/private_pets.sql`; until that
+has run, the listings show without them.

@@ -1578,7 +1578,7 @@ async function uploadPetImages(input) {
     const compressed=await compressImage(file);
     const fd=new FormData(); fd.append('file',compressed); fd.append('bucket','hero-images');
     try{
-      const res=await fetch('/api/hero-upload',{method:'POST',body:fd});
+      const res=await heroUpload(fd);
       const data=await res.json(); if(!res.ok) throw new Error(data.error||'Upload failed');
       petImgUrls.push(data.url); renderPetImgList();
     }catch(err){showToast('❌ '+err.message,'error');}
@@ -1587,6 +1587,8 @@ async function uploadPetImages(input) {
   showToast('✅ Photos uploaded','success');
 }
 /* ── ADMIN NUMBERS (served by the Worker, which holds the database key) ── */
+// Photo uploads go through the server with the admin's token.
+function heroUpload(fd){ return fetch('/api/hero-upload',{method:'POST',headers:{Authorization:'Bearer '+(sessionStorage.getItem('pp_token')||'')},body:fd}); }
 async function adminApi(path, body){
   const res=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:sessionStorage.getItem('pp_token'),...body})});
   const data=await res.json().catch(()=>({}));
@@ -1869,8 +1871,9 @@ function photosOf(p){
 async function loadPets() {
   const tbody=document.getElementById('petsTableBody');
   tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray)">Loading…</td></tr>';
-  const { data, error }=await sbAdmin.from('pets').select('*').order('created_at',{ascending:false});
-  if(error){ tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--red)">${escHtml(error.message)}</td></tr>`; return; }
+  let data;
+  try{ data=(await adminApi('/api/admin/pets',{action:'list'})).pets; }
+  catch(error){ tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--red)">${escHtml(error.message)}</td></tr>`; return; }
   _pets=data||[];
   const types=[...new Set(_pets.map(p=>p.type).filter(Boolean))].sort();
   const sel=document.getElementById('petType2'), keep=sel.value;
@@ -1974,8 +1977,8 @@ function openPetDetail(id){
 }
 function closePetDetail(){ document.getElementById('petModalBg').style.display='none'; }
 async function unpublishPet(id){
-  const { error }=await sbAdmin.from('pets').update({ active:false }).eq('id',id);
-  if(error){ showToast('❌ '+error.message,'error'); return; }
+  try{ await adminApi('/api/admin/pets',{action:'set_active',id,active:false}); }
+  catch(error){ showToast('❌ '+error.message,'error'); return; }
   showToast('Hidden from the site','success'); closePetDetail(); loadPets();
 }
 function exportPets(){
@@ -1997,7 +2000,8 @@ async function checkTracking(){
   if(c){
     rows.push(c.save.ok?line(true,'Events can be saved to the database')
       :line(false,'Events cannot be saved to the database',`The database said (HTTP ${c.save.status}): ${escHtml(c.save.error||'no reason given')}. Run supabase/admin_dashboard.sql again in Supabase → SQL Editor and check SUPABASE_SERVICE_KEY on the Worker.`));
-    rows.push(c.filter?line(false,'This browser or network is treated as a bot, so its clicks are not counted',escHtml(c.filter)+'. Real visitors on mobile data or home Wi-Fi are not affected; try without a VPN.')
+    rows.push(c.eventFilter?line(false,'This browser is treated as a bot, so its clicks are not counted',escHtml(c.eventFilter)+'. Real visitors are not affected.')
+      :c.filter?line(null,'Wishlist, cart and checkout clicks from this browser are counted; its page views are not',escHtml(c.filter)+'. Page views from VPNs and data centres are mostly crawlers, so they are left out; button taps are always a person.')
       :line(true,'This browser and network pass the bot filter',c.network?escHtml(c.network)+(c.country?' · '+escHtml(c.country):''):''));
   }
   let notrack=false; try{ notrack=!!localStorage.getItem('pp_notrack'); }catch{}
@@ -2107,8 +2111,9 @@ async function openMessages(id){
 function deletePetById(id){ const p=_pets.find(x=>String(x.id)===String(id)); if(p) deletePet(p.id,p.breed||p.name||'this pet'); }
 
 async function editPet(id) {
-  const { data }=await sbAdmin.from('pets').select('*').eq('id',id).single();
-  if(!data) return;
+  let data;
+  try{ data=(await adminApi('/api/admin/pets',{action:'get',id})).pet; }
+  catch(error){ showToast('❌ '+error.message,'error'); return; }
   openPetForm(id);
   document.getElementById('petBreed').value=data.breed||'';
   document.getElementById('petName').value=data.name||'';
@@ -2150,10 +2155,8 @@ async function savePet() {
   };
   const id=document.getElementById('petId').value;
   if (!id) payload.slug = generatePetSlug(breed);
-  const { error }=id
-    ? await sbAdmin.from('pets').update(payload).eq('id',id)
-    : await sbAdmin.from('pets').insert(payload);
-  if(error){ showToast('❌ '+error.message,'error'); return; }
+  try{ await adminApi('/api/admin/pets',{action:'save',id:id||null,pet:payload}); }
+  catch(error){ showToast('❌ '+error.message,'error'); return; }
   showToast('✅ Pet saved','success');
   closePetForm();
   loadPets();
@@ -2194,15 +2197,15 @@ async function guideAct(i,action){
 }
 
 async function approvePet(id) {
-  const { error }=await sbAdmin.from('pets').update({ active:true }).eq('id',id);
-  if(error){ showToast('❌ '+error.message,'error'); return; }
+  try{ await adminApi('/api/admin/pets',{action:'set_active',id,active:true}); }
+  catch(error){ showToast('❌ '+error.message,'error'); return; }
   showToast('✅ Published. A seller who listed on WhatsApp is told within a minute','success');
   loadPets();
 }
 async function deletePet(id,name) {
   if(!confirm(`Delete ${name}?`)) return;
-  const { error }=await sbAdmin.from('pets').delete().eq('id',id);
-  if(error){ showToast('❌ '+error.message,'error'); return; }
+  try{ await adminApi('/api/admin/pets',{action:'delete',id}); }
+  catch(error){ showToast('❌ '+error.message,'error'); return; }
   showToast('Deleted','success');
   loadPets();
 }
@@ -2597,7 +2600,7 @@ function importProducts(input){
             fd.append('file',converted);
             fd.append('bucket','hero-images');
 
-            const upRes=await fetch('/api/hero-upload',{method:'POST',body:fd});
+            const upRes=await heroUpload(fd);
             const upData=await upRes.json();
 
             if(upRes.ok&&upData.url){
@@ -2774,7 +2777,7 @@ async function uploadBlogInlineImg(file) {
   const fd = new FormData();
   fd.append('file', compressed);
   fd.append('bucket', 'hero-images');
-  const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
+  const res  = await heroUpload(fd);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Upload failed');
   return data.url;
@@ -2943,7 +2946,7 @@ async function uploadBlogFeaturedImg(input) {
     const fd = new FormData();
     fd.append('file', compressed);
     fd.append('bucket', 'hero-images');
-    const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
+    const res  = await heroUpload(fd);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
     document.getElementById('bfFeaturedImg').value = data.url;
@@ -2993,7 +2996,7 @@ async function uploadHeroImage(input, settingKey, imgId, prevId, urlInputId) {
   fd.append('bucket', 'hero-images');
   let publicUrl;
   try {
-    const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
+    const res  = await heroUpload(fd);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
     publicUrl = data.url;
@@ -3099,7 +3102,7 @@ async function hpHandleUpload(input, key) {
   fd.append('bucket', 'hero-images');
   let url;
   try {
-    const res  = await fetch('/api/hero-upload', { method: 'POST', body: fd });
+    const res  = await heroUpload(fd);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
     url = data.url;
