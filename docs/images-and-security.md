@@ -43,8 +43,12 @@ In October 2026 the 448 stored photos averaged 1.5 MB. Now:
   alone.
 
 Videos for social posting (`puppy-videos`, 2.6 MB each on average) are fetched by
-Facebook, Instagram and WhatsApp straight from Supabase. They are small enough
-not to matter much.
+Facebook, Instagram, WhatsApp and Gemini straight from Supabase, within minutes
+of being saved by n8n's "PuppyPlace Video Posting". Nothing on the site shows
+them, so every night at 03:17 UTC the Worker's `scheduled` handler deletes
+videos saved more than three days ago (`deleteOldVideos`; the schedule is in
+wrangler.jsonc → `triggers`). The `video_posts` rows stay as a record. Each run
+is logged in Cloudflare → Workers → puppyplace-ng → Logs.
 
 ## What the public key can do
 

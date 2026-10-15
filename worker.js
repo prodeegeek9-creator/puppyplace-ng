@@ -3,6 +3,14 @@ import PETS_TEMPLATE from './templates/pets.html';
 import { renderPetCard, ageWeeks, MAIN_TYPES } from './pet-cards.js';
 
 export default {
+  // Nightly (wrangler.jsonc → triggers): clear posted social videos out of storage.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(deleteOldVideos(cleanEnv(env)).then(
+      (r) => console.log(`old videos: ${r.deleted} deleted (${Math.round(r.bytes / 1e6)} MB), ${r.kept} kept`),
+      (err) => console.error('old videos not deleted:', err?.message ?? err),
+    ));
+  },
+
   async fetch(request, env, ctx) {
     env = cleanEnv(env);
     const url = new URL(request.url);
@@ -1567,6 +1575,53 @@ async function handleAdminShrink(request, env) {
   const names = (Array.isArray(b.names) ? b.names : []).filter((n) => typeof n === 'string' && !n.includes('..')).slice(0, 8);
   const results = await Promise.all(names.map(async (name) => ({ name, ...(await shrinkStoredPhoto(env, name).catch((err) => ({ skipped: err?.message || 'failed' }))) })));
   return jsonResp({ ok: true, results }, 200);
+}
+
+/* ── OLD SOCIAL VIDEOS ──────────────────────────────────────────────────
+ * n8n's "PuppyPlace Video Posting" saves each video to the puppy-videos bucket
+ * only so Facebook, Instagram, WhatsApp and Gemini can fetch it, which they do
+ * within minutes. Nothing on the site shows them, so every night videos older
+ * than VIDEO_KEEP_DAYS are deleted (the video_posts rows stay as a record).
+ */
+const VIDEO_BUCKET = 'puppy-videos';
+const VIDEO_KEEP_DAYS = 3;
+
+async function deleteOldVideos(env, now = Date.now()) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) throw new Error('server not configured');
+  const key = env.SUPABASE_SERVICE_KEY;
+  const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
+  const cutoff = now - VIDEO_KEEP_DAYS * 864e5;
+  const old = [];
+  let kept = 0;
+  for (let offset = 0; ; offset += 1000) {
+    const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/list/${VIDEO_BUCKET}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ prefix: '', limit: 1000, offset, sortBy: { column: 'created_at', order: 'asc' } }),
+    });
+    if (!r.ok) throw new Error(`could not list videos (${r.status})`);
+    const items = await r.json();
+    for (const it of items) {
+      if (!it.id) continue; // a folder: videos are saved at the top
+      const made = Date.parse(it.created_at || '');
+      if (made && made < cutoff) old.push({ name: it.name, size: Number(it.metadata?.size) || 0 });
+      else kept++;
+    }
+    if (items.length < 1000) break;
+  }
+  let deleted = 0, bytes = 0;
+  for (let i = 0; i < old.length; i += 100) {
+    const batch = old.slice(i, i + 100);
+    const d = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${VIDEO_BUCKET}`, {
+      method: 'DELETE',
+      headers,
+      body: JSON.stringify({ prefixes: batch.map((v) => v.name) }),
+    });
+    if (!d.ok) throw new Error(`could not delete videos (${d.status})`);
+    deleted += batch.length;
+    bytes += batch.reduce((n, v) => n + v.size, 0);
+  }
+  return { deleted, bytes, kept };
 }
 
 /* ── ADMIN DATA ─────────────────────────────────────────────────────────
