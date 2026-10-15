@@ -20,8 +20,27 @@ where they are; only the links change:
   what it receives (`ppCdnFetch`).
 - Link previews (`/api/og-img`, used by WhatsApp and Facebook) are cached too.
 
-Videos for social posting (`puppy-videos`) are fetched by Facebook, Instagram
-and WhatsApp straight from Supabase and are not covered by this.
+Photos are also sent resized: `/img/<path>` gives browsers that take WebP a
+WebP copy 1,200 px wide, and `?w=` asks for another size (200, 400, 600, 800,
+1,200 or 1,600; product and pet cards ask for 600, cart thumbnails for 200). The
+resizing is done by wsrv.nl, the free service the link previews already used,
+and the result is kept in Cloudflare's cache for 30 days. If wsrv.nl fails, the
+original is sent and kept for a day only.
+
+### Stored photos are kept at most 1,600 px wide
+
+In October 2026 the 448 stored photos averaged 1.5 MB. Now:
+
+- New photos (WhatsApp listings, sellers' edit photos, admin uploads) are
+  replaced by a 1,600 px copy right after they are saved, when that saves at
+  least a fifth of the size.
+- Admin → Settings → **Shrink stored photos** does the same for photos already
+  there, 8 at a time (`/api/admin/shrink-photos`). Files keep their names,
+  links and formats; the full-size originals are not kept.
+
+Videos for social posting (`puppy-videos`, 2.6 MB each on average) are fetched by
+Facebook, Instagram and WhatsApp straight from Supabase. They are small enough
+not to matter much.
 
 ## What the public key can do
 
