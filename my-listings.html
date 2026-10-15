@@ -148,7 +148,7 @@ function photosOf(p) {
 const latestEdit = (p) => (me.edits || []).find((e) => String(e.pet_id) === String(p.id));
 
 function render() {
-  $('#topRight').innerHTML = `<span>${esc(me.account.name || '+' + me.account.phone)}</span><button class="btn ghost small" id="out">Log out</button>`;
+  $('#topRight').innerHTML = `<span>${esc(me.account.name || '+' + me.account.phone)}</span><a href="/messages.html" style="font-weight:800;text-decoration:none">Messages</a><button class="btn ghost small" id="out">Log out</button>`;
   $('#out').onclick = async () => { await api('/api/auth/logout', { method: 'POST' }).catch(() => {}); showLogin(); };
   const L = me.listings || [];
   app.innerHTML = `<h1>My listings</h1>

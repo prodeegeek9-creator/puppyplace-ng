@@ -570,6 +570,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link" onclick="showPanel('orders',this)"><span class="sb-link-ico">🧾</span> Orders <span class="sb-badge" id="sbOrdersCount">0</span></div>
         <div class="sb-link" onclick="showPanel('pets',this)"><span class="sb-link-ico">🐾</span> Pets <span class="sb-badge" id="sbPetsCount">0</span></div>
         <div class="sb-link" onclick="showPanel('edits',this)"><span class="sb-link-ico">✏️</span> Edit requests <span class="sb-badge" id="sbEditsCount">0</span></div>
+        <div class="sb-link" onclick="showPanel('messages',this)"><span class="sb-link-ico">💬</span> Messages <span class="sb-badge" id="sbMsgCount">0</span></div>
         <div class="sb-link" onclick="showPanel('guides',this)"><span class="sb-link-ico">📘</span> Breed guides <span class="sb-badge" id="sbGuidesCount">0</span></div>
         <div class="sb-section">Store</div>
         <div class="sb-link" onclick="showPanel('hero',this)"><span class="sb-link-ico">🖼️</span> Hero Images</div>
@@ -850,6 +851,15 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           </div>
           <div id="editsList"><div class="dx-empty">Loading…</div></div>
         </div>
+
+        <div class="panel" id="panelMessages">
+          <div class="dx-toolbar">
+            <div><div class="dx-h">Messages</div><div class="dx-sub">Conversations between buyers and sellers on the site. Reported ones come first, then ones that mention deposits, transfers or account numbers.</div></div>
+            <div class="dx-tools"><input class="filter-sel" id="msgSearch" placeholder="Search breed, name or number" oninput="renderMessages()" style="min-width:200px"/><button class="add-btn" onclick="loadMessages()">↻ Refresh</button></div>
+          </div>
+          <div id="msgList"><div class="dx-empty">Loading…</div></div>
+        </div>
+        <div class="dx-modal-bg" id="msgModalBg" onclick="if(event.target===this)this.style.display='none'"><div class="dx-modal" id="msgModal"></div></div>
 
         <!-- ORDER AND PET DETAIL -->
         <div class="dx-modal-bg" id="orderModalBg" onclick="if(event.target===this)closeOrder()"><div class="dx-modal" id="orderModal"></div></div>
@@ -1416,7 +1426,7 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',orders:'Orders',pets:'Pets',edits:'Edit Requests',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',orders:'Orders',pets:'Pets',edits:'Edit Requests',messages:'Messages',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
   const title = titles[name]||name;
   document.getElementById('pageTitle').textContent = title;
   const mobTitle = document.getElementById('mobPageTitle');
@@ -1428,6 +1438,7 @@ function showPanel(name, el){
   if(name==='dashboard'){ updateStats(); renderDashRecent(); loadDashboard(); }
   if(name==='orders') loadOrders();
   if(name==='edits') loadEdits();
+  if(name==='messages') loadMessages();
   if(name==='blog') loadBlogPosts();
   if(name==='stats') loadStats();
   if(name==='pets') loadPets();
@@ -2053,6 +2064,44 @@ async function decideEdit(id,action){
   catch(err){ showToast('❌ '+err.message,'error'); return; }
   showToast(action==='approve'?'✅ Applied. The seller is told on WhatsApp':'Turned down. The seller is told on WhatsApp','success');
   loadEdits();
+}
+
+let _threads=[];
+async function loadMessages(){
+  const box=document.getElementById('msgList');
+  box.innerHTML='<div class="dx-empty">Loading…</div>';
+  try{ _threads=(await adminApi('/api/admin/messages',{action:'list'})).threads||[]; }
+  catch(err){ box.innerHTML=`<div class="dx-notice">${escHtml(err.message)}</div>`; return; }
+  msgBadge();
+  renderMessages();
+}
+function msgBadge(){ document.getElementById('sbMsgCount').textContent=_threads.filter(t=>t.reported_at||t.flagged).length; }
+function renderMessages(){
+  const box=document.getElementById('msgList');
+  const q=(document.getElementById('msgSearch').value||'').trim().toLowerCase();
+  const list=_threads.filter(t=>!q||[t.pet_breed,t.pet_slug,t.seller_phone,t.buyer?.name,t.buyer?.phone].some(v=>String(v||'').toLowerCase().includes(q)));
+  if(!_threads.length){ box.innerHTML='<div class="dx-card"><div class="dx-ok">No conversations yet.</div></div>'; return; }
+  if(!list.length){ box.innerHTML='<div class="dx-card"><div class="dx-empty">Nothing matches.</div></div>'; return; }
+  box.innerHTML=`<div class="blog-table-wrap"><table class="blog-table"><thead><tr><th>Pet</th><th>Buyer</th><th>Seller</th><th>Status</th><th>Last message</th><th></th></tr></thead><tbody>${list.map(t=>`<tr>
+    <td style="font-weight:800">${escHtml(t.pet_breed||'Pet')} ${t.pet_slug?`<a href="/pets/${escA(t.pet_slug)}" target="_blank" rel="noopener" style="font-size:12px;color:var(--orange)">↗</a>`:''}</td>
+    <td>${escHtml(t.buyer?.name||'—')}<small style="display:block;color:var(--gray)">${t.buyer?'+'+escHtml(t.buyer.phone):''}</small></td>
+    <td>+${escHtml(t.seller_phone)}</td>
+    <td>${t.reported_at?`<span class="badge badge-sale">Reported</span><small style="display:block;color:var(--gray);max-width:220px">${escHtml(t.report_reason||'')}</small>`:t.flagged?'<span class="badge badge-popular">Mentions payment</span>':'<span style="color:var(--gray)">—</span>'}</td>
+    <td>${escHtml(ago(t.last_message_at))}</td>
+    <td><button class="act-btn" title="Read" onclick="openMessages('${sid(t.id)}')">👁️</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+async function openMessages(id){
+  const t=_threads.find(x=>x.id===id); if(!t) return;
+  const bg=document.getElementById('msgModalBg'), m=document.getElementById('msgModal');
+  m.innerHTML='<div class="dx-empty">Loading…</div>'; bg.style.display='flex';
+  let msgs=[];
+  try{ msgs=(await adminApi('/api/admin/messages',{action:'thread',id})).messages||[]; }
+  catch(err){ m.innerHTML=`<div class="dx-notice">${escHtml(err.message)}</div>`; return; }
+  const buyer=t.buyer?(t.buyer.name||'Buyer')+' (+'+t.buyer.phone+')':'Buyer';
+  m.innerHTML=`<div class="dx-card-h"><div><div class="dx-card-t">${escHtml(t.pet_breed||'Pet')}</div><div class="dx-card-s">${escHtml(buyer)} and seller +${escHtml(t.seller_phone)}</div></div><button class="dx-btn" onclick="document.getElementById('msgModalBg').style.display='none'">✕</button></div>
+    ${t.reported_at?`<div class="dx-warn">🚩 Reported ${escHtml(ago(t.reported_at))}: ${escHtml(t.report_reason||'')}</div>`:''}
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;padding:4px 0">${msgs.map(x=>`<div style="align-self:${x.sender==='buyer'?'flex-start':'flex-end'};max-width:80%;background:${x.sender==='buyer'?'var(--light)':'rgba(237,100,54,.1)'};border-radius:12px;padding:8px 12px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere${x.flagged?';border:1.5px solid #e67e22':''}"><div style="font-size:11px;font-weight:800;color:var(--gray);margin-bottom:2px">${x.sender==='buyer'?'Buyer':'Seller'} · ${escHtml(fmtWhen(x.created_at))}${x.flagged?' · ⚠️ payment words':''}</div>${escHtml(x.body)}</div>`).join('')||'<div class="dx-empty">No messages</div>'}</div>
+    <div class="dx-acts" style="margin-top:12px">${t.buyer?`<a class="dx-btn" href="https://wa.me/${escA(t.buyer.phone)}" target="_blank" rel="noopener">💬 WhatsApp buyer</a>`:''}<a class="dx-btn" href="https://wa.me/${escA(t.seller_phone)}" target="_blank" rel="noopener">💬 WhatsApp seller</a></div>`;
 }
 
 function deletePetById(id){ const p=_pets.find(x=>String(x.id)===String(id)); if(p) deletePet(p.id,p.breed||p.name||'this pet'); }
@@ -3110,6 +3159,7 @@ async function _extendedInit() {
   loadHeroSettings();
   loadDashboard();
   adminApi('/api/admin/edits',{action:'list'}).then(d=>{document.getElementById('sbEditsCount').textContent=(d.edits||[]).length;}).catch(()=>{});
+  adminApi('/api/admin/messages',{action:'list'}).then(d=>{_threads=d.threads||[];msgBadge();}).catch(()=>{});
 }
 </script>
 </body>

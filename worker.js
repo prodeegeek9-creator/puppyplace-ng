@@ -34,6 +34,12 @@ export default {
     if (url.pathname === '/api/me/edit' && request.method === 'POST') return handleMeEdit(request, url, env, ctx);
     if (url.pathname === '/api/me/photo' && request.method === 'POST') return handleMePhoto(request, url, env);
     if (url.pathname === '/api/admin/edits' && request.method === 'POST') return handleAdminEdits(request, env, ctx);
+    if (url.pathname === '/api/contact' && request.method === 'GET') return handleContact(request, url, env, ctx);
+    if (url.pathname === '/api/dm/send' && request.method === 'POST') return handleDmSend(request, url, env, ctx);
+    if (url.pathname === '/api/dm/threads' && request.method === 'GET') return handleDmThreads(request, env);
+    if (url.pathname === '/api/dm/thread' && request.method === 'GET') return handleDmThread(request, url, env);
+    if (url.pathname === '/api/dm/report' && request.method === 'POST') return handleDmReport(request, url, env, ctx);
+    if (url.pathname === '/api/admin/messages' && request.method === 'POST') return handleAdminMessages(request, env);
 
     // Pet listings sent in by sellers through Vendwyze; saved hidden until approved in admin
     if (url.pathname === '/api/seller-listings' && request.method === 'POST') {
@@ -817,8 +823,12 @@ async function accountById(env, id) {
   return r.ok ? r.body[0] || null : null;
 }
 
-// A one-tap login link for a seller, sent in the WhatsApp chat they listed from.
-async function makeLoginLink(env, phone) {
+// Where a login link may take you after logging in.
+const safeNext = (v) => (/^\/(my-listings\.html|messages\.html(\?t=[0-9a-f-]{36})?)$/.test(String(v || '')) ? String(v) : null);
+
+// A one-tap login link, sent in the person's WhatsApp chat: to their listings,
+// or with next to a page such as one conversation.
+async function makeLoginLink(env, phone, next = null) {
   const token = randomToken();
   const r = await sbJson(env, 'pp_login_links', {
     method: 'POST',
@@ -826,7 +836,8 @@ async function makeLoginLink(env, phone) {
     body: JSON.stringify({ token_hash: await sha256Hex(token), phone, expires_at: new Date(Date.now() + LINK_DAYS * 864e5).toISOString() }),
   });
   if (!r.ok) throw new Error(`link not saved (${r.status})`);
-  return `${SITE}/login-link?t=${token}`;
+  const to = safeNext(next);
+  return `${SITE}/login-link?t=${token}${to ? `&next=${encodeURIComponent(to)}` : ''}`;
 }
 
 // A seller's listings: the ones listed from their WhatsApp chat (pet_owners),
@@ -890,6 +901,7 @@ async function handleAuthVerify(request, url, env) {
   try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
   const phone = phoneDigits(b?.phone);
   const code = String(b?.code ?? '').replace(/\D/g, '');
+  const name = cleanText(b?.name, 60);
   if (!phone || code.length !== 6) return userJson({ error: 'Enter the 6-digit code from WhatsApp.' }, 400);
 
   const now = new Date().toISOString();
@@ -906,42 +918,51 @@ async function handleAuthVerify(request, url, env) {
   await sbJson(env, `pp_login_codes?id=eq.${row.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ used_at: now }) });
 
   let account;
-  try { account = await upsertAccount(env, phone); } catch { return userJson({ error: 'Could not log you in. Try again.' }, 500); }
+  try { account = await upsertAccount(env, phone, { name }); } catch { return userJson({ error: 'Could not log you in. Try again.' }, 500); }
   return userJson({ ok: true, account: { name: account.name, phone: account.phone } }, 200, sessionCookie(await makeSession(env, account.id)));
 }
 
 // GET /login-link?t=…  A page with a button: WhatsApp and others open links to
 // make previews, and a GET that logged in would spend the link on the preview.
-function loginLinkPage(token, message) {
+// Referrer-Policy is same-origin, not no-referrer: with no-referrer the button's
+// POST carries "Origin: null" and the same-site check turns it away. The page
+// loads nothing from elsewhere, so the token in its address goes nowhere.
+function loginLinkPage(token, message, next = null) {
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const to = safeNext(next) || '/my-listings.html';
+  const msgs = to.startsWith('/messages');
   const body = message
-    ? `<p>${esc(message)}</p><p><a class="btn" href="/my-listings.html">Log in with your WhatsApp number</a></p>`
-    : `<p>Tap the button to open your listings on PuppyPlace.</p>
-       <form method="post" action="/login-link"><input type="hidden" name="t" value="${esc(token)}"/><button class="btn" type="submit">Open my listings</button></form>`;
+    ? `<p>${esc(message)}</p><p><a class="btn" href="${esc(to)}">Log in with your WhatsApp number</a></p>`
+    : `<p>Tap the button to open your ${msgs ? 'messages' : 'listings'} on PuppyPlace.</p>
+       <form method="post" action="/login-link"><input type="hidden" name="t" value="${esc(token)}"/><input type="hidden" name="next" value="${esc(to)}"/><button class="btn" type="submit">Open my ${msgs ? 'messages' : 'listings'}</button></form>`;
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="robots" content="noindex"/><title>My listings | PuppyPlace</title>
+<meta name="robots" content="noindex"/><title>Log in | PuppyPlace</title>
 <style>body{font-family:Nunito,system-ui,sans-serif;background:#f8f9fa;color:#1a1a18;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:16px}
 .card{background:#fff;border-radius:16px;padding:28px;max-width:380px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.08);text-align:center}
 h1{font-size:20px;margin:0 0 10px}p{color:#555;line-height:1.6}.btn{display:inline-block;background:#ed6436;color:#fff;border:0;border-radius:50px;padding:14px 26px;font:800 15px inherit;cursor:pointer;text-decoration:none}</style>
-</head><body><div class="card"><h1>🐾 PuppyPlace</h1>${body}</div></body></html>`, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } });
+</head><body><div class="card"><h1>🐾 PuppyPlace</h1>${body}</div></body></html>`, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'same-origin' } });
 }
 
 async function handleLoginLink(request, url, env) {
-  if (request.method === 'GET') return loginLinkPage(url.searchParams.get('t') || '', url.searchParams.get('t') ? null : 'This link is not complete.');
-  if (!accountsReady(env)) return loginLinkPage('', 'Log in is not set up yet.');
-  if (!sameOrigin(request, url)) return loginLinkPage('', 'Please open the link from WhatsApp again.');
+  if (request.method === 'GET') {
+    const t = url.searchParams.get('t') || '';
+    return loginLinkPage(t, t ? null : 'This link is not complete.', url.searchParams.get('next'));
+  }
   const form = await request.formData().catch(() => null);
+  const next = safeNext(form?.get('next')) || '/my-listings.html';
+  if (!accountsReady(env)) return loginLinkPage('', 'Log in is not set up yet.', next);
+  if (!sameOrigin(request, url)) return loginLinkPage('', 'Please open the link from WhatsApp again.', next);
   const token = String(form?.get('t') || '');
-  if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return loginLinkPage('', 'This link is not valid.');
+  if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return loginLinkPage('', 'This link is not valid.', next);
   const now = new Date().toISOString();
   const hash = await sha256Hex(token);
   const r = await sbJson(env, `pp_login_links?token_hash=eq.${hash}&used_at=is.null&expires_at=gt.${now}&select=phone&limit=1`);
   const link = r.ok ? r.body[0] : null;
-  if (!link) return loginLinkPage('', 'This link has expired or was already used.');
+  if (!link) return loginLinkPage('', 'This link has expired or was already used.', next);
   await sbJson(env, `pp_login_links?token_hash=eq.${hash}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ used_at: now }) });
   let account;
-  try { account = await upsertAccount(env, link.phone); } catch { return loginLinkPage('', 'Could not log you in. Try again.'); }
-  return new Response(null, { status: 303, headers: { Location: '/my-listings.html', 'Set-Cookie': sessionCookie(await makeSession(env, account.id)), 'Cache-Control': 'no-store' } });
+  try { account = await upsertAccount(env, link.phone); } catch { return loginLinkPage('', 'Could not log you in. Try again.', next); }
+  return new Response(null, { status: 303, headers: { Location: next, 'Set-Cookie': sessionCookie(await makeSession(env, account.id)), 'Cache-Control': 'no-store' } });
 }
 
 async function handleLogout() {
@@ -1111,6 +1132,253 @@ async function handleAdminEdits(request, env, ctx) {
     ctx.waitUntil(sendWhatsApp(env, { phone: acc.phone, text }));
   }
   return jsonResp({ ok: true }, 200);
+}
+
+/* ── BUYERS: WHATSAPP CONTACT AND MESSAGES ─────────────────────────────────
+ * A seller's WhatsApp number is no longer in the pet pages: a signed-in buyer
+ * gets the chat link from /api/contact (signing in is a WhatsApp code, about
+ * 20 seconds, on the pet page itself). Or the buyer sends a message on the site
+ * (/api/dm/…): the seller is told on WhatsApp with a one-tap link to reply, and
+ * the buyer the same way when they do; neither sees the other's number. Tables:
+ * supabase/messages.sql.
+ */
+
+const DM_MAX = 1000;
+const NEW_THREADS_PER_DAY = 10;
+const MESSAGES_PER_HOUR = 30;
+const CONTACTS_PER_HOUR = 30;
+// Words that come before most pet scams in Nigeria: a deposit, a transfer, an account number.
+const SCAM = /\b(deposit|pay(ment)? (first|before|upfront|now)|transfer|account (number|no|details)|acct|bank details|opay|palmpay|moniepoint|kuda|western union|delivery fee|caution fee|\d{10})\b/i;
+
+async function sessionAccount(request, env) {
+  const id = await readSession(request, env);
+  return id ? accountById(env, id) : null;
+}
+
+async function petBySlug(env, slug) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/.test(String(slug || ''))) return null;
+  const r = await sbJson(env, `pets?slug=eq.${encodeURIComponent(slug)}&active=eq.true&select=id,slug,breed,name,type,whatsapp,breeder,image_url,image_urls&limit=1`);
+  return r.ok ? r.body[0] || null : null;
+}
+
+// Who answers for a pet: the number it was listed from, else the one buyers were given.
+async function sellerPhoneFor(env, pet) {
+  const own = await sbJson(env, `pet_owners?pet_id=eq.${encodeURIComponent(pet.id)}&select=phone&limit=1`);
+  return (own.ok && own.body[0]?.phone) || phoneDigits(pet.whatsapp) || null;
+}
+
+const firstName = (a) => (a?.name ? String(a.name).split(' ')[0] : 'A buyer');
+
+// GET /api/contact?slug=…  → { url } for a signed-in buyer: the WhatsApp chat with the seller.
+async function handleContact(request, url, env, ctx) {
+  if (!accountsReady(env)) return userJson({ error: 'Not set up yet' }, 503);
+  const me = await sessionAccount(request, env);
+  if (!me) return userJson({ error: 'Sign in to chat on WhatsApp', login: true }, 401);
+  const pet = await petBySlug(env, url.searchParams.get('slug'));
+  const wa = pet ? String(pet.whatsapp || '').replace(/\D/g, '') : '';
+  if (!wa) return userJson({ error: 'This seller cannot be reached on WhatsApp. Send a message instead.' }, 404);
+
+  const since = new Date(Date.now() - 3600e3).toISOString();
+  const recent = await sbJson(env, `pet_leads?account_id=eq.${me.id}&created_at=gte.${since}&select=id`);
+  if (recent.ok && recent.body.length >= CONTACTS_PER_HOUR) return userJson({ error: 'Too many in a short time. Try again later.' }, 429);
+  ctx.waitUntil(sbJson(env, 'pet_leads', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pet_id: String(pet.id), account_id: me.id, kind: 'whatsapp' }) }).catch(() => {}));
+  ctx.waitUntil(sbJson(env, 'shop_events', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ event: 'whatsapp_click', path: `/pets/${pet.slug}`, item_id: String(pet.id), item_name: pet.breed }) }).catch(() => {}));
+
+  const text = `Hi, I'm interested in the ${pet.breed}${pet.name ? ' (' + pet.name + ')' : ''} listed on PuppyPlace.ng: ${SITE}/pets/${pet.slug}`;
+  return userJson({ ok: true, url: `https://wa.me/${wa}?text=${encodeURIComponent(text)}` });
+}
+
+// The other side is told on WhatsApp, with a one-tap link straight to the conversation.
+async function tellAboutMessage(env, { phone, pet, from, body, threadId }) {
+  let link = `${SITE}/messages.html?t=${threadId}`;
+  try { link = await makeLoginLink(env, phone, `/messages.html?t=${threadId}`); } catch { /* the plain link still works after logging in */ }
+  const quote = body.length > 160 ? body.slice(0, 157) + '…' : body;
+  return sendWhatsApp(env, { phone, text: `💬 New message about the *${pet.breed}* from ${from}:\n\n"${quote}"\n\nReply here: ${link}` });
+}
+
+// POST /api/dm/send { slug } or { thread_id }, with { body }
+async function handleDmSend(request, url, env, ctx) {
+  if (!accountsReady(env)) return userJson({ error: 'Not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  const me = await sessionAccount(request, env);
+  if (!me) return userJson({ error: 'Sign in to send a message', login: true }, 401);
+  let b;
+  try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
+  const body = String(b?.body ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, DM_MAX);
+  if (!body) return userJson({ error: 'Write a message first.' }, 400);
+
+  const hour = new Date(Date.now() - 3600e3).toISOString();
+  const mine = await sbJson(env, `pet_messages?sender_id=eq.${me.id}&created_at=gte.${hour}&select=id`);
+  if (!mine.ok) return userJson({ error: 'Messages are not set up yet' }, 503);
+  if (mine.body.length >= MESSAGES_PER_HOUR) return userJson({ error: 'You have sent a lot of messages. Try again in a while.' }, 429);
+
+  let thread, role, pet;
+  if (b?.thread_id) {
+    if (!/^[0-9a-f-]{36}$/.test(String(b.thread_id))) return userJson({ error: 'Conversation not found' }, 404);
+    const t = await sbJson(env, `pet_threads?id=eq.${b.thread_id}&select=*&limit=1`);
+    thread = t.ok ? t.body[0] : null;
+    if (!thread) return userJson({ error: 'Conversation not found' }, 404);
+    role = thread.buyer_id === me.id ? 'buyer' : (await isSellerOf(env, me, thread)) ? 'seller' : null;
+    if (!role) return userJson({ error: 'Conversation not found' }, 404);
+    pet = { id: thread.pet_id, slug: thread.pet_slug, breed: thread.pet_breed };
+  } else {
+    pet = await petBySlug(env, b?.slug);
+    if (!pet) return userJson({ error: 'That listing is not available.' }, 404);
+    const sellerPhone = await sellerPhoneFor(env, pet);
+    if (!sellerPhone) return userJson({ error: 'This seller cannot be reached here.' }, 404);
+    if (sellerPhone === me.phone || phoneDigits(pet.whatsapp) === me.phone) return userJson({ error: 'This is your own listing.' }, 400);
+    const t = await sbJson(env, `pet_threads?pet_id=eq.${encodeURIComponent(pet.id)}&buyer_id=eq.${me.id}&select=*&limit=1`);
+    thread = t.ok ? t.body[0] : null;
+    if (!thread) {
+      const day = new Date(Date.now() - 864e5).toISOString();
+      const started = await sbJson(env, `pet_threads?buyer_id=eq.${me.id}&created_at=gte.${day}&select=id`);
+      if (started.ok && started.body.length >= NEW_THREADS_PER_DAY) return userJson({ error: 'You have messaged a lot of sellers today. Try again tomorrow.' }, 429);
+      const made = await sbJson(env, 'pet_threads', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({ pet_id: String(pet.id), pet_slug: pet.slug, pet_breed: pet.breed, buyer_id: me.id, seller_phone: sellerPhone }),
+      });
+      if (made.ok) {
+        thread = made.body[0];
+      } else {
+        // Two first messages at once: the other one made the conversation.
+        const again = await sbJson(env, `pet_threads?pet_id=eq.${encodeURIComponent(pet.id)}&buyer_id=eq.${me.id}&select=*&limit=1`);
+        thread = again.ok ? again.body[0] : null;
+        if (!thread) return userJson({ error: 'Could not start the conversation. Try again.' }, 500);
+      }
+      if (made.ok) ctx.waitUntil(sbJson(env, 'pet_leads', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pet_id: String(pet.id), account_id: me.id, kind: 'message' }) }).catch(() => {}));
+    }
+    role = 'buyer';
+  }
+
+  const flagged = SCAM.test(body);
+  const sent = await sbJson(env, 'pet_messages', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({ thread_id: thread.id, sender: role, sender_id: me.id, body, flagged }),
+  });
+  if (!sent.ok) return userJson({ error: 'Could not send. Try again.' }, 500);
+
+  // Only the first unread message sends a WhatsApp alert: a conversation in full
+  // flow does not turn into a stream of notifications.
+  const otherUnread = role === 'buyer' ? thread.seller_unread : thread.buyer_unread;
+  const patch = {
+    last_message_at: new Date().toISOString(),
+    [role === 'buyer' ? 'seller_unread' : 'buyer_unread']: (otherUnread || 0) + 1,
+    ...(flagged ? { flagged: true } : {}),
+  };
+  await sbJson(env, `pet_threads?id=eq.${thread.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+  if (!otherUnread) {
+    let phone = thread.seller_phone, from = firstName(me);
+    if (role === 'seller') {
+      const buyer = await accountById(env, thread.buyer_id);
+      phone = buyer?.phone;
+      from = 'the seller';
+    }
+    if (phone) ctx.waitUntil(tellAboutMessage(env, { phone, pet, from, body, threadId: thread.id }));
+  }
+  return userJson({ ok: true, thread_id: thread.id, message: sent.body[0], warn: flagged });
+}
+
+async function isSellerOf(env, me, thread) {
+  if (thread.seller_phone === me.phone) return true;
+  const mine = await listingsFor(env, me.phone, 'id');
+  return mine.some((p) => String(p.id) === String(thread.pet_id));
+}
+
+// GET /api/dm/threads → every conversation I am in, as buyer or seller
+async function handleDmThreads(request, env) {
+  if (!accountsReady(env)) return userJson({ error: 'Not set up yet' }, 503);
+  const me = await sessionAccount(request, env);
+  if (!me) return userJson({ error: 'Sign in to see your messages', login: true }, 401);
+  const myPets = (await listingsFor(env, me.phone, 'id')).map((p) => encodeURIComponent(p.id));
+  const or = [`buyer_id.eq.${me.id}`, `seller_phone.eq.${me.phone}`, ...(myPets.length ? [`pet_id.in.(${myPets.join(',')})`] : [])].join(',');
+  const t = await sbJson(env, `pet_threads?or=(${or})&select=*&order=last_message_at.desc&limit=100`);
+  if (!t.ok) return userJson({ error: 'Messages are not set up yet' }, 503);
+  const ids = t.body.map((x) => x.id);
+  const buyers = [...new Set(t.body.map((x) => x.buyer_id))];
+  const last = ids.length ? await sbJson(env, `pet_messages?thread_id=in.(${ids.join(',')})&select=thread_id,body,sender,created_at&order=created_at.desc&limit=500`) : { body: [] };
+  const people = buyers.length ? await sbJson(env, `pp_accounts?id=in.(${buyers.join(',')})&select=id,name`) : { body: [] };
+  const petIds = [...new Set(t.body.map((x) => encodeURIComponent(x.pet_id)))];
+  const pets = petIds.length ? await sbJson(env, `pets?id=in.(${petIds.join(',')})&select=id,image_url,breeder`) : { body: [] };
+  const lastBy = new Map();
+  for (const m of last.body || []) if (!lastBy.has(m.thread_id)) lastBy.set(m.thread_id, m);
+  const nameOf = new Map((people.body || []).map((a) => [a.id, a.name]));
+  const petOf = new Map((pets.body || []).map((p) => [String(p.id), p]));
+  return userJson({
+    ok: true,
+    threads: t.body.map((x) => {
+      const asBuyer = x.buyer_id === me.id;
+      const p = petOf.get(String(x.pet_id));
+      return {
+        id: x.id, slug: x.pet_slug, breed: x.pet_breed, photo: p?.image_url || null, role: asBuyer ? 'buyer' : 'seller',
+        with: asBuyer ? p?.breeder || 'The seller' : (nameOf.get(x.buyer_id) || 'A buyer'),
+        unread: asBuyer ? x.buyer_unread : x.seller_unread, flagged: x.flagged, last: lastBy.get(x.id) || null, last_message_at: x.last_message_at,
+      };
+    }),
+  });
+}
+
+// GET /api/dm/thread?id=… → the messages, and marks them read for me
+async function handleDmThread(request, url, env) {
+  if (!accountsReady(env)) return userJson({ error: 'Not set up yet' }, 503);
+  const me = await sessionAccount(request, env);
+  if (!me) return userJson({ error: 'Sign in to see your messages', login: true }, 401);
+  const id = url.searchParams.get('id') || '';
+  if (!/^[0-9a-f-]{36}$/.test(id)) return userJson({ error: 'Conversation not found' }, 404);
+  const t = await sbJson(env, `pet_threads?id=eq.${id}&select=*&limit=1`);
+  const thread = t.ok ? t.body[0] : null;
+  const role = !thread ? null : thread.buyer_id === me.id ? 'buyer' : (await isSellerOf(env, me, thread)) ? 'seller' : null;
+  if (!role) return userJson({ error: 'Conversation not found' }, 404);
+  const m = await sbJson(env, `pet_messages?thread_id=eq.${id}&select=id,sender,body,flagged,created_at&order=created_at.asc&limit=500`);
+  const unread = role === 'buyer' ? 'buyer_unread' : 'seller_unread';
+  if (thread[unread]) await sbJson(env, `pet_threads?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ [unread]: 0 }) });
+  const other = role === 'seller' ? await accountById(env, thread.buyer_id) : null;
+  const pet = await sbJson(env, `pets?id=eq.${encodeURIComponent(thread.pet_id)}&select=breeder,image_url,active&limit=1`);
+  return userJson({
+    ok: true,
+    thread: { id, slug: thread.pet_slug, breed: thread.pet_breed, role, flagged: thread.flagged, reported: Boolean(thread.reported_at), photo: pet.body?.[0]?.image_url || null, live: pet.body?.[0]?.active === true,
+      with: role === 'buyer' ? pet.body?.[0]?.breeder || 'The seller' : other?.name || 'A buyer' },
+    messages: (m.body || []).map((x) => ({ ...x, mine: x.sender === role })),
+  });
+}
+
+// POST /api/dm/report { thread_id, reason }
+async function handleDmReport(request, url, env, ctx) {
+  if (!accountsReady(env)) return userJson({ error: 'Not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  const me = await sessionAccount(request, env);
+  if (!me) return userJson({ error: 'Sign in first', login: true }, 401);
+  const b = await request.json().catch(() => ({}));
+  if (!/^[0-9a-f-]{36}$/.test(String(b?.thread_id || ''))) return userJson({ error: 'Conversation not found' }, 404);
+  const t = await sbJson(env, `pet_threads?id=eq.${b.thread_id}&select=*&limit=1`);
+  const thread = t.ok ? t.body[0] : null;
+  if (!thread || !(thread.buyer_id === me.id || (await isSellerOf(env, me, thread)))) return userJson({ error: 'Conversation not found' }, 404);
+  const reason = cleanText(b?.reason, 300) || 'No reason given';
+  await sbJson(env, `pet_threads?id=eq.${thread.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ reported_at: new Date().toISOString(), report_reason: reason }) });
+  ctx.waitUntil(sendWhatsApp(env, { to: 'owner', text: `🚩 A conversation about the *${thread.pet_breed}* was reported: "${reason}". See it in your site admin → Messages.` }));
+  return userJson({ ok: true });
+}
+
+// POST /api/admin/messages { token, action: 'list' | 'thread', id }
+async function handleAdminMessages(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+  if (b.action === 'thread') {
+    if (!/^[0-9a-f-]{36}$/.test(String(b.id || ''))) return jsonResp({ error: 'A valid conversation is required' }, 400);
+    const m = await sbJson(env, `pet_messages?thread_id=eq.${b.id}&select=sender,body,flagged,created_at&order=created_at.asc&limit=500`);
+    return jsonResp({ ok: true, messages: m.body || [] }, 200);
+  }
+  const t = await sbJson(env, 'pet_threads?select=*&order=last_message_at.desc&limit=200');
+  if (!t.ok) return jsonResp({ error: 'Messages are not set up yet. Run supabase/messages.sql once in Supabase → SQL Editor.', setup: true }, 503);
+  const buyers = [...new Set(t.body.map((x) => x.buyer_id))];
+  const people = buyers.length ? await sbJson(env, `pp_accounts?id=in.(${buyers.join(',')})&select=id,name,phone`) : { body: [] };
+  const who = new Map((people.body || []).map((a) => [a.id, a]));
+  const rank = (x) => (x.reported_at ? 0 : x.flagged ? 1 : 2);
+  const threads = t.body.map((x) => ({ ...x, buyer: who.get(x.buyer_id) || null })).sort((a, z) => rank(a) - rank(z));
+  return jsonResp({ ok: true, threads }, 200);
 }
 
 /* ── BREED GUIDES ── */
@@ -1819,12 +2087,13 @@ function renderPetPage(p, guide = null) {
     ? `<div class="pg-price free">Free to adopt</div>`
     : (p.price ? `<div class="pg-price">₦${Number(p.price).toLocaleString('en-NG')}</div>` : `<div class="pg-price ask">Price on request</div>`);
 
-  const waLink = text => `https://wa.me/${wa}?text=${encodeURIComponent(text)}`;
-  const interest = `Hi, I'm interested in the ${breed}${p.name ? ' (' + p.name + ')' : ''} listed on PuppyPlace.ng: ${petUrl}`;
-  const question = `Hi, I have a question about the ${breed}${p.name ? ' (' + p.name + ')' : ''} listed on PuppyPlace.ng: ${petUrl}`;
+  // The seller's number is not in the page: /pp-contact.js signs the buyer in
+  // (a code on WhatsApp) and then opens the chat, or sends a message on the site.
+  const contactData = `data-slug="${esc(p.slug)}" data-breed="${esc(breed)}"`;
   const ctaHtml = wa
-    ? `<a class="btn-wa" href="${esc(waLink(interest))}" target="_blank" rel="noopener noreferrer">${I.wa}Contact on WhatsApp</a>
-       <a class="btn-ask" href="${esc(waLink(question))}" target="_blank" rel="noopener noreferrer">${I.chat}Ask a question</a>`
+    ? `<button type="button" class="btn-wa" data-pp-contact="whatsapp" ${contactData}>${I.wa}Contact on WhatsApp</button>
+       <button type="button" class="btn-ask" data-pp-contact="message" ${contactData}>${I.chat}Send a message</button>
+       <p class="cta-note">Sign in once with your WhatsApp number. Messages here keep your number private.</p>`
     : `<a class="btn-ask" href="/contact.html">${I.chat}Ask a question</a>`;
 
   const socials = PET_FOOTER_SOCIALS.filter(s => s.url);
@@ -1945,7 +2214,9 @@ svg{flex-shrink:0}
 .pg-price{font-size:38px;font-weight:800;color:var(--orange);letter-spacing:-.01em;margin-bottom:14px}
 .pg-price.free{color:var(--green);font-size:32px}
 .pg-price.ask{color:var(--text);font-size:26px}
-.btn-wa,.btn-ask{display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border-radius:50px;font-size:16px;font-weight:700;transition:all .2s}
+.btn-wa,.btn-ask{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;border-radius:50px;font:700 16px 'Nunito',sans-serif;border:0;cursor:pointer;transition:all .2s}
+.btn-wa:disabled,.btn-ask:disabled{opacity:.6;cursor:wait}
+.cta-note{margin:-12px 0 22px;font-size:12.5px;color:#868686;text-align:center;line-height:1.5}
 .btn-wa{background:#22c35e;color:#fff;margin-bottom:12px}
 .btn-wa:hover{background:#1aa850}
 .btn-ask{border:1.5px solid var(--orange);color:var(--orange);background:#fff;margin-bottom:22px}
@@ -2118,6 +2389,7 @@ svg{flex-shrink:0}
   </div>
 </footer>
 ${pageScript}
+<script src="/pp-auth.js" defer></script><script src="/pp-contact.js" defer></script>
 <script>(function(){try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="wa.me"]');if(!a)return;var v=JSON.stringify({event:'whatsapp_click',path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);},true);})();</script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
