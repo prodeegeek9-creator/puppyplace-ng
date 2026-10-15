@@ -35,8 +35,12 @@ In October 2026 the 448 stored photos averaged 1.5 MB. Now:
   replaced by a 1,600 px copy right after they are saved, when that saves at
   least a fifth of the size.
 - Admin → Settings → **Shrink stored photos** does the same for photos already
-  there, 8 at a time (`/api/admin/shrink-photos`). Files keep their names,
-  links and formats; the full-size originals are not kept.
+  there, 8 at a time (`/api/admin/shrink-photos`). Files keep their names and
+  links; the full-size originals are not kept. JPEGs stay JPEG; PNGs are saved
+  as WebP (served as `image/webp` under their `.png` name), because most of the
+  stored PNGs were photos (325 files, 570 MB) and re-saving a photo as PNG
+  barely shrinks it. The site logo, which is also the browser-tab icon, is left
+  alone.
 
 Videos for social posting (`puppy-videos`, 2.6 MB each on average) are fetched by
 Facebook, Instagram and WhatsApp straight from Supabase. They are small enough

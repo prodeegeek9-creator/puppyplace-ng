@@ -746,7 +746,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
             </div>
             <div class="settings-card">
               <h3>🗜️ Shrink stored photos</h3>
-              <p>Replaces photos over 300 KB with a copy at most 1,600 px wide. They look the same on the site, take far less of the 1 GB Supabase storage, and download faster. Links don't change. The full-size originals are not kept.</p>
+              <p>Replaces photos over 300 KB with a copy at most 1,600 px wide (PNG photos are saved as WebP, which is far smaller). They look the same on the site, take far less of the 1 GB Supabase storage, and download faster. Links don't change. The full-size originals are not kept.</p>
               <div id="shrinkStatus" style="background:#f1f3f5;border-radius:10px;padding:14px;font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">Press “Check” to see how many photos can be made smaller.</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <button class="settings-save" id="shrinkCheckBtn" onclick="shrinkCheck()">🔍 Check</button>
@@ -2162,17 +2162,19 @@ async function shrinkRun(){
   const st=document.getElementById('shrinkStatus'), run=document.getElementById('shrinkRunBtn'), chk=document.getElementById('shrinkCheckBtn');
   run.disabled=chk.disabled=true;
   let done=0, saved=0, shrunk=0, skipped=0;
+  const why={};
   const total=_shrinkList.length;
   for(let i=0;i<total;i+=8){
     const names=_shrinkList.slice(i,i+8).map(f=>f.name);
     try{
       const d=await adminApi('/api/admin/shrink-photos',{action:'shrink',names});
-      for(const r of d.results||[]){ if(r.after&&!r.skipped){ shrunk++; saved+=Math.max(0,(r.before||0)-r.after); } else skipped++; }
-    }catch(err){ skipped+=names.length; }
+      for(const r of d.results||[]){ if(r.after&&!r.skipped){ shrunk++; saved+=Math.max(0,(r.before||0)-r.after); } else { skipped++; why[r.skipped||'unknown']=(why[r.skipped||'unknown']||0)+1; } }
+    }catch(err){ skipped+=names.length; why[err.message]=(why[err.message]||0)+names.length; }
     done=Math.min(total,i+8);
     st.innerHTML=`Working… ${fmtN(done)} of ${fmtN(total)} · <strong>${fmtN(shrunk)}</strong> made smaller · <strong>${fmtMB(saved)}</strong> saved`+(skipped?` · ${fmtN(skipped)} left as they were`:'');
   }
-  st.innerHTML=`✅ Done. <strong>${fmtN(shrunk)}</strong> photos made smaller, <strong>${fmtMB(saved)}</strong> saved.`+(skipped?` ${fmtN(skipped)} were left as they were (already small enough, or could not be resized; you can run it again later).`:'');
+  const reasons=Object.entries(why).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${escHtml(k)}: ${fmtN(n)}`).join(' · ');
+  st.innerHTML=`✅ Done. <strong>${fmtN(shrunk)}</strong> photos made smaller, <strong>${fmtMB(saved)}</strong> saved.`+(skipped?` ${fmtN(skipped)} ${skipped===1?'was':'were'} left as ${skipped===1?'it was':'they were'} (${reasons}). You can run it again later.`:'');
   run.disabled=chk.disabled=false; run.style.display='none'; _shrinkList=[];
 }
 
