@@ -14,5 +14,10 @@
   // by .assetsignore)
   "rules": [
     { "type": "Text", "globs": ["templates/**/*.html"], "fallthrough": true }
-  ]
+  ],
+  // Every night at 03:17 UTC (04:17 in Lagos): worker.js `scheduled` deletes
+  // social videos that were posted more than three days ago.
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  }
 }
