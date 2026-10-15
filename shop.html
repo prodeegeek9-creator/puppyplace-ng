@@ -803,8 +803,15 @@ footer{background:#1a1a18;color:rgba(255,255,255,.65);padding:60px 0 0;margin-to
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
 <script>
+// Photo links from the database point at Cloudflare's cached copies (/img/) rather
+// than Supabase, so visitors' downloads don't use up the Supabase plan.
+const ppCdnFetch = (input, init) => fetch(input, init).then(async (res) => {
+  if (res.status === 204 || !/json/.test(res.headers.get('Content-Type') || '')) return res;
+  const text = (await res.text()).replace(/https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/hero-images\//g, '/img/');
+  return new Response(text, { status: res.status, statusText: res.statusText, headers: res.headers });
+});
 const supabase = (window.supabase && window.PPCONFIG && window.PPCONFIG.SUPABASE_URL)
-  ? window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON)
+  ? window.supabase.createClient(window.PPCONFIG.SUPABASE_URL, window.PPCONFIG.SUPABASE_ANON, { global: { fetch: ppCdnFetch } })
   : null;
 
 let allProds = [];
