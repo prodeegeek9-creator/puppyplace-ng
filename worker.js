@@ -2209,7 +2209,7 @@ async function servePetsPage(page, env) {
     PRESET_JSON: scriptJson(preset),
   };
   const out = PETS_TEMPLATE.replace(/\{\{([A-Z0-9_]+)\}\}/g, (m, k) => (k in fill ? fill[k] : m));
-  return html(out, failed ? 503 : 200);
+  return failed ? tryLater(out) : html(out, 200);
 }
 
 // Listing pages worth a place in the sitemap: each type page with listings,
@@ -2233,11 +2233,14 @@ async function servePetPage(slug, env) {
       `${env.SUPABASE_URL}/rest/v1/pets?slug=eq.${encodeURIComponent(slug)}&active=eq.true&select=*`,
       { headers: sbHeaders(env) }
     );
+    // A database error is not "no such pet": a 404 here tells Google a live listing is gone
+    if (!res.ok) throw new Error(`Supabase ${res.status}`);
     const rows = await res.json();
-    if (!rows || !rows.length) return html(petNotFoundPage(), 404);
+    if (!rows.length) return html(petNotFoundPage(), 404);
     return html(renderPetPage(rows[0], await approvedGuide(rows[0].breed, env)), 200);
   } catch (e) {
-    return html(petErrorPage('Failed to load pet.'), 500);
+    console.error('pet ' + slug + ':', e.message);
+    return tryLater(petErrorPage('Failed to load pet.'));
   }
 }
 
@@ -2773,7 +2776,7 @@ async function servePost(slug, env) {
     ]);
   } catch (e) {
     console.error('post ' + slug + ':', e.message);
-    return html(errorPage('Failed to load article.'), 500);
+    return tryLater(errorPage('Failed to load article.'));
   }
   if (!post) {
     const match = closestSlug(slug, all.map(p => p.slug).filter(Boolean));
@@ -2866,7 +2869,7 @@ async function serveBlogIndex(url, env, cat) {
     posts = await getAllPosts(env);
   } catch (e) {
     console.error('blog index:', e.message);
-    return html(errorPage('Failed to load the blog.'), 500);
+    return tryLater(errorPage('Failed to load the blog.'));
   }
   const counts = {};
   for (const p of posts) { const c = blogCategory(p).slug; counts[c] = (counts[c] || 0) + 1; }
@@ -3042,6 +3045,14 @@ function html(body, status) {
     status,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });
+}
+
+// The database didn't answer. 503 + Retry-After tells Google the page is only
+// briefly down and to come back, so a short outage doesn't cost it its place.
+function tryLater(body) {
+  const res = html(body, 503);
+  res.headers.set('Retry-After', '300');
+  return res;
 }
 
 function esc(s) {
@@ -3394,24 +3405,25 @@ async function serveSitemap(env) {
     return new Response('Server not configured', { status: 503 });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-
+  // No lastmod on these: there's no real date to give, and stamping every page
+  // with today's date daily teaches Google to ignore the dates that are real
+  // (pets, posts, products), which it uses to pick what to crawl next
   const staticPages = [
-    { loc: 'https://puppyplace.ng/', lastmod: today },
-    { loc: 'https://puppyplace.ng/shop.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/about.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/contact.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/blog.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/pets.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/privacy.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/terms.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/faq.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/shipping.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/returns.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/track-order.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/sell.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/sell-my-dog.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/careers.html', lastmod: today },
+    'https://puppyplace.ng/',
+    'https://puppyplace.ng/shop.html',
+    'https://puppyplace.ng/about.html',
+    'https://puppyplace.ng/contact.html',
+    'https://puppyplace.ng/blog.html',
+    'https://puppyplace.ng/pets.html',
+    'https://puppyplace.ng/privacy.html',
+    'https://puppyplace.ng/terms.html',
+    'https://puppyplace.ng/faq.html',
+    'https://puppyplace.ng/shipping.html',
+    'https://puppyplace.ng/returns.html',
+    'https://puppyplace.ng/track-order.html',
+    'https://puppyplace.ng/sell.html',
+    'https://puppyplace.ng/sell-my-dog.html',
+    'https://puppyplace.ng/careers.html',
   ];
 
   // Each source is fetched on its own and a failure only drops that source,
@@ -3422,18 +3434,18 @@ async function serveSitemap(env) {
     sitemapRows(env, 'pets', 'active=eq.true&order=created_at.desc'),
     getLivePets(env).catch(e => { console.error('sitemap pet pages:', e.message); return []; }),
   ]);
-  const pets = petRows.filter(p => p.slug).map(p => ({ loc: `https://puppyplace.ng/pets/${encodeURIComponent(p.slug)}`, lastmod: (p.updated_at || today).slice(0, 10) }));
+  const pets = petRows.filter(p => p.slug).map(p => ({ loc: `https://puppyplace.ng/pets/${encodeURIComponent(p.slug)}`, lastmod: p.updated_at ? p.updated_at.slice(0, 10) : '' }));
 
   const toUrl = (loc, lastmod) =>
     `  <url>\n    <loc>${loc}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
 
-  const staticUrls = staticPages.map(p => toUrl(p.loc, p.lastmod));
+  const staticUrls = staticPages.map(loc => toUrl(loc));
   const usedCats = new Set(posts.map(p => blogCategory(p).slug));
-  const catUrls = BLOG_CATS.filter(c => usedCats.has(c.slug)).map(c => toUrl(`https://puppyplace.ng${blogCatPath(c)}`, today));
+  const catUrls = BLOG_CATS.filter(c => usedCats.has(c.slug)).map(c => toUrl(`https://puppyplace.ng${blogCatPath(c)}`));
   const postUrls = posts.map(p => toUrl(`https://puppyplace.ng${postPath(p)}`, p.published_at ? p.published_at.slice(0, 10) : ''));
   const productUrls = products.filter(p => p.slug).map(p => toUrl(`https://puppyplace.ng/product/${encodeURIComponent(p.slug)}.html`, p.updated_at ? p.updated_at.slice(0, 10) : ''));
   const petUrls = pets.map(p => toUrl(p.loc, p.lastmod));
-  const petPageUrls = petsSitemapPaths(livePets).map(path => toUrl(`https://puppyplace.ng${path}`, today));
+  const petPageUrls = petsSitemapPaths(livePets).map(path => toUrl(`https://puppyplace.ng${path}`));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...catUrls, ...postUrls, ...productUrls, ...petPageUrls, ...petUrls].join('\n')}\n</urlset>`;
 
@@ -3659,11 +3671,11 @@ async function serveProduct(slugOrId, env) {
     const base = env.SUPABASE_URL;
 
     // 1. Try slug column lookup
+    // (a failure here is the database, not a missing product: never answer it with a 404)
     const slugRes = await fetch(`${base}/rest/v1/shop_products?slug=eq.${encodeURIComponent(slugOrId)}&active=eq.true&select=*`, { headers: h });
-    if (slugRes.ok) {
-      const rows = await slugRes.json();
-      if (rows && rows.length) product = rows[0];
-    }
+    if (!slugRes.ok) throw new Error(`Supabase ${slugRes.status}`);
+    const slugRows = await slugRes.json();
+    if (slugRows && slugRows.length) product = slugRows[0];
 
     // 2. Try direct ID lookup
     if (!product) {
@@ -3689,7 +3701,8 @@ async function serveProduct(slugOrId, env) {
       }
     }
   } catch (e) {
-    return html(productErrorPage('Failed to load product.'), 500);
+    console.error('product ' + slugOrId + ':', e.message);
+    return tryLater(productErrorPage('Failed to load product.'));
   }
 
   if (!product) {
