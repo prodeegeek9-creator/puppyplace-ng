@@ -42,7 +42,7 @@ export function genderOf(p) {
 
 // Cards show a 600px copy: the site's photo links (Supabase's, which pages turn
 // into /img/ ones, or /img/ already) take ?w= (see /img in worker.js).
-function cardSize(u) {
+export function cardSize(u) {
   const s = String(u);
   return /(\/storage\/v1\/object\/public\/hero-images\/|^(https:\/\/puppyplace\.ng)?\/img\/)/.test(s) && !s.includes('?') ? `${s}?w=600` : s;
 }

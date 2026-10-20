@@ -1,6 +1,6 @@
 import BLOG_TEMPLATE from './templates/blog.html';
 import PETS_TEMPLATE from './templates/pets.html';
-import { renderPetCard, ageWeeks, MAIN_TYPES } from './pet-cards.js';
+import { renderPetCard, ageWeeks, MAIN_TYPES, cardSize } from './pet-cards.js';
 
 export default {
   // Nightly (wrangler.jsonc → triggers): clear posted social videos out of storage.
@@ -172,14 +172,12 @@ export default {
       return new Response(null, { status: 204 });
     }
 
+    if (url.pathname === '/' || url.pathname === '/index.html') return serveHome(url, env);
+
     const asset = await env.ASSETS.fetch(request);
     if (asset.status !== 404) return asset;
     // html_handling is "none", so .html pages are served as-is (matching the
-    // canonical links and sitemap); the home page and old extensionless
-    // addresses are handled here
-    if (url.pathname === '/') {
-      return env.ASSETS.fetch(new Request(new URL('/index.html', url.origin), request));
-    }
+    // canonical links and sitemap); old extensionless addresses are handled here
     const bare = url.pathname.replace(/\/+$/, '');
     if (bare === '/index') return Response.redirect('https://puppyplace.ng/', 301);
     if (/^\/[a-z0-9-]+$/i.test(bare)) {
@@ -3498,6 +3496,139 @@ async function serveSitemap(env) {
   });
 }
 
+/* ── HOME PAGE ──────────────────────────────────────────────────────────
+ * index.html loads its products, pets and latest posts from the browser, so
+ * a crawler that doesn't run the page's scripts (AdSense's reviewer among
+ * them) found an empty shop with no link to any product or pet. The same
+ * cards now come in the HTML, each with a real link; the page's script
+ * redraws them when it has loaded the same data.
+ */
+const HOME_PET_LOOK = {
+  Dog:          ['🐕', 'linear-gradient(135deg,#fdeee7,#fbd4c3)'],
+  Cat:          ['🐈', 'linear-gradient(135deg,#e8f5e9,#c8e6c9)'],
+  Bird:         ['🦜', 'linear-gradient(135deg,#e3f2fd,#bbdefb)'],
+  Rabbit:       ['🐰', 'linear-gradient(135deg,#f3e5f5,#e1bee7)'],
+  Fish:         ['🐠', 'linear-gradient(135deg,#e0f7fa,#b2ebf2)'],
+  'Guinea Pig': ['🐹', 'linear-gradient(135deg,#fff9c4,#fff59d)'],
+  Reptile:      ['🦎', 'linear-gradient(135deg,#f1f8e9,#dcedc8)'],
+};
+const HOME_LABELS = { sale: ['lbl-sale', 'Sale'], new: ['lbl-new', 'New'], hot: ['lbl-hot', 'Hot'], best: ['lbl-best', 'Best Seller'], popular: ['lbl-sale', 'Popular'] };
+
+async function serveHome(url, env) {
+  const page = await env.ASSETS.fetch(new Request(new URL('/index.html', url.origin)));
+  if (!page.ok || !env.SUPABASE_URL) return page;
+  // A slow database leaves a section to the page's script rather than holding the page
+  const soon = (p) => Promise.race([p.catch(() => []), new Promise((r) => setTimeout(() => r([]), 3000))]);
+  const [products, pets, posts] = await Promise.all([soon(homeProducts(env)), soon(getLivePets(env)), soon(getAllPosts(env))]);
+
+  let body = await page.text();
+  const fill = (id, cards) => { body = body.replace(`id="${id}"></div>`, `id="${id}">${cards}</div>`); };
+  if (products.length) {
+    fill('prodGrid', products.slice(0, 8).map(homeProductCard).join(''));
+    body = body.replace('<strong id="pCount"></strong>', `<strong id="pCount">${products.length}</strong>`);
+    if (products.length > 8) body = body.replace('id="seeMoreWrap" style="display:none;"', 'id="seeMoreWrap"');
+  }
+  if (pets.length) fill('petGrid', pets.map(homePetCard).join(''));
+  if (posts.length) fill('blogGrid', homeBlogCards(posts.slice(0, 3)));
+  return html(body, 200);
+}
+
+async function homeProducts(env) {
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/shop_products?active=eq.true&select=*&order=created_at.desc`, { headers: sbPublicHeaders(env) });
+  if (!res.ok) throw new Error(`products ${res.status}`);
+  const rows = await res.json();
+  return Array.isArray(rows) ? rows : [];
+}
+
+// image_url holds one link, or a JSON list of them
+function firstImage(v) {
+  const s = String(v || '');
+  try { const a = JSON.parse(s); if (Array.isArray(a)) return a[0] || ''; } catch { /* a plain link */ }
+  return s;
+}
+
+// The same card as renderProds() in index.html
+function homeProductCard(r) {
+  const href = esc(productPath(r));
+  const price = Number(r.price) || 0;
+  const was = Number(r.original_price) || 0;
+  const img = firstImage(r.image_url);
+  const [cls, label] = HOME_LABELS[r.tag] || ['lbl-sale', r.tag];
+  const reviews = Number(r.review_count) || 0;
+  const rating = reviews ? Number(r.rating) || 0 : 0;
+  const stars = Math.min(5, Math.round(rating));
+  return `<div class="pcard">
+      <div class="pc-thumb">
+        ${r.tag ? `<span class="pc-badge ${cls}">${esc(label)}</span>` : ''}
+        ${img ? `<img src="${esc(cardSize(img))}" alt="${esc(r.name)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span>${esc(r.emoji || '📦')}</span>`}
+      </div>
+      <div class="pc-body">
+        <div class="pc-cat">${esc(r.category)} · ${esc(r.pet_type || 'All')}</div>
+        <div class="pc-name"><a href="${href}">${esc(r.name)}</a></div>
+        ${reviews ? `<div class="pc-stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}<span class="pc-rc">${esc(String(rating))} (${reviews})</span></div>` : '<div class="pc-stars"><span class="pc-rc">No reviews yet</span></div>'}
+        <div class="pc-price-row">
+          <span class="pc-price">${naira(price)}</span>
+          ${was ? `<span class="pc-del">${naira(was)}</span><span class="pc-disc">-${Math.round((1 - price / was) * 100)}%</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+// The same card as renderPets() in index.html, less the Contact button (it needs the seller's number)
+function homePetCard(p) {
+  const [emoji, bg] = HOME_PET_LOOK[p.type] || ['🐾', 'linear-gradient(135deg,#fafafa,#f0f0f0)'];
+  const adopt = p.listing_type === 'adoption';
+  const health = [p.dewormed && 'Dewormed', p.vaccinated && 'Vaccinated'].filter(Boolean);
+  const name = esc(p.breed || p.type);
+  return `<div class="pet-card">
+        <div class="pt-img" style="${p.image_url ? 'background:#f5f5f5' : `background:${bg}`}">
+          <span class="pt-badge ${adopt ? 'lbl-new' : 'lbl-hot'}">${adopt ? 'Adopt' : 'For Sale'}</span>
+          ${p.image_url ? `<img src="${esc(cardSize(p.image_url))}" alt="${name}" style="width:100%;height:100%;object-fit:cover;"/>` : `<span style="font-size:58px">${emoji}</span>`}
+        </div>
+        <div class="pt-body">
+          <div class="pt-breed">${esc(p.type)}${p.pedigree ? ` · ${p.pedigree === 'pedigree' ? 'Pedigree' : 'Non-Pedigree'}` : ''}</div>
+          <div class="pt-name">${p.slug ? `<a href="/pets/${esc(encodeURIComponent(p.slug))}">${name}</a>` : name}</div>
+          ${(p.name || p.breeder) ? `<div style="font-size:12px;color:var(--gray);margin-bottom:6px;">${esc(p.name)}${p.name && p.breeder ? ' · ' : ''}${p.breeder ? '🏠 ' + esc(p.breeder) : ''}</div>` : ''}
+          <div class="pt-tags">
+            ${p.age ? `<span class="pt-tag">${esc(p.age)}</span>` : ''}
+            ${health.map((t) => `<span class="pt-tag" style="color:#2ecc71;background:#eafaf1;border-color:#eafaf1">${t}</span>`).join('')}
+          </div>
+          <div class="pt-loc">📍 ${esc(p.location)}</div>
+          <div class="pt-footer">
+            ${adopt ? '<span class="pt-price" style="color:#2ecc71">Free / Adoption</span>' : `<span class="pt-price">${naira(p.price)}</span>`}
+          </div>
+        </div>
+      </div>`;
+}
+
+// The same cards as renderBlog() in index.html: the newest post large, the next two small
+function homeBlogCards(posts) {
+  const card = (p, small) => {
+    const cat = esc(p.category || 'General');
+    const color = esc(p.cat_color || '#ED6436');
+    const bg = esc(p.bg_color || '#fff5f0');
+    const date = p.published_at ? new Date(p.published_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    const meta = `${esc(p.author || 'PuppyPlace')} · ${esc(date)} · ${esc(String(p.read_time || 5))} min read`;
+    const img = p.featured_image
+      ? `<img src="${esc(cardSize(p.featured_image))}" alt="${esc(p.title)}" loading="lazy"/>`
+      : `<span style="font-size:${small ? 56 : 80}px;">${esc(p.emoji || '📝')}</span>`;
+    return `
+    <a class="blog-card" href="${esc(postPath(p))}">
+      <div class="blog-img${small ? ' sm' : ''}" style="background:${bg};">
+        ${img}
+        <span class="blog-cat-pill" style="background:${color}">${cat}</span>
+      </div>
+      <div class="blog-body">
+        <div class="blog-title"${small ? ' style="font-size:16px;"' : ''}>${esc(p.title)}</div>
+        <div class="blog-meta">${meta}</div>
+        ${small ? '' : `<p style="font-size:13px;color:#666;margin:10px 0 0;line-height:1.6;">${esc(p.excerpt)}</p>`}
+        <span class="blog-read">${small ? 'Read →' : 'Read Article →'}</span>
+      </div>
+    </a>`;
+  };
+  return posts.map((p, i) => card(p, i > 0)).join('');
+}
+
 /* ── PAGE VIEW STATS ── */
 
 async function handleStats(request, url, env) {
@@ -4190,7 +4321,7 @@ ${p.review_count > 0 ? `
         <div style="background:var(--light);border-radius:var(--r);padding:16px;font-size:13px"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-bottom:10px">Delivering to</div><div id="coReviewDetails" style="display:flex;flex-direction:column;gap:5px"></div></div>
       </div>
       <div class="co-section" id="coStep3">
-        <div class="co-test-banner">&#x1F9EA; Test mode &#x2014; use card <strong>4084 0840 8408 4081</strong> &#xB7; Exp: any future date &#xB7; CVV: any 3 digits</div>
+        <div class="co-test-banner" id="coTestBanner" hidden></div>
         <div class="co-pay-info"><div class="co-pay-ico">&#x1F512;</div><div class="co-pay-text"><h4>Secure payment via Paystack</h4><p>Your payment is encrypted and processed securely. PuppyPlace.ng never stores your card details.</p></div></div>
         <div class="co-summary" id="coPaySummary"></div>
         <div style="text-align:center;font-size:11px;color:var(--gray);font-weight:700;">&#x1F510; SSL Encrypted &nbsp;&#xB7;&nbsp; &#x2705; Paystack Secured &nbsp;&#xB7;&nbsp; &#x1F1F3;&#x1F1EC; Nigerian Payment Gateway</div>
@@ -4248,6 +4379,8 @@ ${p.review_count > 0 ? `
 const fmt=n=>'₦'+n.toLocaleString('en-NG');
 const escH=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const PAYSTACK_PUBLIC_KEY=(window.PPCONFIG&&window.PPCONFIG.PAYSTACK_PUBLIC_KEY)||'';
+// Paystack's test card, shown only while the site runs on a test key
+if(PAYSTACK_PUBLIC_KEY.startsWith('pk_test_')){const tb=document.getElementById('coTestBanner');tb.innerHTML='&#x1F9EA; Test mode &#x2014; use card <strong>4084 0840 8408 4081</strong> &#xB7; Exp: any future date &#xB7; CVV: any 3 digits';tb.hidden=false;}
 const N8N_WEBHOOK_URL=(window.PPCONFIG&&window.PPCONFIG.N8N_WEBHOOK_URL)||'';
 let _supabase=null;
 try{if(window.supabase&&window.PPCONFIG&&window.PPCONFIG.SUPABASE_URL){_supabase=window.supabase.createClient(window.PPCONFIG.SUPABASE_URL,window.PPCONFIG.SUPABASE_ANON);}}catch(e){console.warn('Supabase init failed:',e.message);}
