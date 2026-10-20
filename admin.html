@@ -1922,6 +1922,21 @@ function petIssues(p){
   if(!p.location) out.push('No location');
   if(!p.whatsapp) out.push('No WhatsApp number');
   if(!p.age) out.push('No age');
+  return out.concat(petLooksWrong(p));
+}
+// Answers that went into the wrong box on WhatsApp: ₦70 meant as ₦70,000, a
+// message saved as the breed, a question as the age, the pet's name or a stray
+// word ("Done", "Or") as the seller's name.
+const PET_NOT_A_SELLER=/^(done|or|and|yes|no|ok|okay|name|my name|kennel|my kennel|brand name|my kennel brand name|tq|thanks?)$/i;
+function petLooksWrong(p){
+  const out=[];
+  const price=Number(p.price);
+  if(p.listing_type!=='adoption'&&price>0&&price<1000) out.push(`Price looks too low (${fmtMoney(price)})`);
+  const breed=String(p.breed||'').trim();
+  if(breed.split(/\s+/).length>5||/\?|\b(please|would like|enquiry|inquiry|looking for)\b/i.test(breed)) out.push('Breed looks like a message');
+  if(/\?|\b(when|approv\w*|review|listing)\b/i.test(String(p.age||''))) out.push('Age looks like a question');
+  const seller=String(p.breeder||'').trim();
+  if(seller&&(PET_NOT_A_SELLER.test(seller)||/\b(her|his|its|pet'?s?) name\b/i.test(seller)||(p.name&&seller.toLowerCase()===String(p.name).trim().toLowerCase()))) out.push("Seller name looks wrong (the pet's name, or a stray word)");
   return out;
 }
 function filteredPets(){
@@ -1953,7 +1968,7 @@ function renderPets(){
   document.getElementById('sbPetsCount').textContent=_pets.length;
   document.getElementById('petsSummary').textContent=`${_pets.length} in all · ${live} live · ${pending} awaiting approval`;
   document.getElementById('petsPendingNote').textContent=pending?`${pending} waiting for review. Check the photos and details, then tap ✅ to publish.`:'';
-  document.getElementById('petPills').innerHTML=[['','All',_pets.length],['pending','Needs review',pending],['live','Live',live],['issues','Missing details',issues]]
+  document.getElementById('petPills').innerHTML=[['','All',_pets.length],['pending','Needs review',pending],['live','Live',live],['issues','Needs a fix',issues]]
     .map(([v,l,n])=>`<button class="dx-pill${_petTab===v?' on':''}" onclick="_petTab='${v}';renderPets()">${l} · ${n}</button>`).join('');
   const list=filteredPets();
   document.getElementById('petCount').textContent=list.length===_pets.length?'':`Showing ${list.length} of ${_pets.length}`;
