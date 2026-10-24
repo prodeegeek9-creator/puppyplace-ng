@@ -136,6 +136,10 @@ svg{flex-shrink:0}
 .pt-img img{width:100%;height:100%;object-fit:cover;display:block}
 .pt-badge{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;padding:4px 10px;border-radius:50px;color:#fff;text-transform:uppercase;letter-spacing:.02em;background:var(--orange)}
 .pt-badge.adopt{background:var(--green)}
+.pt-badge.sold,.pt-badge.adopt.sold{background:#6b7280}
+.pet-card.sold .pt-img img,.pet-card.sold .pt-img>span:first-child{filter:grayscale(1);opacity:.55}
+.pet-card.sold .pt-body{opacity:.6}
+.pt-stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-14deg);border:3px solid #d32f2f;color:#d32f2f;background:rgba(255,255,255,.88);font-size:24px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:3px 14px;border-radius:8px;pointer-events:none}
 .pt-heart{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;border:none;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#1d1d1b;box-shadow:0 2px 6px rgba(0,0,0,.15);transition:transform .15s}
 .pt-heart:hover{transform:scale(1.1)}
 .pt-heart.on{color:var(--orange)}
@@ -564,6 +568,8 @@ function render() {
       : (isPresetOnly() ? PRESET.emptyHtml : '<div class="pet-grid-empty"><div class="ico">🐾</div><div>No pets match your filters.</div><a class="sell-pill" href="/sell-my-dog.html">🐶 Selling a dog? List it free →</a></div>');
     return;
   }
+  // Sold pets after the ones still available, whatever the sort.
+  pets = [...pets.filter(p => !p.sold_at), ...pets.filter(p => p.sold_at)];
   grid.innerHTML = pets.map(p => renderPetCard(p, _saved.includes(p.id))).join('');
 }
 

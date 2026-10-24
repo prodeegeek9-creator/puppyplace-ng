@@ -9,6 +9,11 @@ export default {
       (r) => console.log(`old videos: ${r.deleted} deleted (${Math.round(r.bytes / 1e6)} MB), ${r.kept} kept`),
       (err) => console.error('old videos not deleted:', err?.message ?? err),
     ));
+    // And pets marked sold more than SOLD_KEEP_DAYS ago.
+    ctx.waitUntil(deleteSoldPets(cleanEnv(env)).then(
+      (r) => console.log(`sold pets: ${r.deleted} deleted, ${r.photos} photos`),
+      (err) => console.error('sold pets not deleted:', err?.message ?? err),
+    ));
   },
 
   async fetch(request, env, ctx) {
@@ -46,6 +51,7 @@ export default {
     if (url.pathname === '/api/me' && request.method === 'GET') return handleMe(request, env);
     if (url.pathname === '/api/me/edit' && request.method === 'POST') return handleMeEdit(request, url, env, ctx);
     if (url.pathname === '/api/me/photo' && request.method === 'POST') return handleMePhoto(request, url, env, ctx);
+    if (url.pathname === '/api/me/sold' && request.method === 'POST') return handleMeSold(request, url, env, ctx);
     if (url.pathname === '/api/admin/edits' && request.method === 'POST') return handleAdminEdits(request, env, ctx);
     if (url.pathname === '/api/contact' && request.method === 'GET') return handleContact(request, url, env, ctx);
     if (url.pathname === '/api/dm/send' && request.method === 'POST') return handleDmSend(request, url, env, ctx);
@@ -831,6 +837,75 @@ async function sbJson(env, path, init = {}) {
   return { ok: res.ok, status: res.status, body };
 }
 
+/* ── SOLD PETS ─────────────────────────────────────────────────────────────
+ * A seller (My listings) or the admin marks a pet sold: it stays on the site,
+ * stamped SOLD (ADOPTED for an adoption) and greyed out, after the pets still
+ * available, and buyers can no longer start a chat about it. SOLD_KEEP_DAYS
+ * after it was marked, the nightly job deletes it. The column comes from
+ * supabase/sold_pets.sql; until that has run, a select naming sold_at fails,
+ * so petsJson asks for it and, if it is not there, asks again without it (and
+ * stops asking for a few minutes). Nothing shows as sold until then.
+ */
+const SOLD_KEEP_DAYS = 60;
+const SOLD_COL = ',sold_at';
+let soldMissingUntil = 0;
+const SOLD_SETUP = 'Marking pets sold is not set up yet. Run supabase/sold_pets.sql once in Supabase → SQL Editor.';
+
+async function petsJson(env, path, init) {
+  const without = () => sbJson(env, path.split(SOLD_COL).join(''), init);
+  if (Date.now() < soldMissingUntil) return without();
+  const r = await sbJson(env, path, init);
+  if (!r.ok && r.status === 400 && path.includes(SOLD_COL) && /sold_at/.test(JSON.stringify(r.body ?? ''))) {
+    soldMissingUntil = Date.now() + 10 * 60e3;
+    return without();
+  }
+  return r;
+}
+
+// Available pets first, then the sold ones, each in the order they came.
+const availableFirst = (pets) => [...pets.filter((p) => !p.sold_at), ...pets.filter((p) => p.sold_at)];
+const soldWord = (p) => (p?.listing_type === 'adoption' ? 'adopted' : 'sold');
+
+// Sets or clears sold_at on one pet: { ok } or { error, status }.
+async function setSold(env, petId, sold) {
+  const r = await sbJson(env, `pets?id=eq.${encodeURIComponent(petId)}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ sold_at: sold ? new Date().toISOString() : null }),
+  });
+  if (r.ok) return { ok: true };
+  return /sold_at/.test(JSON.stringify(r.body ?? '')) ? { error: SOLD_SETUP, status: 503 } : { error: 'Could not change the listing. Try again.', status: 500 };
+}
+
+// Nightly: pets sold more than SOLD_KEEP_DAYS ago are deleted, with the photos
+// their sellers sent (seller-pets/…, which no other listing uses).
+async function deleteSoldPets(env, now = Date.now()) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) throw new Error('server not configured');
+  const cutoff = new Date(now - SOLD_KEEP_DAYS * 864e5).toISOString();
+  const r = await sbJson(env, `pets?sold_at=lt.${encodeURIComponent(cutoff)}&select=id,image_url,image_urls&limit=200`);
+  if (!r.ok) {
+    if (/sold_at/.test(JSON.stringify(r.body ?? ''))) return { deleted: 0, photos: 0 };
+    throw new Error(`could not list sold pets (${r.status})`);
+  }
+  if (!r.body.length) return { deleted: 0, photos: 0 };
+  const ids = r.body.map((p) => encodeURIComponent(p.id));
+  const d = await sbJson(env, `pets?id=in.(${ids.join(',')})&sold_at=lt.${encodeURIComponent(cutoff)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  if (!d.ok) throw new Error(`could not delete sold pets (${d.status})`);
+  const prefix = `${env.SUPABASE_URL}/storage/v1/object/public/hero-images/`;
+  const photos = [...new Set(r.body.flatMap((p) => [p.image_url, ...(Array.isArray(p.image_urls) ? p.image_urls : [])]))]
+    .filter((u) => typeof u === 'string' && u.startsWith(`${prefix}seller-pets/`))
+    .map((u) => decodeURIComponent(u.slice(prefix.length).split('?')[0]));
+  const key = env.SUPABASE_SERVICE_KEY;
+  for (let i = 0; i < photos.length; i += 100) {
+    await fetch(`${env.SUPABASE_URL}/storage/v1/object/hero-images`, {
+      method: 'DELETE',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefixes: photos.slice(i, i + 100) }),
+    }).catch(() => {});
+  }
+  return { deleted: r.body.length, photos: photos.length };
+}
+
 async function upsertAccount(env, phone, { name, seller, login = true } = {}) {
   const row = { phone, ...(login ? { last_login_at: new Date().toISOString() } : {}), ...(name ? { name } : {}), ...(seller ? { is_seller: true } : {}) };
   const r = await sbJson(env, 'pp_accounts?on_conflict=phone', {
@@ -871,11 +946,11 @@ async function listingsFor(env, phone, select) {
   const ids = own.ok ? own.body.map((r) => r.pet_id) : [];
   const byNumber = `whatsapp.eq.${encodeURIComponent(`+${phone}`)}`;
   const filter = ids.length ? `or=(${byNumber},id.in.(${ids.map(encodeURIComponent).join(',')}))` : byNumber.replace('.eq.', '=eq.');
-  const r = await sbJson(env, `pets?${filter}&select=${select}&order=created_at.desc&limit=200`);
+  const r = await petsJson(env, `pets?${filter}&select=${select}&order=created_at.desc&limit=200`);
   return r.ok && Array.isArray(r.body) ? r.body : [];
 }
 
-const LISTING_FIELDS = 'id,slug,breed,name,type,listing_type,price,age,location,specs,vaccinated,dewormed,pedigree,image_urls,image_url,active,created_at';
+const LISTING_FIELDS = 'id,slug,breed,name,type,listing_type,price,age,location,specs,vaccinated,dewormed,pedigree,image_urls,image_url,active,created_at,sold_at';
 
 // POST /api/auth/code { phone }  → a 6-digit code on WhatsApp
 async function handleAuthCode(request, url, env) {
@@ -1079,6 +1154,33 @@ async function handleMeEdit(request, url, env, ctx) {
   return userJson({ ok: true, edit: saved.body[0] });
 }
 
+// POST /api/me/sold { pet_id, sold } → marks the seller's own pet sold, or
+// available again. No review: it only takes a live listing out of the running
+// (and back), and the owner is told.
+async function handleMeSold(request, url, env, ctx) {
+  if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  const id = await readSession(request, env);
+  const account = id ? await accountById(env, id) : null;
+  if (!account) return userJson({ error: 'Not logged in' }, 401);
+  let b;
+  try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
+  const pet = (await listingsFor(env, account.phone, LISTING_FIELDS)).find((p) => String(p.id) === String(b?.pet_id));
+  if (!pet) return userJson({ error: 'That listing is not yours.' }, 404);
+  if (pet.active === false) return userJson({ error: 'This listing is not live yet.' }, 400);
+  const sold = b?.sold !== false;
+  const done = await setSold(env, pet.id, sold);
+  if (!done.ok) return userJson({ error: done.error }, done.status);
+  const who = account.name || '+' + account.phone;
+  ctx.waitUntil(sendWhatsApp(env, {
+    to: 'owner',
+    text: sold
+      ? `🎉 ${who} marked their *${pet.breed}* as ${soldWord(pet)}. It stays on the site, stamped ${soldWord(pet).toUpperCase()}, for ${SOLD_KEEP_DAYS} days.`
+      : `↩️ ${who} marked their *${pet.breed}* as available again.`,
+  }));
+  return userJson({ ok: true, sold });
+}
+
 // POST /api/me/photo (multipart: file) → { url }, for a photo in a change request
 async function handleMePhoto(request, url, env, ctx) {
   if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
@@ -1115,7 +1217,7 @@ async function handleAdminEdits(request, env, ctx) {
     if (!e.ok) return jsonResp({ error: 'Edit requests are not set up yet. Run supabase/seller_accounts.sql once in Supabase → SQL Editor.', setup: true }, 503);
     const petIds = [...new Set(e.body.map((x) => x.pet_id))];
     const accIds = [...new Set(e.body.map((x) => x.account_id).filter(Boolean))];
-    const pets = petIds.length ? await sbJson(env, `pets?id=in.(${petIds.map(encodeURIComponent).join(',')})&select=${LISTING_FIELDS},whatsapp,breeder`) : { body: [] };
+    const pets = petIds.length ? await petsJson(env, `pets?id=in.(${petIds.map(encodeURIComponent).join(',')})&select=${LISTING_FIELDS},whatsapp,breeder`) : { body: [] };
     const accs = accIds.length ? await sbJson(env, `pp_accounts?id=in.(${accIds.join(',')})&select=id,name,phone`) : { body: [] };
     const petMap = new Map((pets.body || []).map((p) => [String(p.id), p]));
     const accMap = new Map((accs.body || []).map((a) => [a.id, a]));
@@ -1187,7 +1289,7 @@ async function sessionAccount(request, env) {
 
 async function petBySlug(env, slug) {
   if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/.test(String(slug || ''))) return null;
-  const r = await sbJson(env, `pets?slug=eq.${encodeURIComponent(slug)}&active=eq.true&select=id,slug,breed,name,type,whatsapp,breeder,image_url,image_urls&limit=1`);
+  const r = await petsJson(env, `pets?slug=eq.${encodeURIComponent(slug)}&active=eq.true&select=id,slug,breed,name,type,listing_type,whatsapp,breeder,image_url,image_urls,sold_at&limit=1`);
   return r.ok ? r.body[0] || null : null;
 }
 
@@ -1205,6 +1307,7 @@ async function handleContact(request, url, env, ctx) {
   const me = await sessionAccount(request, env);
   if (!me) return userJson({ error: 'Sign in to chat on WhatsApp', login: true }, 401);
   const pet = await petBySlug(env, url.searchParams.get('slug'));
+  if (pet?.sold_at) return userJson({ error: `This pet has been ${soldWord(pet)}.`, sold: true }, 410);
   const wa = pet ? String(pet.whatsapp || '').replace(/\D/g, '') : '';
   if (!wa) return userJson({ error: 'This seller cannot be reached on WhatsApp. Send a message instead.' }, 404);
 
@@ -1254,6 +1357,8 @@ async function handleDmSend(request, url, env, ctx) {
   } else {
     pet = await petBySlug(env, b?.slug);
     if (!pet) return userJson({ error: 'That listing is not available.' }, 404);
+    // A conversation already going carries on; a new one about a sold pet is not started.
+    if (pet.sold_at) return userJson({ error: `This pet has been ${soldWord(pet)}.`, sold: true }, 410);
     const sellerPhone = await sellerPhoneFor(env, pet);
     if (!sellerPhone) return userJson({ error: 'This seller cannot be reached here.' }, 404);
     if (sellerPhone === me.phone || phoneDigits(pet.whatsapp) === me.phone) return userJson({ error: 'This is your own listing.' }, 400);
@@ -1687,15 +1792,15 @@ async function handleAdminData(request, env) {
 // GET /api/pets → live pets for the home page; "contact" says whether the seller can be reached
 async function handlePublicPets(env) {
   if (!env.SUPABASE_URL) return jsonResp({ error: 'Server not configured' }, 503);
-  const r = await sbJson(env, `pets?active=eq.true&order=created_at.desc&limit=500&select=${PET_LIST_FIELDS},created_at,whatsapp`);
+  const r = await petsJson(env, `pets?active=eq.true&order=created_at.desc&limit=500&select=${PET_LIST_FIELDS},created_at,whatsapp`);
   if (!r.ok) return jsonResp({ error: 'Could not load pets' }, 502);
-  const pets = r.body.map(({ whatsapp, ...p }) => ({ ...p, contact: Boolean(String(whatsapp || '').replace(/\D/g, '')) }));
+  const pets = availableFirst(r.body).map(({ whatsapp, ...p }) => ({ ...p, contact: !p.sold_at && Boolean(String(whatsapp || '').replace(/\D/g, '')) }));
   return new Response(viaCdn(JSON.stringify({ pets })), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
 }
 
 const ADMIN_PET_FIELDS = ['breed', 'name', 'breeder', 'type', 'listing_type', 'pedigree', 'price', 'age', 'specs', 'location', 'whatsapp', 'image_urls', 'image_url', 'dewormed', 'vaccinated', 'active'];
 
-// POST /api/admin/pets { token, action: 'list' | 'get' | 'save' | 'set_active' | 'delete', id, pet, active }
+// POST /api/admin/pets { token, action: 'list' | 'get' | 'save' | 'set_active' | 'set_sold' | 'delete', id, pet, active, sold }
 async function handleAdminPets(request, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
   let b;
@@ -1708,7 +1813,7 @@ async function handleAdminPets(request, env) {
     const r = await sbJson(env, 'pets?select=*&order=created_at.desc&limit=2000');
     return r.ok ? jsonResp({ ok: true, pets: r.body }, 200) : fail(r, 'Could not load pets');
   }
-  if (!['get', 'save', 'set_active', 'delete'].includes(b.action)) return jsonResp({ error: 'Unknown action' }, 400);
+  if (!['get', 'save', 'set_active', 'set_sold', 'delete'].includes(b.action)) return jsonResp({ error: 'Unknown action' }, 400);
   if (b.action !== 'save' && !id) return jsonResp({ error: 'Which pet?' }, 400);
 
   if (b.action === 'get') {
@@ -1719,6 +1824,10 @@ async function handleAdminPets(request, env) {
   if (b.action === 'set_active') {
     const r = await sbJson(env, `pets?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ active: b.active === true }) });
     return r.ok ? jsonResp({ ok: true }, 200) : fail(r, 'Could not change the pet');
+  }
+  if (b.action === 'set_sold') {
+    const done = await setSold(env, b.id, b.sold !== false);
+    return done.ok ? jsonResp({ ok: true }, 200) : jsonResp({ error: done.error }, done.status);
   }
   if (b.action === 'delete') {
     const r = await sbJson(env, `pets?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
@@ -1946,7 +2055,7 @@ const PET_CITIES = [
   ['ekiti', 'Ekiti', 'ekiti'],
 ].map(([slug, name, words]) => ({ slug, name, words: `\\b(?:${words})\\b`, re: new RegExp(`\\b(?:${words})\\b`, 'i') }));
 
-const PET_LIST_FIELDS = 'id,slug,breed,name,breeder,type,listing_type,pedigree,price,age,specs,location,image_url,image_urls,dewormed,vaccinated';
+const PET_LIST_FIELDS = 'id,slug,breed,name,breeder,type,listing_type,pedigree,price,age,specs,location,image_url,image_urls,dewormed,vaccinated,sold_at';
 const PETS_PER_LIST_JSONLD = 60;
 // A city page needs this many listings before search engines are asked to index it
 const CITY_PAGE_MIN = 2;
@@ -1975,10 +2084,9 @@ function matchPetsPage(pathname) {
 }
 
 async function getLivePets(env) {
-  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/pets?active=eq.true&order=created_at.desc&select=${PET_LIST_FIELDS}`, { headers: sbHeaders(env) });
-  if (!res.ok) throw new Error(`pets ${res.status}`);
-  const rows = await res.json();
-  return Array.isArray(rows) ? rows : [];
+  const r = await petsJson(env, `pets?active=eq.true&order=created_at.desc&select=${PET_LIST_FIELDS}`);
+  if (!r.ok) throw new Error(`pets ${r.status}`);
+  return Array.isArray(r.body) ? availableFirst(r.body) : [];
 }
 
 function petsInPage(pets, kind, city, adoption) {
@@ -2023,14 +2131,17 @@ async function servePetsPage(page, env) {
   }
 
   const shown = petsInPage(pets, kind, city, adoption);
+  // Sold pets are shown, stamped, after the rest, but the counts, prices and
+  // what search engines are told is for sale are the pets still available.
+  const available = shown.filter(p => !p.sold_at);
   const place = city ? city.name : 'Nigeria';
   const inPlace = `in ${place}`;
   const path = petsPagePath(kind, city, adoption);
   const canonical = `https://puppyplace.ng${path}`;
-  const stats = petPriceStats(shown);
-  const breeds = topBreeds(shown);
+  const stats = petPriceStats(available);
+  const breeds = topBreeds(available);
   const isMain = !kind.type && !city && !adoption;
-  const count = shown.length;
+  const count = available.length;
   const many = kind.type === 'other' ? 'pets' : kind.many;
   const aOne = kind.one === 'fish' ? 'fish' : `a ${kind.one}`;
 
@@ -2059,7 +2170,7 @@ async function servePetsPage(page, env) {
         : `Buy, sell or adopt healthy dogs, cats, birds, rabbits and more from trusted sellers ${inPlace}.`;
   }
   const countWords = count === 1 ? `1 ${kind.type === 'other' ? 'pet' : kind.one}` : `${count} ${many}`;
-  const adoptN = shown.filter(p => p.listing_type === 'adoption').length;
+  const adoptN = available.filter(p => p.listing_type === 'adoption').length;
   const forWhat = adoption || (count && adoptN === count) ? 'for adoption' : adoptN ? 'for sale and adoption' : 'for sale';
   description = [
     count ? `Browse ${countWords} ${forWhat} ${inPlace}${stats ? ` from ${naira(stats.min)}` : ''}.` : `${kind.title} ${adoption ? 'for adoption' : 'for sale'} ${inPlace} on PuppyPlace.ng.`,
@@ -2081,7 +2192,7 @@ async function servePetsPage(page, env) {
 
   // ── Listings ──
   const emptyHtml = `<div class="pet-grid-empty"><div class="ico">${kind.emoji || '🐾'}</div><div>${failed ? 'We couldn’t load the pets just now. Please refresh the page.' : `No ${esc(many)} ${adoption ? 'for adoption' : 'listed'} ${esc(inPlace)} yet. Check back soon!`}</div>${!failed && !isMain ? `<a class="sell-pill" href="/pets.html">See all pets in Nigeria →</a>` : ''}</div>`;
-  const grid = count ? shown.map((p, i) => renderPetCard(p, false, i < 4)).join('\n') : emptyHtml;
+  const grid = shown.length ? shown.map((p, i) => renderPetCard(p, false, i < 4)).join('\n') : emptyHtml;
   const gridTitle = count ? `${countWords} ${forWhat} ${inPlace}` : `${kind.title} ${inPlace}`;
 
   // ── Text for buyers and sellers ──
@@ -2171,7 +2282,7 @@ async function servePetsPage(page, env) {
         mainEntity: {
           '@type': 'ItemList',
           numberOfItems: count,
-          itemListElement: shown.filter(p => p.slug).slice(0, PETS_PER_LIST_JSONLD).map((p, i) => ({
+          itemListElement: available.filter(p => p.slug).slice(0, PETS_PER_LIST_JSONLD).map((p, i) => ({
             '@type': 'ListItem',
             position: i + 1,
             url: `https://puppyplace.ng/pets/${encodeURIComponent(p.slug)}`,
@@ -2315,6 +2426,10 @@ function renderPetPage(p, guide = null) {
   const isAdopt = p.listing_type === 'adoption';
   const imgs = (p.image_urls && p.image_urls.length) ? p.image_urls : (p.image_url ? [p.image_url] : []);
   const wa = (p.whatsapp || '').replace(/\D/g, '');
+  // Sold (or adopted): the page stays, stamped and greyed, with no way to contact the seller.
+  const sold = Boolean(p.sold_at);
+  const soldLabel = isAdopt ? 'Adopted' : 'Sold';
+  const stampHtml = sold ? `<span class="pg-stamp">${soldLabel}</span>` : '';
   // Search titles read the way people search: "Cane Corso Puppies for Sale in Lagos – ₦550,000"
   const petKind  = PET_KINDS.find(k => k.type === petKindOf(p)) || ALL_PETS_KIND;
   const petCity  = petCityOf(p);
@@ -2325,7 +2440,7 @@ function renderPetPage(p, guide = null) {
     : '';
   const placeName = petCity ? petCity.name : String(p.location || '').split(',').pop().trim().slice(0, 40);
   const titleLead = [p.breed || p.type, youngTitle, isAdopt ? 'for Adoption' : 'for Sale', placeName ? 'in ' + placeName : ''].filter(Boolean).join(' ');
-  const pageTitle = `${titleLead}${!isAdopt && p.price ? ' – ' + naira(p.price) : ''} | PuppyPlace.ng`;
+  const pageTitle = `${sold ? `${soldLabel}: ` : ''}${titleLead}${!isAdopt && p.price ? ' – ' + naira(p.price) : ''} | PuppyPlace.ng`;
   const healthWords = [p.vaccinated && 'vaccinated', p.dewormed && 'dewormed'].filter(Boolean).join(' and ');
   const metaDesc = plainText([
     `${titleLead}${!isAdopt && p.price ? ' for ' + naira(p.price) : ''}${p.location && p.location !== placeName ? ` (${p.location})` : ''}.`,
@@ -2354,7 +2469,7 @@ function renderPetPage(p, guide = null) {
       url: petUrl,
       price: isAdopt ? 0 : (p.price || 0),
       priceCurrency: 'NGN',
-      availability: 'https://schema.org/InStock',
+      availability: sold ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
       areaServed: { '@type': 'Country', name: 'Nigeria' },
       seller: { '@type': 'Organization', name: p.breeder || 'PuppyPlace.ng' },
     },
@@ -2401,10 +2516,11 @@ function renderPetPage(p, guide = null) {
 
   // ── Gallery ──
   const galleryHtml = imgs.length
-    ? `<div class="pg-main" id="pgMain">
+    ? `<div class="pg-main${sold ? ' sold' : ''}" id="pgMain">
         <img id="pgImg" src="${esc(imgs[0])}" alt="${esc(titleLead)}"/>
+        ${stampHtml}
         <button class="pg-heart" id="pgHeart" aria-label="Save pet" aria-pressed="false">${I.heart}</button>
-        <span class="pg-badge${isAdopt ? ' adopt' : ''}">${isAdopt ? 'Adoption' : 'For Sale'}</span>
+        <span class="pg-badge${isAdopt ? ' adopt' : ''}${sold ? ' sold' : ''}">${sold ? soldLabel : isAdopt ? 'Adoption' : 'For Sale'}</span>
         ${imgs.length > 1 ? `<button class="pg-arrow l" onclick="pgNav(-1)" aria-label="Previous photo">${I.left}</button><button class="pg-arrow r" onclick="pgNav(1)" aria-label="Next photo">${I.right}</button>` : ''}
       </div>
       ${imgs.length > 1 ? `<div class="pg-thumbs-row">
@@ -2412,9 +2528,10 @@ function renderPetPage(p, guide = null) {
         <div class="pg-thumbs" id="pgThumbs">${imgs.map((u, i) => `<button class="pg-thumb${i === 0 ? ' on' : ''}" onclick="pgGo(${i})" aria-label="Photo ${i + 1}"><img src="${esc(u)}" alt="" loading="lazy"/></button>`).join('')}</div>
         <button class="pg-tarrow" onclick="pgThumbs(1)" aria-label="Scroll photos right">${I.right}</button>
       </div>` : ''}`
-    : `<div class="pg-main pg-emoji" style="background:${bg}">${emoji}
+    : `<div class="pg-main pg-emoji${sold ? ' sold' : ''}" style="background:${bg}">${emoji}
+        ${stampHtml}
         <button class="pg-heart" id="pgHeart" aria-label="Save pet" aria-pressed="false">${I.heart}</button>
-        <span class="pg-badge${isAdopt ? ' adopt' : ''}">${isAdopt ? 'Adoption' : 'For Sale'}</span>
+        <span class="pg-badge${isAdopt ? ' adopt' : ''}${sold ? ' sold' : ''}">${sold ? soldLabel : isAdopt ? 'Adoption' : 'For Sale'}</span>
       </div>`;
 
   // ── Header chips and facts ──
@@ -2444,14 +2561,18 @@ function renderPetPage(p, guide = null) {
   const factsHtml = facts.map(([k, v, ic], i) => `<div class="fact${i >= facts.length - (facts.length % 3 || 3) ? ' l3' : ''}${i >= facts.length - (facts.length % 2 || 2) ? ' l2' : ''}"><span class="fact-ico">${ic}</span><div><div class="fact-k">${esc(k)}</div><div class="fact-v">${esc(v)}</div></div></div>`).join('');
 
   const seller = p.breeder || 'PuppyPlace.ng';
-  const priceHtml = isAdopt
+  const priceHtml = (isAdopt
     ? `<div class="pg-price free">Free to adopt</div>`
-    : (p.price ? `<div class="pg-price">₦${Number(p.price).toLocaleString('en-NG')}</div>` : `<div class="pg-price ask">Price on request</div>`);
+    : (p.price ? `<div class="pg-price">₦${Number(p.price).toLocaleString('en-NG')}</div>` : `<div class="pg-price ask">Price on request</div>`))
+    .replace('class="pg-price', sold ? 'class="pg-price sold' : 'class="pg-price');
 
   // The seller's number is not in the page: /pp-contact.js signs the buyer in
   // (a code on WhatsApp) and then opens the chat, or sends a message on the site.
   const contactData = `data-slug="${esc(p.slug)}" data-breed="${esc(breed)}"`;
-  const ctaHtml = wa
+  const ctaHtml = sold
+    ? `<div class="pg-sold-note">This ${esc(youngWord)} has been ${soldLabel.toLowerCase()}.</div>
+       <a class="btn-ask" href="${esc(petsPagePath(petKind, null, isAdopt))}">${I.chat}See other ${esc(petKind.type ? petKind.many : 'pets')} ${isAdopt ? 'for adoption' : 'for sale'}</a>`
+    : wa
     ? `<button type="button" class="btn-wa" data-pp-contact="whatsapp" ${contactData}>${I.wa}Contact on WhatsApp</button>
        <button type="button" class="btn-ask" data-pp-contact="message" ${contactData}>${I.chat}Send a message</button>
        <p class="cta-note">Sign in once with your WhatsApp number. Messages here keep your number private.</p>`
@@ -2541,6 +2662,12 @@ svg{flex-shrink:0}
 .top>*{min-width:0}
 .gallery{padding:12px}
 .pg-main{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:454/484;background:#f1f2f4;touch-action:pan-y}
+.pg-main.sold #pgImg,.pg-main.sold.pg-emoji{filter:grayscale(1);opacity:.55}
+.pg-main.sold ~ .pg-thumbs-row .pg-thumb img{filter:grayscale(1)}
+.pg-stamp{position:absolute;top:50%;left:50%;z-index:2;transform:translate(-50%,-50%) rotate(-14deg);border:4px solid #d32f2f;color:#d32f2f;background:rgba(255,255,255,.88);font-size:42px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:6px 22px;border-radius:10px;pointer-events:none}
+.pg-badge.sold,.info-badge.sold,.pg-badge.adopt.sold,.info-badge.adopt.sold{background:#6b7280;color:#fff}
+.pg-price.sold{color:#9ca3af}
+.pg-sold-note{background:#f3f4f6;color:#374151;font-weight:800;border-radius:10px;padding:14px 16px;margin-bottom:12px;text-align:center}
 .pg-main img{width:100%;height:100%;object-fit:cover;display:block}
 .pg-emoji{display:flex;align-items:center;justify-content:center;font-size:110px}
 .pg-heart{position:absolute;top:8px;left:8px;width:40px;height:40px;border-radius:50%;border:none;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);transition:transform .15s}
@@ -2704,7 +2831,7 @@ svg{flex-shrink:0}
   <div class="top">
     <div class="card gallery">${galleryHtml}</div>
     <div class="card info">
-      <span class="info-badge${isAdopt ? ' adopt' : ''}">${isAdopt ? 'For Adoption' : 'For Sale'}</span>
+      <span class="info-badge${isAdopt ? ' adopt' : ''}${sold ? ' sold' : ''}">${sold ? soldLabel : isAdopt ? 'For Adoption' : 'For Sale'}</span>
       <div class="info-type">${esc(p.type || 'Pet')}</div>
       <h1>${esc(breed)}</h1>
       <div class="seller"><span class="avatar">${esc(seller.trim().charAt(0).toUpperCase())}</span>${esc(seller)}${I.check}</div>

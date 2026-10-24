@@ -49,10 +49,13 @@ function cardSize(u) {
 
 export function renderPetCard(p, saved = false, eager = false) {
   const isAdopt = p.listing_type === 'adoption';
+  // Sold (or adopted): still shown, stamped and greyed, after the pets still available.
+  const sold = Boolean(p.sold_at);
+  const soldLabel = isAdopt ? 'Adopted' : 'Sold';
   const img = p.image_url || (p.image_urls && p.image_urls[0]);
   const bg = img ? '#f1f2f4' : (TYPE_BG[p.type] || 'linear-gradient(135deg,#fafafa,#f0f0f0)');
   const name = p.breed || p.type;
-  const alt = `${name} ${isAdopt ? 'for adoption' : 'for sale'}${p.location ? ' in ' + p.location : ''}`;
+  const alt = `${name} ${sold ? soldLabel.toLowerCase() : isAdopt ? 'for adoption' : 'for sale'}${p.location ? ' in ' + p.location : ''}`;
   const imgHtml = img
     ? `<img src="${esc(cardSize(img))}" alt="${esc(alt)}"${eager ? '' : ' loading="lazy"'}/>`
     : `<span>${TYPE_EMOJI[p.type] || '🐾'}</span>`;
@@ -64,10 +67,11 @@ export function renderPetCard(p, saved = false, eager = false) {
     ? '<span class="pt-price free">Free</span>'
     : (p.price ? `<span class="pt-price">${fmtNaira(p.price)}</span>` : '<span class="pt-price ask">Price on request</span>');
 
-  return `<article class="pet-card">
+  return `<article class="pet-card${sold ? ' sold' : ''}">
     <a class="pt-img" href="${esc(href)}" style="background:${bg}" tabindex="-1" aria-hidden="true">
       ${imgHtml}
-      <span class="pt-badge${isAdopt ? ' adopt' : ''}">${isAdopt ? 'Adoption' : 'For Sale'}</span>
+      <span class="pt-badge${isAdopt ? ' adopt' : ''}${sold ? ' sold' : ''}">${sold ? soldLabel : isAdopt ? 'Adoption' : 'For Sale'}</span>
+      ${sold ? `<span class="pt-stamp">${soldLabel}</span>` : ''}
     </a>
     <button class="pt-heart${saved ? ' on' : ''}" data-id="${esc(p.id)}" aria-label="${saved ? 'Remove from saved' : 'Save pet'}" aria-pressed="${saved}">${ICO.heart}</button>
     <div class="pt-body">

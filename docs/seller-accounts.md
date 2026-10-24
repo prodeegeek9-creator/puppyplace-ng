@@ -6,10 +6,11 @@ A seller's account is their WhatsApp number. Nobody fills in a sign-up form.
 - **Logging in later.** On `/my-listings.html` the seller enters their number, gets a 6-digit code on WhatsApp from the store's number, and is in for 30 days. The session is an HttpOnly cookie.
 - **Which listings are theirs.** The ones sent from their chat, plus the ones that give their number to buyers. This covers listings made before accounts existed.
 - **Changes are reviewed.** Price, details, photos and take-downs are saved as a request (`pet_edits`). Nothing changes on the site until it is approved in **Admin → Edit requests**. The owner is told on WhatsApp when a request comes in, and the seller is told when it's approved or turned down.
+- **Sold is not reviewed.** *Mark as sold* (*Mark as adopted* for an adoption) works straight away. The listing stays on the site with a SOLD stamp, greyed out and after the pets still available, and buyers can no longer start a chat about it (a conversation already going carries on). It can be marked available again. 60 days after it was marked, the nightly job deletes it, with the photos the seller sent. The owner is told on WhatsApp. The admin can do the same in **Admin → Pets** (🏷️), where sold pets have their own tab. Needs `supabase/sold_pets.sql`, run once.
 
 ## Setup
 
-1. Run `supabase/seller_accounts.sql` once in Supabase → SQL Editor. Until then, listings work exactly as before, with no log-in link.
+1. Run `supabase/seller_accounts.sql` once in Supabase → SQL Editor. Until then, listings work exactly as before, with no log-in link. Then `supabase/sold_pets.sql` for *Mark as sold*.
 2. `SELLER_API_KEY` and `ADMIN_TOKEN_SECRET` are already set. Messages go out through Vendwyze at `VENDWYZE_URL`, which defaults to `https://thrift-unique.prodeegeek9.workers.dev`.
 
 ## Safety
@@ -30,6 +31,7 @@ A seller's account is their WhatsApp number. Nobody fills in a sign-up form.
 | `GET /api/me` | The account, its listings and its requests |
 | `POST /api/me/edit` `{ pet_id, kind: 'edit' \| 'remove', changes, note }` | Sends a change or take-down for review |
 | `POST /api/me/photo` (multipart `file`) | Uploads a photo for a change request |
+| `POST /api/me/sold` `{ pet_id, sold }` | Marks the seller's own live listing sold, or available again (`sold: false`) |
 | `POST /api/admin/edits` `{ token, action: 'list' \| 'approve' \| 'reject', id, note }` | Admin review |
 
 ## Numbers on My listings
