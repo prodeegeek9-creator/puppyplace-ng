@@ -1945,7 +1945,8 @@ function filteredPets(){
   const sort=document.getElementById('petSort')?.value||'review';
   let list=_pets.filter(p=>{
     if(_petTab==='pending'&&p.active!==false) return false;
-    if(_petTab==='live'&&p.active===false) return false;
+    if(_petTab==='live'&&(p.active===false||p.sold_at)) return false;
+    if(_petTab==='sold'&&!p.sold_at) return false;
     if(_petTab==='issues'&&!petIssues(p).length) return false;
     if(type&&p.type!==type) return false;
     if(lt&&(p.listing_type||'sale')!==lt) return false;
@@ -1964,11 +1965,11 @@ function filteredPets(){
 }
 function renderPets(){
   const tbody=document.getElementById('petsTableBody');
-  const pending=_pets.filter(p=>p.active===false).length, live=_pets.length-pending, issues=_pets.filter(p=>petIssues(p).length).length;
+  const pending=_pets.filter(p=>p.active===false).length, sold=_pets.filter(p=>p.sold_at).length, live=_pets.length-pending-sold, issues=_pets.filter(p=>petIssues(p).length).length;
   document.getElementById('sbPetsCount').textContent=_pets.length;
   document.getElementById('petsSummary').textContent=`${_pets.length} in all · ${live} live · ${pending} awaiting approval`;
   document.getElementById('petsPendingNote').textContent=pending?`${pending} waiting for review. Check the photos and details, then tap ✅ to publish.`:'';
-  document.getElementById('petPills').innerHTML=[['','All',_pets.length],['pending','Needs review',pending],['live','Live',live],['issues','Needs a fix',issues]]
+  document.getElementById('petPills').innerHTML=[['','All',_pets.length],['pending','Needs review',pending],['live','Live',live],['sold','Sold',sold],['issues','Needs a fix',issues]]
     .map(([v,l,n])=>`<button class="dx-pill${_petTab===v?' on':''}" onclick="_petTab='${v}';renderPets()">${l} · ${n}</button>`).join('');
   const list=filteredPets();
   document.getElementById('petCount').textContent=list.length===_pets.length?'':`Showing ${list.length} of ${_pets.length}`;
@@ -1980,7 +1981,7 @@ function renderPets(){
     <td><div style="width:48px;height:48px;border-radius:8px;overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="openPetDetail('${sid(p.id)}')">${ph[0]?`<img src="${escA(safeUrl(ph[0]))}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>`:'🐾'}</div></td>
     <td style="font-weight:800"><span class="dx-link" onclick="openPetDetail('${sid(p.id)}')">${escHtml(p.breed||p.name||'—')}</span>${p.slug?` <a href="/pets/${escA(p.slug)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--orange)">↗</a>`:''}<small style="display:block;font-weight:500;color:var(--gray)">${escHtml(p.age||'')}</small></td>
     <td>${escHtml(p.type)}</td>
-    <td><span class="badge ${p.listing_type==='adoption'?'badge-new':'badge-hot'}">${p.listing_type==='adoption'?'Adoption':'For Sale'}</span>${p.active===false?'<span class="badge badge-popular" style="margin-top:4px">⏳ Pending</span>':''}</td>
+    <td><span class="badge ${p.listing_type==='adoption'?'badge-new':'badge-hot'}">${p.listing_type==='adoption'?'Adoption':'For Sale'}</span>${p.active===false?'<span class="badge badge-popular" style="margin-top:4px">⏳ Pending</span>':''}${p.sold_at?`<span class="badge" style="margin-top:4px;background:#6b7280;color:#fff" title="Removed ${escA(fmtDay(new Date(Date.parse(p.sold_at)+60*864e5).toISOString()))}">${p.listing_type==='adoption'?'Adopted':'Sold'}</span>`:''}</td>
     <td style="font-weight:800">${p.listing_type==='sale'&&p.price?fmtMoney(p.price):'—'}</td>
     <td>${escHtml(p.location||'—')}${p.whatsapp?`<small style="display:block"><a href="https://wa.me/${escA(String(p.whatsapp).replace(/\D/g,''))}" target="_blank" rel="noopener" style="color:var(--orange);font-weight:700">${escHtml(p.whatsapp)}</a>${p.breeder?' · '+escHtml(p.breeder):''}</small>`:''}</td>
     <td style="font-weight:800${ph.length<2?';color:var(--red)':''}">${ph.length}</td>
@@ -1988,6 +1989,7 @@ function renderPets(){
     <td style="white-space:nowrap">${escHtml(fmtDay(p.created_at))}<small style="display:block;color:var(--gray)">${escHtml(ago(p.created_at))}</small>${iss.length?`<small style="display:block;color:#8a5a00" title="${escA(iss.join(', '))}">⚠ ${iss.length} to fix</small>`:''}</td>
     <td><div class="action-btns">
       ${p.active===false?`<button class="act-btn" title="Approve and publish" onclick="approvePet('${sid(p.id)}')">✅</button>`:''}
+      ${p.active!==false?`<button class="act-btn" title="${p.sold_at?'Mark as available again':'Mark as sold: stamped SOLD, removed after 2 months'}" onclick="markPetSold('${sid(p.id)}',${p.sold_at?'false':'true'})">${p.sold_at?'↩️':'🏷️'}</button>`:''}
       <button class="act-btn" title="Details" onclick="openPetDetail('${sid(p.id)}')">👁️</button>
       <button class="act-btn" onclick="editPet('${sid(p.id)}')">✏️</button>
       <button class="act-btn del" onclick="deletePetById('${sid(p.id)}')">🗑️</button>
@@ -2285,6 +2287,12 @@ async function approvePet(id) {
   try{ await adminApi('/api/admin/pets',{action:'set_active',id,active:true}); }
   catch(error){ showToast('❌ '+error.message,'error'); return; }
   showToast('✅ Published. A seller who listed on WhatsApp is told within a minute','success');
+  loadPets();
+}
+async function markPetSold(id,sold) {
+  try{ await adminApi('/api/admin/pets',{action:'set_sold',id,sold}); }
+  catch(error){ showToast('❌ '+error.message,'error'); return; }
+  showToast(sold?'🏷️ Marked sold. It shows a SOLD stamp and is removed after 2 months':'↩️ Available again','success');
   loadPets();
 }
 async function deletePet(id,name) {

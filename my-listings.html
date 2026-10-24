@@ -39,7 +39,8 @@ textarea{resize:vertical;min-height:90px}
 .pet-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px}
 .pet-t{font-size:17px;font-weight:900}
 .badge{display:inline-block;font-size:11px;font-weight:800;padding:4px 10px;border-radius:50px;text-transform:uppercase;letter-spacing:.04em}
-.b-live{background:rgba(30,158,87,.12);color:var(--green)}.b-wait{background:rgba(243,156,18,.15);color:var(--amber)}.b-no{background:rgba(214,60,47,.1);color:var(--red)}
+.b-live{background:rgba(30,158,87,.12);color:var(--green)}.b-wait{background:rgba(243,156,18,.15);color:var(--amber)}.b-no{background:rgba(214,60,47,.1);color:var(--red)}.b-sold{background:#6b7280;color:#fff}
+.pet.sold img{filter:grayscale(1);opacity:.6}
 .pet-m{font-size:14px;color:var(--gray);line-height:1.6}
 .pet-n{font-size:13px;font-weight:700;margin-top:6px;line-height:1.5}
 .stats{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:13px;color:var(--gray)}
@@ -164,6 +165,28 @@ function render() {
     ${L.length ? `<div class="list">${L.map(card).join('')}</div>` : `<div class="card empty">You have no listings on this number yet.<br/><a class="btn" style="margin-top:14px" href="/sell-my-dog.html">List a pet for free</a></div>`}`;
   app.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openEdit(b.dataset.edit)));
   app.querySelectorAll('[data-remove]').forEach((b) => (b.onclick = () => openRemove(b.dataset.remove)));
+  app.querySelectorAll('[data-sold]').forEach((b) => (b.onclick = () => markSold(b.dataset.sold, b.dataset.to === 'sold', b)));
+}
+
+// Sold (or adopted): the listing stays up, stamped and greyed, for two months, then it is removed.
+const SOLD_KEEP_DAYS = 60;
+const soldLabel = (p) => (p.listing_type === 'adoption' ? 'adopted' : 'sold');
+function goneOn(p) {
+  const d = new Date(Date.parse(p.sold_at) + SOLD_KEEP_DAYS * 864e5);
+  return d.toLocaleDateString('en-NG', { day: 'numeric', month: 'long' });
+}
+
+async function markSold(id, sold, btn) {
+  const p = me.listings.find((x) => String(x.id) === String(id));
+  if (!p) return;
+  const word = soldLabel(p);
+  if (sold && !confirm(`Mark your ${p.breed || 'pet'} as ${word}?\n\nIt stays on PuppyPlace with a ${word.toUpperCase()} stamp for two months, so buyers can see it went, and buyers can no longer contact you about it. Then it is removed.`)) return;
+  btn.disabled = true;
+  try {
+    await api('/api/me/sold', { method: 'POST', body: JSON.stringify({ pet_id: p.id, sold }) });
+    await load();
+    flash(sold ? `🎉 Marked as ${word}. Congratulations!` : '✅ Your listing is available again.');
+  } catch (e) { btn.disabled = false; alert(e.message); }
 }
 
 // Views, WhatsApp chats and messages for a listing, when the site has them.
@@ -182,21 +205,26 @@ function statsLine(p) {
 function card(p) {
   const ph = photosOf(p)[0];
   const e = latestEdit(p);
-  const status = p.active === false ? '<span class="badge b-wait">Waiting for approval</span>' : '<span class="badge b-live">Live</span>';
+  const status = p.active === false ? '<span class="badge b-wait">Waiting for approval</span>'
+    : p.sold_at ? `<span class="badge b-sold">${soldLabel(p)}</span>` : '<span class="badge b-live">Live</span>';
+  const soldNote = p.sold_at ? `<div class="pet-n" style="color:var(--gray)">Shown with a ${soldLabel(p).toUpperCase()} stamp until ${goneOn(p)}, then removed.</div>` : '';
   let req = '';
   if (e?.status === 'pending') req = `<div class="pet-n" style="color:var(--amber)">⏳ ${e.kind === 'remove' ? 'Take-down request' : 'Your changes'} waiting for review</div>`;
   else if (e?.status === 'rejected') req = `<div class="pet-n" style="color:var(--red)">Your last change wasn't approved${e.note ? `: ${esc(e.note)}` : ''}</div>`;
   else if (e?.status === 'approved') req = '<div class="pet-n" style="color:var(--green)">✅ Your last change was approved</div>';
-  return `<div class="card pet">
+  return `<div class="card pet${p.sold_at ? ' sold' : ''}">
     ${ph ? `<img src="${esc(ph)}" alt="" loading="lazy"/>` : '<img alt=""/>'}
     <div>
       <div class="pet-h"><span class="pet-t">${esc(p.breed || p.name || 'Pet')}</span>${status}</div>
       <div class="pet-m">${[p.age, p.listing_type === 'adoption' ? 'For adoption' : p.price ? money(p.price) : 'Price on request', p.location].filter(Boolean).map(esc).join(' · ')}<br/>${photosOf(p).length} photo${photosOf(p).length === 1 ? '' : 's'}</div>
       ${statsLine(p)}
+      ${soldNote}
       ${req}
       <div class="acts">
         ${p.active !== false && p.slug ? `<a class="btn ghost small" href="/pets/${encodeURIComponent(p.slug)}" target="_blank" rel="noopener">View page</a>` : ''}
-        <button class="btn small" data-edit="${esc(p.id)}">Edit</button>
+        ${p.active !== false && !p.sold_at ? `<button class="btn small" data-sold="${esc(p.id)}" data-to="sold">Mark as ${soldLabel(p)}</button>` : ''}
+        ${p.sold_at ? `<button class="btn ghost small" data-sold="${esc(p.id)}" data-to="available">Mark as available again</button>` : ''}
+        ${p.sold_at ? '' : `<button class="btn ${p.active !== false ? 'ghost ' : ''}small" data-edit="${esc(p.id)}">Edit</button>`}
         <button class="btn ghost small" data-remove="${esc(p.id)}">Take down</button>
       </div>
     </div>
@@ -285,9 +313,9 @@ function openRemove(id) {
   if (!p) return;
   $('#editModal').innerHTML = `
     <div class="modal-h"><h1 style="font-size:20px">Take down ${esc(p.breed || 'listing')}?</h1><button class="x" id="x">✕</button></div>
-    <p class="sub">PuppyPlace will remove the listing from the site once they've checked the request.</p>
+    <p class="sub">PuppyPlace will remove the listing from the site once they've checked the request.${p.sold_at || p.active === false ? '' : ` Sold it? Use <b>Mark as ${soldLabel(p)}</b> instead: it shows a ${soldLabel(p).toUpperCase()} stamp straight away, with no wait.`}</p>
     <label>Why?</label>
-    <select id="r_why"><option>Sold</option><option>Adopted</option><option>No longer available</option><option>Other</option></select>
+    <select id="r_why"><option>No longer available</option><option>Sold</option><option>Adopted</option><option>Other</option></select>
     <button class="btn full" id="send">Ask to take it down</button>
     <div class="msg" id="emsg"></div>`;
   $('#x').onclick = closeEdit;

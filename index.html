@@ -346,6 +346,10 @@ img { max-width: 100%; height: auto; display: block; }
 .pet-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 20px; }
 .pet-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer; transition: all var(--trans); box-shadow: var(--shadow); }
 .pet-card:hover { border-color: var(--orange); transform: translateY(-5px); box-shadow: var(--shadow2); }
+.pet-card.sold .pt-img img, .pet-card.sold .pt-img > span:not(.pt-badge):not(.pt-stamp) { filter: grayscale(1); opacity: .55; }
+.pet-card.sold .pt-body { opacity: .6; }
+.pt-badge.lbl-sold { background: #6b7280; color: #fff; }
+.pt-stamp { position: absolute; top: 50%; left: 50%; z-index: 2; transform: translate(-50%, -50%) rotate(-14deg); border: 3px solid #d32f2f; color: #d32f2f; background: rgba(255,255,255,.88); font-size: 22px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; padding: 3px 12px; border-radius: 8px; pointer-events: none; }
 .pt-img { aspect-ratio: 1.1; display: flex; align-items: center; justify-content: center; font-size: 80px; position: relative; }
 .pt-badge { position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 50px; color: #fff; text-transform: uppercase; }
 .pt-wish { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; border: none; opacity: 0; transition: all var(--trans); transform: scale(0.8); }
@@ -1780,7 +1784,7 @@ function openPetModal(id) {
   _pmIdx=0; _pmEmoji=typeMap[p.type]||'🐾'; _renderPetImg();
   const isAdopt=p.listing_type==='adoption';
   document.getElementById('pmTitle').textContent=p.breed||p.type;
-  document.getElementById('pmMeta').textContent=p.type+(p.pedigree?` · ${p.pedigree==='pedigree'?'Pedigree':'Non-Pedigree'}`:'')+(isAdopt?' · For Adoption':' · For Sale');
+  document.getElementById('pmMeta').textContent=p.type+(p.pedigree?` · ${p.pedigree==='pedigree'?'Pedigree':'Non-Pedigree'}`:'')+(p.sold_at?(isAdopt?' · Adopted':' · Sold'):isAdopt?' · For Adoption':' · For Sale');
   document.getElementById('pmBreed').textContent=p.breed||p.type;
   const sub=[p.name,p.breeder?'🏠 '+p.breeder:null].filter(Boolean).join(' · ');
   const subEl=document.getElementById('pmSub'); subEl.textContent=sub; subEl.style.display=sub?'':'none';
@@ -1822,8 +1826,11 @@ async function renderPets() {
     g.innerHTML = pets.map(p => {
       const { e, bg } = typeMap[p.type] || def;
       const isAdopt = p.listing_type === 'adoption';
-      const badge = isAdopt ? 'Adopt' : 'For Sale';
-      const bdgCls = isAdopt ? 'lbl-new' : 'lbl-hot';
+      // Sold (or adopted): still shown, stamped and greyed, after the pets still available.
+      const sold = Boolean(p.sold_at);
+      const soldLabel = isAdopt ? 'Adopted' : 'Sold';
+      const badge = sold ? soldLabel : isAdopt ? 'Adopt' : 'For Sale';
+      const bdgCls = sold ? 'lbl-sold' : isAdopt ? 'lbl-new' : 'lbl-hot';
       const priceHtml = isAdopt
         ? `<span class="pt-price" style="color:#2ecc71">Free / Adoption</span>`
         : `<span class="pt-price">${fmt(p.price)}</span>`;
@@ -1832,10 +1839,11 @@ async function renderPets() {
       const imgHtml = p.image_url
         ? `<img src="${escHtml(ppSize(p.image_url, 600))}" alt="${escHtml(p.breed || p.type)}" style="width:100%;height:100%;object-fit:cover;"/>`
         : `<span style="font-size:58px">${e}</span>`;
-      return `<div class="pet-card" onclick="openPetModal('${escHtml(p.id)}')" style="cursor:pointer;">
+      return `<div class="pet-card${sold ? ' sold' : ''}" onclick="openPetModal('${escHtml(p.id)}')" style="cursor:pointer;">
         <div class="pt-img" style="${p.image_url ? 'background:#f5f5f5' : `background:${bg}`}">
           <span class="pt-badge ${bdgCls}">${badge}</span>
           ${imgHtml}
+          ${sold ? `<span class="pt-stamp">${soldLabel}</span>` : ''}
         </div>
         <div class="pt-body">
           <div class="pt-breed">${escHtml(p.type)}${p.pedigree ? ` · ${p.pedigree === 'pedigree' ? 'Pedigree' : 'Non-Pedigree'}` : ''}</div>
