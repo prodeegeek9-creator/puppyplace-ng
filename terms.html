@@ -92,6 +92,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;marg
     <div class="mob-logo-text">Puppy<span>Place</span></div>
   </a>
   <a href="shop.html" style="font-size:13px;font-weight:800;color:var(--orange);">🛍️ Shop</a>
+  <button type="button" class="pp-acct-btn" data-pp-account>👤 <span data-pp-account-label>Sign in</span></button>
 </div>
 <div class="mob-search-bar" id="mobSearch">
   <div class="mob-search-inner">
@@ -114,6 +115,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;marg
       <a href="contact.html">Contact</a>
     </nav>
     <a href="shop.html"><button class="btn-primary">🛍️ Shop Now</button></a>
+    <button type="button" class="pp-acct-btn" data-pp-account>👤 <span data-pp-account-label>Sign in</span></button>
   </div>
 </header>
 
@@ -289,5 +291,6 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;marg
 </footer>
 
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+<script src="/pp-account.js" defer></script>
 </body>
 </html>

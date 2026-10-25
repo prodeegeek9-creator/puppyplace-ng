@@ -149,6 +149,19 @@ async function load() {
   catch (e) { if (e.status === 401) { setIn(false); return showLogin(); } app.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
   setIn(true);
   render();
+  actFromLink();
+}
+
+// Arrived from a pet's page ("Edit listing", "Mark as sold"): do that, once.
+function actFromLink() {
+  const m = /^#(edit|sold|available)-(.+)$/.exec(location.hash);
+  if (!m) return;
+  history.replaceState(null, '', location.pathname);
+  const id = decodeURIComponent(m[2]);
+  if (!me.listings.some((p) => String(p.id) === id)) return;
+  if (m[1] === 'edit') return openEdit(id);
+  const btn = app.querySelector(`[data-sold="${CSS.escape(id)}"]`);
+  if (btn) { btn.scrollIntoView({ block: 'center' }); markSold(id, m[1] === 'sold', btn); }
 }
 
 function photosOf(p) {

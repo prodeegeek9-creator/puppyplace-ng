@@ -1074,6 +1074,12 @@ async function handleMe(request, env) {
   const id = await readSession(request, env);
   const account = id ? await accountById(env, id) : null;
   if (!account) return userJson({ error: 'Not logged in' }, 401, id ? CLEAR_COOKIE : null);
+  // ?brief=1, for the account button in every page's header (pp-account.js):
+  // who is signed in, and which listings are theirs.
+  if (new URL(request.url).searchParams.get('brief')) {
+    const mine = await listingsFor(env, account.phone, 'id,slug,active,listing_type,sold_at');
+    return userJson({ ok: true, account: { name: account.name, phone: account.phone }, listings: mine });
+  }
   const listings = await listingsFor(env, account.phone, LISTING_FIELDS);
   const e = await sbJson(env, `pet_edits?account_id=eq.${account.id}&select=id,pet_id,kind,changes,status,note,created_at,decided_at&order=created_at.desc&limit=100`);
   // Views, WhatsApp chats and messages per listing (supabase/private_pets.sql); left out until it is set up.
@@ -2821,12 +2827,14 @@ svg{flex-shrink:0}
     <a class="nav-ico" href="/pets.html#search" aria-label="Search pets"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
     <a class="nav-ico" href="/pets.html#saved" aria-label="Saved pets">${I.heart.replace('width="20" height="20"', 'width="22" height="22"')}</a>
     <a class="nav-ico" href="/messages.html" data-pp-inbox aria-label="Messages"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-cnt" data-pp-inbox-count style="display:none">0</span></a>
+    <button type="button" class="nav-ico" data-pp-account aria-label="Sign in"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></button>
     <a class="nav-cta" href="/contact.html">Contact Us</a>
   </div>
 </nav>
 
 <main class="wrap">
   <a class="back" href="/pets.html">${I.back}Back to Pets</a>
+  <div data-pp-owner-bar data-slug="${esc(p.slug)}" hidden></div>
 
   <div class="top">
     <div class="card gallery">${galleryHtml}</div>
@@ -2880,7 +2888,7 @@ svg{flex-shrink:0}
   </div>
 </footer>
 ${pageScript}
-<script src="/pp-auth.js" defer></script><script src="/pp-contact.js" defer></script><script src="/pp-inbox.js" defer></script>
+<script src="/pp-auth.js" defer></script><script src="/pp-contact.js" defer></script><script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script>
 <script>(function(){try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="wa.me"]');if(!a)return;var v=JSON.stringify({event:'whatsapp_click',path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);},true);})();</script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
@@ -4111,7 +4119,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
     <div class="nav-ico" onclick="openWishlist()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;display:block"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="nav-badge" id="wBadge">0</span></div>
     <a class="nav-ico" href="/messages.html" data-pp-inbox aria-label="Messages"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-badge" data-pp-inbox-count style="display:none">0</span></a>
     <div class="nav-ico" onclick="openCart()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;display:block"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="nav-badge" id="cBadge">0</span></div>
-    <a href="/account.html" class="nav-ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;display:block"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
+    <button type="button" class="nav-ico" data-pp-account aria-label="Sign in"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;display:block"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
   </div>
 </nav>
 <div class="mob-search-bar">
@@ -4606,7 +4614,7 @@ try{(function(){
 try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error('[PuppyPlace] Cart init error:',e);}
 </script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
-<script src="/pp-inbox.js" defer></script>
+<script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script>
 </body>
 </html>`;
 }
