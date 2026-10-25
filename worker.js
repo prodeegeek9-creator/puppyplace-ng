@@ -37,6 +37,8 @@ export default {
       return handleHeroUpload(request, url, env, ctx);
     }
     if (url.pathname === '/api/pets' && request.method === 'GET') return handlePublicPets(env);
+    if (url.pathname === '/feeds/meta-shop.csv' && (request.method === 'GET' || request.method === 'HEAD')) return handleMetaShopFeed(env);
+    if (url.pathname === '/pp-pixel.js' && request.method === 'GET') return handlePixelScript(env);
     if (url.pathname.startsWith('/img/') && (request.method === 'GET' || request.method === 'HEAD')) return handleImage(request, url, env, ctx);
     if (url.pathname === '/api/admin/data' && request.method === 'POST') return handleAdminData(request, env);
     if (url.pathname === '/api/admin/shrink-photos' && request.method === 'POST') return handleAdminShrink(request, env);
@@ -1804,6 +1806,79 @@ async function handlePublicPets(env) {
   return new Response(viaCdn(JSON.stringify({ pets })), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
 }
 
+/* ── META: SHOP CATALOG FEED AND PIXEL ─────────────────────────────────────
+ * /feeds/meta-shop.csv lists the Shop's products (food, toys, accessories, never
+ * pets: Meta's catalogs do not allow live animals) in the columns Meta Commerce
+ * Manager reads, for catalog ads: add it as a scheduled data feed and it keeps
+ * itself up to date. Products switched off or out of stock drop out.
+ *
+ * /pp-pixel.js is the Meta Pixel for every page, with the Pixel ID from the
+ * META_PIXEL_ID variable (Cloudflare → Workers → puppyplace-ng → Settings →
+ * Variables). Unset, it does nothing. It sends PageView, ViewContent on a product
+ * page, and AddToCart, AddToWishlist, InitiateCheckout and Purchase from the
+ * shop's own events (ppEvent), with the product ids the feed uses, so the ads can
+ * show people what they looked at. A browser that has opted out of the site's
+ * own tracking (pp_notrack) sends nothing.
+ */
+const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+const plain = (v) => String(v ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+function productImages(p) {
+  const raw = String(p.image_url || '').trim();
+  let list = [];
+  if (raw.startsWith('[')) { try { list = JSON.parse(raw); } catch { list = []; } } else if (raw) list = [raw];
+  return list.filter((u) => typeof u === 'string' && /^https:\/\//.test(u));
+}
+
+async function handleMetaShopFeed(env) {
+  if (!env.SUPABASE_URL) return new Response('Server not configured', { status: 503 });
+  const r = await sbJson(env, 'shop_products?active=eq.true&select=id,name,slug,description,brand,price,original_price,image_url,category,pet_type&order=name.asc&limit=5000');
+  if (!r.ok) return new Response('Could not load products', { status: 502 });
+  const money = (n) => `${Number(n).toFixed(2)} NGN`;
+  const head = ['id', 'title', 'description', 'availability', 'condition', 'price', 'sale_price', 'link', 'image_link', 'additional_image_link', 'brand', 'product_type'];
+  const rows = [];
+  for (const p of r.body || []) {
+    const imgs = productImages(p);
+    const price = Number(p.price);
+    if (!p.id || !p.name || !imgs.length || !(price > 0)) continue; // Meta refuses an item without these
+    const was = Number(p.original_price);
+    const onSale = was > price;
+    rows.push([
+      p.id,
+      plain(p.name).slice(0, 200),
+      (plain(p.description) || `${plain(p.name)}${p.pet_type ? ` for your ${String(p.pet_type).toLowerCase()}` : ''}, from PuppyPlace.ng, delivered across Nigeria.`).slice(0, 5000),
+      'in stock',
+      'new',
+      money(onSale ? was : price),
+      onSale ? money(price) : '',
+      `${SITE}/product/${encodeURIComponent(p.slug || p.id)}.html`,
+      imgs[0],
+      imgs.slice(1, 10).join(','),
+      plain(p.brand) || 'PuppyPlace',
+      [p.pet_type, p.category].filter(Boolean).map(plain).join(' > '),
+    ].map(csvCell).join(','));
+  }
+  return new Response([head.join(','), ...rows].join('\n') + '\n', {
+    status: 200,
+    headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
+  });
+}
+
+function handlePixelScript(env) {
+  const id = String(env.META_PIXEL_ID || '').trim();
+  const js = /^\d{5,20}$/.test(id)
+    ? `(function(){
+try{if(localStorage.getItem('pp_notrack')){window.ppPixel=function(){};return;}}catch(e){}
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','${id}');fbq('track','PageView');
+var EV={cart_add:'AddToCart',wishlist_add:'AddToWishlist',checkout_start:'InitiateCheckout',purchase:'Purchase'};
+window.ppPixel=function(e,pid,name,price){var ev=EV[e];if(!ev)return;var d={currency:'NGN',value:Number(price)||0};if(pid){d.content_ids=[String(pid)];d.content_type='product';if(name)d.content_name=String(name);}fbq('track',ev,d);};
+var p=window.__pp_prod;if(p&&p.id)fbq('track','ViewContent',{content_ids:[String(p.id)],content_type:'product',content_name:p.n||'',value:Number(p.p)||0,currency:'NGN'});
+})();`
+    : '/* Meta Pixel: set META_PIXEL_ID to switch it on. */window.ppPixel=function(){};';
+  return new Response(js, { status: 200, headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });
+}
+
 const ADMIN_PET_FIELDS = ['breed', 'name', 'breeder', 'type', 'listing_type', 'pedigree', 'price', 'age', 'specs', 'location', 'whatsapp', 'image_urls', 'image_url', 'dewormed', 'vaccinated', 'active'];
 
 // POST /api/admin/pets { token, action: 'list' | 'get' | 'save' | 'set_active' | 'set_sold' | 'delete', id, pet, active, sold }
@@ -2888,7 +2963,7 @@ svg{flex-shrink:0}
   </div>
 </footer>
 ${pageScript}
-<script src="/pp-auth.js" defer></script><script src="/pp-contact.js" defer></script><script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script>
+<script src="/pp-auth.js" defer></script><script src="/pp-contact.js" defer></script><script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script><script src="/pp-pixel.js" defer></script>
 <script>(function(){try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="wa.me"]');if(!a)return;var v=JSON.stringify({event:'whatsapp_click',path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);},true);})();</script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
 </body>
@@ -4340,7 +4415,7 @@ function updateBadges(){
   var cb=document.getElementById('cBadge'),wb=document.getElementById('wBadge'),cd=document.getElementById('cartDrawerCount'),wd=document.getElementById('wishDrawerCount');
   if(cb)cb.textContent=qty;if(wb)wb.textContent=wishItems.length;if(cd)cd.textContent=qty;if(wd)wd.textContent=wishItems.length;
 }
-function ppEvent(e,id,name,price){try{if(localStorage.getItem('pp_notrack'))return;var v=JSON.stringify({event:e,id:id,name:name,price:price,path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);else fetch('/api/track-event',{method:'POST',body:v,keepalive:true}).catch(function(){});}catch(x){}}
+function ppEvent(e,id,name,price){try{window.ppPixel&&ppPixel(e,id,name,price);}catch(x){}try{if(localStorage.getItem('pp_notrack'))return;var v=JSON.stringify({event:e,id:id,name:name,price:price,path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);else fetch('/api/track-event',{method:'POST',body:v,keepalive:true}).catch(function(){});}catch(x){}}
 function showToast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2500);}
 function addToCartBtn(){
   var prod=window.__pp_prod||{};
@@ -4574,7 +4649,7 @@ function launchPaystack(){
       {display_name:'Address',variable_name:'address',value:document.getElementById('coAddress').value},
       {display_name:'State',variable_name:'state',value:document.getElementById('coState').value},
     ]},
-    callback:function(response){saveOrderToSupabase(ref);sendToN8n(ref,response.transaction);},
+    callback:function(response){saveOrderToSupabase(ref);sendToN8n(ref,response.transaction);try{window.ppPixel&&ppPixel('purchase',null,null,cartTotal());}catch(x){}},
     onClose:function(){btnNext.disabled=false;spinner.classList.remove('show');btnLbl.textContent='🔒 Pay Now — '+fmt(cartTotal());}
   }).openIframe();
 }
@@ -4614,7 +4689,7 @@ try{(function(){
 try{updateBadges();renderCartDrawer();renderWishDrawer();}catch(e){console.error('[PuppyPlace] Cart init error:',e);}
 </script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
-<script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script>
+<script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script><script src="/pp-pixel.js" defer></script>
 </body>
 </html>`;
 }

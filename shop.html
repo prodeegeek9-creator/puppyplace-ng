@@ -1053,7 +1053,7 @@ function updateBadges() {
   if(document.getElementById('mcBadge')) document.getElementById('mcBadge').textContent = qty;
   if(document.getElementById('mwBadge')) document.getElementById('mwBadge').textContent = wishItems.length;
 }
-function ppEvent(e,id,name,price){try{if(localStorage.getItem('pp_notrack'))return;var v=JSON.stringify({event:e,id:id,name:name,price:price,path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);else fetch('/api/track-event',{method:'POST',body:v,keepalive:true}).catch(function(){});}catch(x){}}
+function ppEvent(e,id,name,price){try{window.ppPixel&&ppPixel(e,id,name,price);}catch(x){}try{if(localStorage.getItem('pp_notrack'))return;var v=JSON.stringify({event:e,id:id,name:name,price:price,path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);else fetch('/api/track-event',{method:'POST',body:v,keepalive:true}).catch(function(){});}catch(x){}}
 function showToast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;border-radius:50px;padding:10px 22px;font-size:13px;font-weight:800;z-index:99999;white-space:nowrap;pointer-events:none;';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
 function collectVariants(container,id){const groups=container.querySelectorAll('.pv-group');if(!groups.length)return{variantStr:'',cid:id,storedGroups:[]};const varParts=[],storedGroups=[];let missing=false;groups.forEach(grp=>{const label=grp.querySelector('.pv-label')?.textContent.trim()||'Option';const sel=grp.querySelector('.pv-opt.selected');if(!sel){grp.classList.add('pv-group-err');setTimeout(()=>grp.classList.remove('pv-group-err'),800);missing=true;}else{varParts.push(label+': '+sel.textContent.trim());storedGroups.push({label,values:[...grp.querySelectorAll('.pv-opt')].map(b=>b.textContent.trim()),selected:sel.textContent.trim()});}});if(missing)return null;const variantStr=varParts.join(', ');return{variantStr,cid:variantStr?id+'||'+variantStr:id,storedGroups};}
 function changeCartVariant(cid,groupLabel,newValue){const item=cartItems.find(i=>(i.cid||i.id)===cid);if(!item||!item.varGroups)return;const group=item.varGroups.find(g=>g.label===groupLabel);if(!group)return;group.selected=newValue;const newVariant=item.varGroups.map(g=>g.label+': '+g.selected).join(', ');const newCid=newVariant?item.id+'||'+newVariant:item.id;const existing=cartItems.find(i=>(i.cid||i.id)===newCid&&(i.cid||i.id)!==cid);if(existing){existing.qty+=item.qty;cartItems=cartItems.filter(i=>(i.cid||i.id)!==cid);}else{item.cid=newCid;item.variant=newVariant;}saveCart();updateBadges();renderCartDrawer();}
@@ -1392,6 +1392,7 @@ function launchPaystack() {
       { display_name:'State',         variable_name:'state',   value: document.getElementById('coState').value },
     ]},
     callback: function(response) {
+      try{window.ppPixel&&ppPixel('purchase',null,null,cartTotal());}catch(x){}
       saveOrderToSupabase(ref);
       sendToN8n(ref, response.transaction);
     },
@@ -1456,6 +1457,6 @@ loadProducts();
 </div>
 
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
-<script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script>
+<script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script><script src="/pp-pixel.js" defer></script>
 </body>
 </html>

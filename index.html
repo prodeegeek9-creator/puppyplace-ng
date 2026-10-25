@@ -1458,7 +1458,7 @@ function updateBadges() {
   if(document.getElementById('mwBadge')) document.getElementById('mwBadge').textContent = wishItems.length;
 }
 
-function ppEvent(e,id,name,price){try{if(localStorage.getItem('pp_notrack'))return;var v=JSON.stringify({event:e,id:id,name:name,price:price,path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);else fetch('/api/track-event',{method:'POST',body:v,keepalive:true}).catch(function(){});}catch(x){}}
+function ppEvent(e,id,name,price){try{window.ppPixel&&ppPixel(e,id,name,price);}catch(x){}try{if(localStorage.getItem('pp_notrack'))return;var v=JSON.stringify({event:e,id:id,name:name,price:price,path:location.pathname});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-event',v);else fetch('/api/track-event',{method:'POST',body:v,keepalive:true}).catch(function(){});}catch(x){}}
 function showToast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;border-radius:50px;padding:10px 22px;font-size:13px;font-weight:800;z-index:99999;white-space:nowrap;pointer-events:none;';
@@ -2233,6 +2233,7 @@ function launchPaystack() {
       ]
     },
     callback: function(response) {
+      try{window.ppPixel&&ppPixel('purchase',null,null,cartTotal());}catch(x){}
       saveOrderToSupabase(ref);
       sendToN8n(ref, response.transaction);
     },
@@ -3417,6 +3418,6 @@ function toggleFc(h) {
 })();
 </script>
 
-<script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script>
+<script src="/pp-inbox.js" defer></script><script src="/pp-account.js" defer></script><script src="/pp-pixel.js" defer></script>
 </body>
 </html>
