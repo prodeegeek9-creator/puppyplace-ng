@@ -188,6 +188,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;}
     <div class="mob-logo-text">Puppy<span>Place</span></div>
   </a>
   <a href="pets.html" style="font-size:13px;font-weight:800;color:var(--orange);">🐶 Dogs for sale</a>
+  <button type="button" class="pp-acct-btn" data-pp-account>👤 <span data-pp-account-label>Sign in</span></button>
 </div>
 
 <header class="site-header">
@@ -204,6 +205,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:48px 24px 24px;}
       <a href="contact.html">Contact</a>
     </nav>
     <a class="btn-primary sell-cta" style="font-size:13px;padding:10px 22px" href="https://wa.me/2348156740438?text=Hi%20PuppyPlace%2C%20I%20want%20to%20sell%20my%20dog." target="_blank" rel="noopener">List my dog free</a>
+    <button type="button" class="pp-acct-btn" data-pp-account>👤 <span data-pp-account-label>Sign in</span></button>
   </div>
 </header>
 
@@ -348,5 +350,6 @@ var SELL_CHAT_URL = 'https://wa.me/2348156740438?text=' + encodeURIComponent('Hi
 document.querySelectorAll('.sell-cta').forEach(function (a) { a.href = SELL_CHAT_URL; });
 </script>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+<script src="/pp-account.js" defer></script>
 </body>
 </html>
