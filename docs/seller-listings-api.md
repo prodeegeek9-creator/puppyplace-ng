@@ -76,14 +76,25 @@ once a minute, asks this site which of the ones still waiting are live:
 GET /api/seller-listings/status?slugs=boerboel-20261008-1019-ab12,lhasa-20261008-0950-cd34
 Authorization: Bearer <SELLER_API_KEY>
 
-200 { "live": ["boerboel-…"], "pending": ["lhasa-…"], "missing": [] }
+200 { "live": ["boerboel-…"], "pending": ["lhasa-…"], "missing": [],
+      "socials": [{ "name": "Facebook", "url": "https://www.facebook.com/puppyplace_ng" }, …] }
 ```
 
 `live` is approved and showing, `pending` is waiting for the store, `missing`
 is no longer there (deleted). Up to 50 slugs, each letters, digits and hyphens.
 Each seller whose listing is live gets, in the same WhatsApp chat they wrote
 from, their link with a push to share it, and the link again in a message made
-to be forwarded. Because Vendwyze asks, it does not matter how the listing was
+to be forwarded. `socials` is the store's own pages (the pet page footer's
+Facebook, Instagram and TikTok, `PET_FOOTER_SOCIALS` in `worker.js`), listed in
+that message.
+
+Before telling the seller, Vendwyze also has the pet posted to the store's
+Facebook page and Instagram: n8n's **Puppyplace Social Posting — Approved
+Pets** workflow, at `PET_SOCIAL_URL` in Vendwyze (`POST { "slug": "…" }`). It
+reads the pet from Supabase itself and only posts one that is live, not sold
+and listed in the last 60 days, once (its `puppyplace_pet_posts` data table);
+it answers `{ "posted": true, "facebook_url": …, "instagram_url": … }`, and
+those links replace the page links for the seller. Because Vendwyze asks, it does not matter how the listing was
 approved (the ✅ in Admin → Pets, the edit form, the database), and this site
 never has to reach Vendwyze.
 

@@ -2007,10 +2007,11 @@ async function handleBreedGuideAdmin(request, env) {
 
 // GET /api/seller-listings/status?slugs=a,b,c  (same shared key)
 //
-// → { live: [...], pending: [...], missing: [...] }. Live is approved and
-// showing; pending is waiting for the store; missing is not there any more
-// (deleted). Vendwyze asks once a minute about the listings it sent and tells
-// each seller whose is live, however the store approved it.
+// → { live: [...], pending: [...], missing: [...], socials: [{ name, url }] }.
+// Live is approved and showing; pending is waiting for the store; missing is
+// not there any more (deleted). Vendwyze asks once a minute about the listings
+// it sent and tells each seller whose is live, however the store approved it,
+// with the store's social pages from socials (PET_FOOTER_SOCIALS).
 async function handleSellerListingStatus(request, url, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY || !env.SELLER_API_KEY) {
     return jsonResp({ error: 'Server not configured' }, 503);
@@ -2036,6 +2037,8 @@ async function handleSellerListingStatus(request, url, env) {
     live: slugs.filter((x) => found.get(x) === true),
     pending: slugs.filter((x) => found.get(x) === false),
     missing: slugs.filter((x) => !found.has(x)),
+    // The store's own pages, for Vendwyze to put in the "your pet is live" message
+    socials: PET_FOOTER_SOCIALS.filter((s) => s.url).map(({ name, url }) => ({ name, url })),
   }, 200);
 }
 
