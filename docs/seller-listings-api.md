@@ -77,7 +77,8 @@ GET /api/seller-listings/status?slugs=boerboel-20261008-1019-ab12,lhasa-20261008
 Authorization: Bearer <SELLER_API_KEY>
 
 200 { "live": ["boerboel-…"], "pending": ["lhasa-…"], "missing": [],
-      "socials": [{ "name": "Facebook", "url": "https://www.facebook.com/puppyplace_ng" }, …] }
+      "socials": [{ "name": "Facebook", "url": "https://www.facebook.com/puppyplace_ng" }, …],
+      "social_posting": true }
 ```
 
 `live` is approved and showing, `pending` is waiting for the store, `missing`
@@ -86,7 +87,10 @@ Each seller whose listing is live gets, in the same WhatsApp chat they wrote
 from, their link with a push to share it, and the link again in a message made
 to be forwarded. `socials` is the store's own pages (the pet page footer's
 Facebook, Instagram and TikTok, `PET_FOOTER_SOCIALS` in `worker.js`), listed in
-that message.
+that message. `social_posting` is the tick in **Admin → Pets** ("Post approved
+pets to Facebook & Instagram", on unless unticked, stored in `store_settings`
+as `social_posting` `{ "enabled": bool }`); when it is `false`, or the site
+cannot read it, Vendwyze does not post and the seller gets the pages alone.
 
 Before telling the seller, Vendwyze also has the pet posted to the store's
 Facebook page and Instagram: n8n's **Puppyplace Social Posting — Approved

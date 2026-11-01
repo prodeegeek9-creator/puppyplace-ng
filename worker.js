@@ -2007,11 +2007,12 @@ async function handleBreedGuideAdmin(request, env) {
 
 // GET /api/seller-listings/status?slugs=a,b,c  (same shared key)
 //
-// → { live: [...], pending: [...], missing: [...], socials: [{ name, url }] }.
+// → { live: [...], pending: [...], missing: [...], socials: [{ name, url }], social_posting: bool }.
 // Live is approved and showing; pending is waiting for the store; missing is
 // not there any more (deleted). Vendwyze asks once a minute about the listings
 // it sent and tells each seller whose is live, however the store approved it,
-// with the store's social pages from socials (PET_FOOTER_SOCIALS).
+// with the store's social pages from socials (PET_FOOTER_SOCIALS). When
+// social_posting is false (Admin → Pets) Vendwyze does not post the pet.
 async function handleSellerListingStatus(request, url, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY || !env.SELLER_API_KEY) {
     return jsonResp({ error: 'Server not configured' }, 503);
@@ -2026,7 +2027,10 @@ async function handleSellerListingStatus(request, url, env) {
     return jsonResp({ error: 'slugs must be 1 to 50 slugs, separated by commas' }, 400);
   }
 
-  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/pets?slug=in.(${slugs.join(',')})&select=slug,active`, { headers: sbHeaders(env) });
+  const [res, social] = await Promise.all([
+    fetch(`${env.SUPABASE_URL}/rest/v1/pets?slug=in.(${slugs.join(',')})&select=slug,active`, { headers: sbHeaders(env) }),
+    socialPostingOn(env),
+  ]);
   if (!res.ok) {
     console.error('seller listing status failed:', res.status, (await res.text().catch(() => '')).slice(0, 300));
     return jsonResp({ error: 'Could not read the listings' }, 500);
@@ -2039,7 +2043,24 @@ async function handleSellerListingStatus(request, url, env) {
     missing: slugs.filter((x) => !found.has(x)),
     // The store's own pages, for Vendwyze to put in the "your pet is live" message
     socials: PET_FOOTER_SOCIALS.filter((s) => s.url).map(({ name, url }) => ({ name, url })),
+    // Admin → Pets: whether newly approved pets are posted to Facebook and Instagram
+    social_posting: social,
   }, 200);
+}
+
+// The admin's "Post approved pets to Facebook & Instagram" tick (store_settings
+// key social_posting, { enabled }). On unless it has been unticked. If the
+// setting cannot be read it is treated as off: a post cannot be taken back,
+// and a pet skipped can still be posted by hand.
+async function socialPostingOn(env) {
+  try {
+    const r = await fetch(`${env.SUPABASE_URL}/rest/v1/store_settings?key=eq.social_posting&select=value&limit=1`, { headers: sbHeaders(env) });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    return !(Array.isArray(rows) && rows[0]?.value?.enabled === false);
+  } catch {
+    return false;
+  }
 }
 
 function jsonResp(data, status) {
