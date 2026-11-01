@@ -834,6 +834,11 @@ input,select,textarea{font-family:'Nunito',sans-serif}
             </div>
           </div>
           <div id="petsPendingNote" style="font-size:13px;font-weight:700;color:var(--orange);margin:-6px 0 14px"></div>
+          <label style="display:flex;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:12px 14px;margin:0 0 14px;cursor:pointer">
+            <input type="checkbox" id="socialPostingOn" onchange="saveSocialPosting(this)" disabled style="width:18px;height:18px;margin-top:2px;accent-color:var(--orange)"/>
+            <span><span style="font-weight:800;font-size:14px">📣 Post approved pets to Facebook &amp; Instagram</span><br/>
+            <span id="socialPostingNote" style="font-size:12.5px;color:var(--gray)">Loading…</span></span>
+          </label>
           <div class="dx-pills" id="petPills"></div>
           <div class="dx-filters">
             <input type="search" id="petSearch" placeholder="Search breed, name, seller, number or place" oninput="renderPets()"/>
@@ -1901,7 +1906,31 @@ function photosOf(p){
   if(Array.isArray(a)&&a.length) return a.filter(Boolean);
   return p.image_url?[p.image_url]:[];
 }
+// The tick that decides whether a pet is posted to Facebook and Instagram when it
+// is approved (read by Vendwyze through /api/seller-listings/status). On unless unticked.
+async function loadSocialPosting(){
+  const box=document.getElementById('socialPostingOn'), note=document.getElementById('socialPostingNote');
+  const { data, error }=await sbAdmin.from('store_settings').select('value').eq('key','social_posting').maybeSingle();
+  if(error){ note.textContent='Could not load this setting. It is treated as off until it loads. '+error.message; box.disabled=true; return; }
+  box.checked=!(data&&data.value&&data.value.enabled===false);
+  box.disabled=false;
+  showSocialPostingNote(box.checked);
+}
+function showSocialPostingNote(on){
+  document.getElementById('socialPostingNote').textContent=on
+    ?'On. A pet you approve is posted once to the PuppyPlace Facebook page and Instagram within a minute, and the seller gets the links.'
+    :'Off. Pets you approve are not posted. The seller still hears it is live, with your page links. A pet approved while this is off is not posted later.';
+}
+async function saveSocialPosting(box){
+  const on=box.checked; box.disabled=true;
+  const { error }=await sbAdmin.from('store_settings').upsert({ key:'social_posting', value:{ enabled:on }, updated_at:new Date().toISOString() });
+  box.disabled=false;
+  if(error){ box.checked=!on; showToast('❌ '+error.message,'error'); return; }
+  showSocialPostingNote(on);
+  showToast(on?'📣 Approved pets will be posted to Facebook and Instagram':'Approved pets will not be posted to social media','success');
+}
 async function loadPets() {
+  loadSocialPosting();
   const tbody=document.getElementById('petsTableBody');
   tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray)">Loading…</td></tr>';
   let data;
