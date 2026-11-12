@@ -885,7 +885,7 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
     <a class="nav-link" href="shop.html?cat=Health">💊 Health <span class="nav-badge">New</span></a>
     <a class="nav-link" href="shop.html?cat=Clothing">👗 Clothing</a>
     <div class="nav-sep"></div>
-    <a class="nav-link" href="#pets" onclick="setNav(this)">🐶 Adopt a Pet</a>
+    <a class="nav-link" href="/pets.html">🐶 Buy or Adopt a Pet</a>
     <a class="nav-link" href="#blog" onclick="setNav(this)">📖 Blog</a>
   </div>
 </nav>
@@ -1025,6 +1025,9 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
           <div class="sec-head-left"><div class="sec-head-label">Adopt &amp; Buy</div><h2>Find Your <span>Companion</span></h2></div>
         </div>
         <div class="pet-grid" id="petGrid"></div>
+        <div class="see-more-wrap">
+          <a href="/pets.html" class="see-more-btn">🐾 See All Pets for Sale &amp; Adoption →</a>
+        </div>
       </div>
 
 
@@ -1089,8 +1092,12 @@ footer { background: #1a1a18; color: rgba(255,255,255,.65); padding: 60px 0 0; }
     <div class="fc">
       <h4 class="fc-h" onclick="toggleFc(this)">Pets <span class="fc-arr">+</span></h4>
       <div class="fc-links">
-        <a href="shop.html?pet=Dog">Dogs</a>
-        <a href="shop.html?pet=Cat">Cats</a>
+        <a href="/pets.html">Pets for Sale</a>
+        <a href="/dogs-for-sale.html">Dogs &amp; Puppies</a>
+        <a href="/cats-for-sale.html">Cats &amp; Kittens</a>
+        <a href="/pets-for-adoption.html">Pets for Adoption</a>
+        <a href="shop.html?pet=Dog">Dog Supplies</a>
+        <a href="shop.html?pet=Cat">Cat Supplies</a>
         <a href="shop.html?pet=Bird">Birds</a>
         <a href="shop.html?pet=Fish">Fish</a>
         <a href="shop.html?pet=Reptile">Reptiles</a>
@@ -1846,7 +1853,7 @@ async function renderPets() {
         </div>
         <div class="pt-body">
           <div class="pt-breed">${escHtml(p.type)}${p.pedigree ? ` · ${p.pedigree === 'pedigree' ? 'Pedigree' : 'Non-Pedigree'}` : ''}</div>
-          <div class="pt-name">${escHtml(p.breed || p.type)}</div>
+          <div class="pt-name">${p.slug ? `<a href="/pets/${encodeURIComponent(p.slug)}" onclick="event.preventDefault()" style="color:inherit">${escHtml(p.breed || p.type)}</a>` : escHtml(p.breed || p.type)}</div>
           ${(p.name || p.breeder) ? `<div style="font-size:12px;color:var(--gray);margin-bottom:6px;">${p.name ? escHtml(p.name) : ''}${p.name && p.breeder ? ' · ' : ''}${p.breeder ? '🏠 '+escHtml(p.breeder) : ''}</div>` : ''}
           <div class="pt-tags">
             ${p.age ? `<span class="pt-tag">${escHtml(p.age)}</span>` : ''}
