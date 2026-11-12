@@ -2160,6 +2160,72 @@ const PET_CITIES = [
   ['ekiti', 'Ekiti', 'ekiti'],
 ].map(([slug, name, words]) => ({ slug, name, words: `\\b(?:${words})\\b`, re: new RegExp(`\\b(?:${words})\\b`, 'i') }));
 
+// Breed pages (/boerboel-for-sale.html, /boerboel-for-sale-in-lagos.html).
+// A listing's breed is free text ("Boerbul puppies", "GSD"); the first breed of
+// the same pet type whose words appear in it is the listing's breed, so more
+// specific names come before the ones they contain (Bullmastiff before Bulldog).
+// [slug, name, pet type, words, plural for birds]
+const PET_BREEDS = [
+  ['bullmastiff', 'Bullmastiff', 'Dog', 'bull ?mastiffs?'],
+  ['tibetan-mastiff', 'Tibetan Mastiff', 'Dog', 'tibetan mastiffs?'],
+  ['neapolitan-mastiff', 'Neapolitan Mastiff', 'Dog', 'neapolitans?(?: mastiffs?)?'],
+  ['boerboel', 'Boerboel', 'Dog', 'boer ?boels?|boer ?buls?|boer ?bulls?|south african mastiffs?'],
+  ['french-bulldog', 'French Bulldog', 'Dog', 'french bull ?dogs?|frenchies|frenchie'],
+  ['american-bully', 'American Bully', 'Dog', 'american bull(?:y|ies)|(?:xl|pocket|exotic|standard) bull(?:y|ies)|bull(?:y|ies)(?: xl)?'],
+  ['pit-bull', 'Pit Bull', 'Dog', 'pit ?bulls?|apbt'],
+  ['english-bulldog', 'English Bulldog', 'Dog', '(?<!american )(?:english |british )?bull ?dogs?'],
+  ['german-shepherd', 'German Shepherd', 'Dog', 'german sh[ea]pp?h?[ae]rds?|gsd|alsatians?'],
+  ['caucasian-shepherd', 'Caucasian Shepherd', 'Dog', 'caucasians?(?: shepherds?| ovcharkas?)?|ovcharkas?'],
+  ['belgian-malinois', 'Belgian Malinois', 'Dog', 'malinois|belgian shepherds?'],
+  ['rottweiler', 'Rottweiler', 'Dog', 'rott?w[ei]+l+[ea]rs?|rotties|rottie|rotty'],
+  ['doberman', 'Doberman', 'Dog', 'dobb?ermann?s?(?: pinschers?)?|dobies?'],
+  ['cane-corso', 'Cane Corso', 'Dog', 'cane ?corsos?|corsos?'],
+  ['great-dane', 'Great Dane', 'Dog', 'great danes?'],
+  ['lhasa-apso', 'Lhasa Apso', 'Dog', 'lh?asa(?: apsos?)?'],
+  ['shih-tzu', 'Shih Tzu', 'Dog', 'shih? ?tzus?|shitzus?|shihtzus?'],
+  ['maltese', 'Maltese', 'Dog', 'maltese'],
+  ['chihuahua', 'Chihuahua', 'Dog', 'chihuahuas?|chiwawas?'],
+  ['pomeranian', 'Pomeranian', 'Dog', 'pomeranians?|poms?'],
+  ['yorkshire-terrier', 'Yorkshire Terrier', 'Dog', 'yorkshires?(?: terriers?)?|yorkies?'],
+  ['poodle', 'Poodle', 'Dog', '(?:toy |teacup |miniature |mini |standard )?poodles?'],
+  ['golden-retriever', 'Golden Retriever', 'Dog', 'golden(?: retrievers?)?(?! ?doodles?)'],
+  ['labrador-retriever', 'Labrador Retriever', 'Dog', 'labradors?(?: retrievers?)?|labs?'],
+  ['siberian-husky', 'Siberian Husky', 'Dog', 'siberians?(?: husk(?:y|ies))?|husk(?:y|ies)'],
+  ['alaskan-malamute', 'Alaskan Malamute', 'Dog', '(?:alaskan )?malamutes?'],
+  ['american-eskimo', 'American Eskimo', 'Dog', '(?:american )?eskimos?(?: dogs?)?'],
+  ['samoyed', 'Samoyed', 'Dog', 'samoyeds?'],
+  ['chow-chow', 'Chow Chow', 'Dog', 'chow ?chows?|chows?'],
+  ['akita', 'Akita', 'Dog', 'akitas?'],
+  ['jack-russell', 'Jack Russell', 'Dog', 'jack russ?ell?s?(?: terriers?)?'],
+  ['dachshund', 'Dachshund', 'Dog', 'dachs?hunds?|sausage dogs?'],
+  ['beagle', 'Beagle', 'Dog', 'beagles?'],
+  ['pug', 'Pug', 'Dog', 'pugs?'],
+  ['bichon-frise', 'Bichon Frise', 'Dog', 'bichons?(?: fris[eé])?'],
+  ['persian-cat', 'Persian', 'Cat', 'persians?'],
+  ['siamese-cat', 'Siamese', 'Cat', 'siamese'],
+  ['maine-coon', 'Maine Coon', 'Cat', 'maine ?coons?'],
+  ['british-shorthair', 'British Shorthair', 'Cat', 'british short ?hairs?'],
+  ['ragdoll', 'Ragdoll', 'Cat', 'rag ?dolls?'],
+  ['bengal-cat', 'Bengal', 'Cat', 'bengals?'],
+  ['sphynx', 'Sphynx', 'Cat', 'sph[iy]nx'],
+  ['african-grey-parrot', 'African Grey Parrot', 'Bird', 'african gr[ae]ys?(?: parrots?)?|gr[ae]y parrots?', 'African Grey Parrots'],
+  ['macaw', 'Macaw', 'Bird', 'macaws?', 'Macaws'],
+  ['cockatiel', 'Cockatiel', 'Bird', 'cockatiels?', 'Cockatiels'],
+  ['lovebird', 'Lovebird', 'Bird', 'love ?birds?', 'Lovebirds'],
+  ['budgie', 'Budgie', 'Bird', 'budgies?|budgerigars?|parakeets?', 'Budgies'],
+  ['canary', 'Canary', 'Bird', 'canar(?:y|ies)', 'Canaries'],
+].map(([slug, name, type, words, plural]) => {
+  const young = type === 'Dog' ? `${name} puppies` : type === 'Cat' ? `${name} kittens` : plural;
+  return {
+    slug, name, type, words: `\\b(?:${words})\\b`, re: new RegExp(`\\b(?:${words})\\b`, 'i'),
+    // "Boerboel Puppies", "Persian Cats & Kittens", "Lovebirds"
+    title: type === 'Dog' ? `${name} Puppies` : type === 'Cat' ? `${name} Cats & Kittens` : plural,
+    one: type === 'Bird' ? name : `${name} ${type.toLowerCase()}`,
+    many: type === 'Bird' ? plural : `${name} ${type.toLowerCase()}s`,
+    young,
+  };
+});
+
 const PET_LIST_FIELDS = 'id,slug,breed,name,breeder,type,listing_type,pedigree,price,age,specs,location,image_url,image_urls,dewormed,vaccinated,sold_at';
 const PETS_PER_LIST_JSONLD = 60;
 // A city page needs this many listings before search engines are asked to index it
@@ -2167,7 +2233,9 @@ const CITY_PAGE_MIN = 2;
 
 function petKindOf(p) { return MAIN_TYPES.includes(p.type) ? p.type : 'other'; }
 function petCityOf(p) { return PET_CITIES.find(c => c.re.test(p.location || '')) || null; }
-function petsPagePath(kind, city, adoption) {
+function petBreedOf(p) { return PET_BREEDS.find(b => b.type === p.type && b.re.test(p.breed || '')) || null; }
+function petsPagePath(kind, city, adoption, breed = null) {
+  if (breed) return `/${breed.slug}-for-sale${city ? `-in-${city.slug}` : ''}.html`;
   if (adoption) return '/pets-for-adoption.html';
   if (!kind.type && !city) return '/pets.html';
   return `/${kind.key}-for-sale${city ? `-in-${city.slug}` : ''}.html`;
@@ -2180,12 +2248,24 @@ function matchPetsPage(pathname) {
   if (pathname === '/pets-for-adoption.html') return { kind: ALL_PETS_KIND, city: null, adoption: true };
   if (pathname === '/pets-for-adoption') return { redirect: '/pets-for-adoption.html' };
   const m = pathname.match(/^\/(dogs|cats|birds|rabbits|fish|other-pets|pets)-for-sale(?:-in-([a-z-]+))?(\.html)?$/);
-  if (!m) return null;
+  if (!m) return matchBreedPage(pathname);
   const kind = m[1] === 'pets' ? ALL_PETS_KIND : PET_KINDS.find(k => k.key === m[1]);
   const city = m[2] ? PET_CITIES.find(c => c.slug === m[2]) : null;
   if (m[2] && !city) return { notFound: true };
   if (!m[3]) return { redirect: petsPagePath(kind, city, false) };
   return { kind, city, adoption: false };
+}
+
+// /boerboel-for-sale.html, /boerboel-for-sale-in-lagos.html
+function matchBreedPage(pathname) {
+  const m = pathname.match(/^\/([a-z-]+?)-for-sale(?:-in-([a-z-]+))?(\.html)?$/);
+  const breed = m && PET_BREEDS.find(b => b.slug === m[1]);
+  if (!breed) return null;
+  const city = m[2] ? PET_CITIES.find(c => c.slug === m[2]) : null;
+  if (m[2] && !city) return { notFound: true };
+  const kind = PET_KINDS.find(k => k.type === breed.type);
+  if (!m[3]) return { redirect: petsPagePath(kind, city, false, breed) };
+  return { kind, city, adoption: false, breed };
 }
 
 async function getLivePets(env) {
@@ -2194,8 +2274,9 @@ async function getLivePets(env) {
   return Array.isArray(r.body) ? availableFirst(r.body) : [];
 }
 
-function petsInPage(pets, kind, city, adoption) {
+function petsInPage(pets, kind, city, adoption, breed = null) {
   return pets.filter(p => (!kind.type || petKindOf(p) === kind.type)
+    && (!breed || petBreedOf(p) === breed)
     && (!city || city.re.test(p.location || ''))
     && (!adoption || p.listing_type === 'adoption'));
 }
@@ -2209,7 +2290,8 @@ function petPriceStats(pets) {
 function topBreeds(pets, n = 4) {
   const counts = new Map();
   for (const p of pets) {
-    const b = String(p.breed || '').trim();
+    // Spellings of a known breed ("Boerbul puppies", "Boerboel") count as one
+    const b = petBreedOf(p)?.name || String(p.breed || '').trim();
     if (!b || b.length > 40) continue;
     const k = b.toLowerCase();
     const cur = counts.get(k) || { name: b, n: 0 };
@@ -2224,8 +2306,36 @@ function listJoin(items) {
 }
 const naira = n => '₦' + Number(n).toLocaleString('en-NG');
 
+// "a Boerboel dog", "an Akita dog"
+const aOrAn = w => `${/^[aeiou]/i.test(w) ? 'an' : 'a'} ${w}`;
+
+// The approved breed guide for a breed page: under the breed's own name, or the
+// breed as one of its listings spells it. Null when there is none.
+async function breedPageGuide(breed, pets, env) {
+  const keys = [...new Set([breed.name, breed.young, ...pets.map(p => p.breed)].map(breedKey).filter(Boolean))].slice(0, 20);
+  if (!keys.length) return null;
+  try {
+    const list = keys.map(k => `"${k}"`).join(',');
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/breed_guides?breed_key=in.(${encodeURIComponent(list)})&status=eq.approved&select=breed_key,summary`, { headers: sbHeaders(env) });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    for (const k of keys) { const r = rows.find(x => x.breed_key === k); if (r) return r.summary; }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// A guide's "About: … / Temperament: … / Best home: …" lines as paragraphs
+function guideParas(summary) {
+  return String(summary).split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const m = /^(About|Temperament|Best home):\s*(.+)$/.exec(l);
+    return m ? `<p><strong>${m[1]}:</strong> ${esc(m[2])}</p>` : `<p>${esc(l)}</p>`;
+  }).join('');
+}
+
 async function servePetsPage(page, env) {
-  const { kind, city, adoption } = page;
+  const { kind, city, adoption, breed = null } = page;
   let pets, failed = false;
   try {
     pets = env.SUPABASE_URL ? await getLivePets(env) : [];
@@ -2235,24 +2345,32 @@ async function servePetsPage(page, env) {
     failed = true;
   }
 
-  const shown = petsInPage(pets, kind, city, adoption);
+  const shown = petsInPage(pets, kind, city, adoption, breed);
+  const guide = breed && !failed ? await breedPageGuide(breed, shown, env) : null;
   // Sold pets are shown, stamped, after the rest, but the counts, prices and
   // what search engines are told is for sale are the pets still available.
   const available = shown.filter(p => !p.sold_at);
   const place = city ? city.name : 'Nigeria';
   const inPlace = `in ${place}`;
-  const path = petsPagePath(kind, city, adoption);
+  const path = petsPagePath(kind, city, adoption, breed);
   const canonical = `https://puppyplace.ng${path}`;
   const stats = petPriceStats(available);
-  const breeds = topBreeds(available);
+  const breeds = breed ? [] : topBreeds(available);
   const isMain = !kind.type && !city && !adoption;
   const count = available.length;
-  const many = kind.type === 'other' ? 'pets' : kind.many;
-  const aOne = kind.one === 'fish' ? 'fish' : `a ${kind.one}`;
+  const many = breed ? breed.many : kind.type === 'other' ? 'pets' : kind.many;
+  const aOne = breed ? aOrAn(breed.one) : kind.one === 'fish' ? 'fish' : `a ${kind.one}`;
 
   // ── Words for this page ──
   let title, h1, sub, description;
-  if (adoption) {
+  if (breed) {
+    const lead = `${breed.title} for Sale in ${place}`;
+    title = city
+      ? `${lead}${count >= CITY_PAGE_MIN ? ` – ${count} Listings` : ''} | PuppyPlace.ng`
+      : `${lead}${stats ? ` – Prices from ${naira(stats.min)}` : ''} | PuppyPlace.ng`;
+    h1 = `${esc(breed.title)} for Sale<br/>in <span>${esc(place)}</span>`;
+    sub = `Buy ${esc(breed.young)}${breed.type === 'Bird' ? '' : ` and adult ${esc(breed.many)}`} from breeders and owners ${inPlace}. See photos, prices and health details, then chat with the seller on WhatsApp.`;
+  } else if (adoption) {
     title = 'Pets for Adoption in Nigeria – Adopt a Dog or Cat | PuppyPlace.ng';
     h1 = 'Pets for Adoption<br/>in <span>Nigeria</span>';
     sub = 'Give a dog, cat or other pet a new home. Owners across Nigeria rehome their pets here, many for free.';
@@ -2274,16 +2392,18 @@ async function servePetsPage(page, env) {
         ? `Buy healthy ${kind.many}${kind.young ? ` and ${kind.young}` : ''} from trusted breeders and owners ${inPlace}. Chat with sellers directly on WhatsApp.`
         : `Buy, sell or adopt healthy dogs, cats, birds, rabbits and more from trusted sellers ${inPlace}.`;
   }
-  const countWords = count === 1 ? `1 ${kind.type === 'other' ? 'pet' : kind.one}` : `${count} ${many}`;
+  const countWords = count === 1 ? `1 ${breed ? breed.one : kind.type === 'other' ? 'pet' : kind.one}` : `${count} ${many}`;
   const adoptN = available.filter(p => p.listing_type === 'adoption').length;
   const forWhat = adoption || (count && adoptN === count) ? 'for adoption' : adoptN ? 'for sale and adoption' : 'for sale';
   description = [
-    count ? `Browse ${countWords} ${forWhat} ${inPlace}${stats ? ` from ${naira(stats.min)}` : ''}.` : `${kind.title} ${adoption ? 'for adoption' : 'for sale'} ${inPlace} on PuppyPlace.ng.`,
+    count ? `Browse ${countWords} ${forWhat} ${inPlace}${stats ? ` from ${naira(stats.min)}` : ''}.` : `${breed ? breed.title : kind.title} ${adoption ? 'for adoption' : 'for sale'} ${inPlace} on PuppyPlace.ng.`,
+    breed && guide ? 'Read about the breed, compare prices,' : '',
     breeds.length ? `${breeds.slice(0, 3).join(', ')} and more.` : '',
-    'Chat with sellers on WhatsApp, or list your pet free.',
+    breed && guide ? 'and chat with sellers on WhatsApp.' : 'Chat with sellers on WhatsApp, or list your pet free.',
   ].filter(Boolean).join(' ');
 
   const indexable = !failed && (isMain || (city ? count >= CITY_PAGE_MIN : count >= 1));
+  const topTitle = breed ? breed.title : kind.title;
 
   // ── Pills: real links, so every type page is one click from every other ──
   const otherIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="3.5"/><circle cx="17" cy="7" r="3.5"/><circle cx="7" cy="17" r="3.5"/><circle cx="17" cy="17" r="3.5"/></svg>';
@@ -2292,29 +2412,37 @@ async function servePetsPage(page, env) {
     const on = !adoption && k.key === kind.key;
     const href = petsPagePath(k, pillCity, false);
     const icon = k.emoji ? `<span class="em">${k.emoji}</span>` : otherIcon;
-    return `      <a class="pill${on ? ' on' : ''}" data-type="${k.type || 'all'}" href="${href}"${on ? ' aria-current="page"' : ''}>${icon}${k.label}</a>`;
+    return `      <a class="pill${on ? ' on' : ''}" data-type="${k.type || 'all'}" href="${href}"${on && !breed ? ' aria-current="page"' : ''}>${icon}${k.label}</a>`;
   }).join('\n');
 
   // ── Listings ──
-  const emptyHtml = `<div class="pet-grid-empty"><div class="ico">${kind.emoji || '🐾'}</div><div>${failed ? 'We couldn’t load the pets just now. Please refresh the page.' : `No ${esc(many)} ${adoption ? 'for adoption' : 'listed'} ${esc(inPlace)} yet. Check back soon!`}</div>${!failed && !isMain ? `<a class="sell-pill" href="/pets.html">See all pets in Nigeria →</a>` : ''}</div>`;
+  const emptyHtml = `<div class="pet-grid-empty"><div class="ico">${kind.emoji || '🐾'}</div><div>${failed ? 'We couldn’t load the pets just now. Please refresh the page.' : `No ${esc(many)} ${adoption ? 'for adoption' : 'listed'} ${esc(inPlace)} yet. Check back soon!`}</div>${!failed && breed ? `<a class="sell-pill" href="${petsPagePath(kind, null, false)}">See all ${esc(kind.title.toLowerCase())} in Nigeria →</a>` : !failed && !isMain ? `<a class="sell-pill" href="/pets.html">See all pets in Nigeria →</a>` : ''}</div>`;
   const grid = shown.length ? shown.map((p, i) => renderPetCard(p, false, i < 4)).join('\n') : emptyHtml;
-  const gridTitle = count ? `${countWords} ${forWhat} ${inPlace}` : `${kind.title} ${inPlace}`;
+  const gridTitle = count ? `${countWords} ${forWhat} ${inPlace}` : `${topTitle} ${inPlace}`;
 
   // ── Text for buyers and sellers ──
-  const kindLinks = PET_KINDS.map(k => {
+  const kindLinks = breed ? [] : PET_KINDS.map(k => {
     const n = petsInPage(pets, k, city, false).length;
     if (city && n < CITY_PAGE_MIN) return '';
     if (!n) return '';
     return `<a href="${petsPagePath(k, city, false)}">${k.emoji || '🐾'} ${esc(k.title)} ${esc(inPlace)} <span>${n}</span></a>`;
   }).filter(Boolean);
-  if (city) kindLinks.push(`<a href="${petsPagePath(kind, null, false)}">${kind.emoji || '🐾'} ${esc(kind.title)} in Nigeria</a>`);
+  if (city && breed) kindLinks.push(`<a href="${petsPagePath(kind, null, false, breed)}">${kind.emoji || '🐾'} ${esc(breed.title)} in Nigeria</a>`);
+  if (city || breed) kindLinks.push(`<a href="${petsPagePath(kind, breed ? city : null, false)}">${kind.emoji || '🐾'} All ${esc(kind.title.toLowerCase())} ${esc(breed ? inPlace : 'in Nigeria')}</a>`);
   const cityLinks = adoption ? [] : PET_CITIES.map(c => {
-    const n = petsInPage(pets, kind, c, false).length;
-    return n >= CITY_PAGE_MIN && (!city || c.slug !== city.slug) ? `<a href="${petsPagePath(kind, c, false)}">📍 ${esc(kind.title)} in ${esc(c.name)} <span>${n}</span></a>` : '';
+    const n = petsInPage(pets, kind, c, false, breed).length;
+    return n >= CITY_PAGE_MIN && (!city || c.slug !== city.slug) ? `<a href="${petsPagePath(kind, c, false, breed)}">📍 ${esc(topTitle)} in ${esc(c.name)} <span>${n}</span></a>` : '';
   }).filter(Boolean);
+  // Breed pages with listings: of this page's pet type, in this page's city
+  const breedLinks = adoption ? [] : PET_BREEDS.filter(b => (!kind.type || b.type === kind.type) && b !== breed).map(b => {
+    const n = petsInPage(pets, PET_KINDS.find(k => k.type === b.type), city, false, b).filter(p => !p.sold_at).length;
+    return { b, n };
+  }).filter(x => x.n >= (city ? CITY_PAGE_MIN : 1)).sort((x, y) => y.n - x.n).slice(0, 16)
+    .map(({ b, n }) => `<a href="${petsPagePath(kind, city, false, b)}">${esc(b.title)}${city ? ` in ${esc(city.name)}` : ''} <span>${n}</span></a>`);
+  const breedLinksTitle = breed ? `Other ${kind.type === 'Bird' ? 'birds' : `${kind.one} breeds`} ${inPlace}` : `Popular ${kind.type ? `${kind.one} breeds` : 'breeds'} ${inPlace}`;
   const adoptCount = pets.filter(p => p.listing_type === 'adoption').length;
 
-  const one = kind.type === 'other' ? 'pet' : kind.one;
+  const one = breed ? breed.one : kind.type === 'other' ? 'pet' : kind.one;
   const sellHref = kind.type === 'Dog' || !kind.type
     ? '/sell-my-dog.html'
     : `https://wa.me/2348156740438?text=${encodeURIComponent(`Hi PuppyPlace, I want to sell my ${one}.`)}`;
@@ -2324,7 +2452,22 @@ async function servePetsPage(page, env) {
     ? `There ${count === 1 ? 'is' : 'are'} ${countWords} ${adoption ? 'up for adoption' : 'listed'} ${inPlace} right now${stats && !adoption ? `, priced from ${naira(stats.min)} to ${naira(stats.max)}` : ''}.${breeds.length ? ` Popular breeds include ${esc(listJoin(breeds))}.` : ''}`
     : `There are no ${esc(many)} listed ${esc(inPlace)} right now. New listings go up every week, so check back soon.`;
 
-  const faqs = [
+  const faqs = breed ? [
+    [`How much does ${aOne} cost in ${place}?`,
+      stats
+        ? `On PuppyPlace right now, ${breed.many} for sale ${inPlace} cost from ${naira(stats.min)} to ${naira(stats.max)}, and the middle price is about ${naira(stats.median)}. The price depends on age, pedigree, vaccinations and the quality of the parents.`
+        : `The price depends on age, pedigree, vaccinations and the quality of the parents. Open the ${breed.name} listings on PuppyPlace to compare current prices ${inPlace}.`],
+    [`Where can I buy ${aOne} in ${place}?`,
+      `${count ? `PuppyPlace has ${countWords} listed ${inPlace} right now. ` : ''}Open a listing to see its photos, age, health details and price, then tap Contact on WhatsApp to talk to the seller directly. Arrange to see the ${breed.type === 'Bird' ? 'bird' : breed.type.toLowerCase()} in person before you pay.`],
+    [`What should I check before buying ${aOrAn(breed.type === 'Dog' ? `${breed.name} puppy` : breed.type === 'Cat' ? `${breed.name} kitten` : breed.name)}?`,
+      breed.type === 'Bird'
+        ? 'See the bird in person, check that it is alert, eats well and has clean feathers, eyes and vent, and ask the seller about its age, diet and any health checks.'
+        : `Ask to see the vaccination card and deworming record, see the ${breed.type === 'Dog' ? 'puppy' : 'kitten'} with its mother if you can, and check that it is active, with clear eyes and a clean coat. A vet check before you pay is worth it.`],
+    [`How do I sell my ${breed.one}?`,
+      `List it free on PuppyPlace. Send the breed, age, price, location and a few clear photos to our listing assistant on WhatsApp. We check the details and publish your listing, and buyers contact you directly.`],
+    ['How do I avoid pet scams?',
+      'Never pay any money, not even a deposit, before you have seen the pet in person. Meet the seller in a safe, public place, ask for health and vaccination records, and walk away if anything feels off.'],
+  ] : [
     [`How do I buy ${aOne === 'fish' ? 'fish' : `a ${one}`} in ${place}?`,
       `Browse the ${many} listed on PuppyPlace, open one to see its photos, age, health details and price, then tap Contact on WhatsApp to talk to the seller. Arrange to meet, see the ${one} in person and check its health or vaccination records before you pay anything.`],
     [`How much does ${aOne === 'fish' ? 'fish' : `a ${one}`} cost in ${place}?`,
@@ -2345,6 +2488,7 @@ async function servePetsPage(page, env) {
     <div class="seo-card">
       <h2>${adoption ? 'Adopt a pet in Nigeria' : `Buy ${esc(aOne)} ${esc(inPlace)}`}</h2>
       <p>${buyIntro}</p>
+      ${guide ? `<h2>About the ${esc(breed.name)}</h2>${guideParas(guide)}<p><em>A general guide to the breed, not a promise about any one ${esc(breed.type === 'Bird' ? 'bird' : breed.type.toLowerCase())}.</em></p>` : ''}
       <p>Every listing is checked by PuppyPlace before it goes live. Open a listing to see its photos, age and health details, then chat with the seller directly on WhatsApp. Always see the pet and its health records first, and never pay any money, not even a deposit, before you have seen it.</p>
       <h2>Sell your ${esc(one)} on PuppyPlace</h2>
       <p>Listing is free. Send the breed, age, price, location and a few clear photos on WhatsApp, and we publish your listing after a quick check. Buyers across Nigeria contact you directly, with no middleman.</p>
@@ -2355,8 +2499,9 @@ async function servePetsPage(page, env) {
     </div>
     <div class="seo-card">
       ${kindLinks.length ? `<h2>Browse by pet</h2><div class="seo-links">${kindLinks.join('')}</div>` : ''}
-      ${cityLinks.length ? `<h2>${esc(kind.title)} by city</h2><div class="seo-links">${cityLinks.join('')}</div>` : ''}
-      ${!kindLinks.length && !cityLinks.length ? `<h2>Browse pets</h2><div class="seo-links"><a href="/pets.html">🐾 All pets in Nigeria</a><a href="/dogs-for-sale.html">🐕 Dogs &amp; Puppies</a><a href="/cats-for-sale.html">🐱 Cats &amp; Kittens</a></div>` : ''}
+      ${cityLinks.length ? `<h2>${esc(topTitle)} by city</h2><div class="seo-links">${cityLinks.join('')}</div>` : ''}
+      ${breedLinks.length ? `<h2>${esc(breedLinksTitle)}</h2><div class="seo-links">${breedLinks.join('')}</div>` : ''}
+      ${!kindLinks.length && !cityLinks.length && !breedLinks.length ? `<h2>Browse pets</h2><div class="seo-links"><a href="/pets.html">🐾 All pets in Nigeria</a><a href="/dogs-for-sale.html">🐕 Dogs &amp; Puppies</a><a href="/cats-for-sale.html">🐱 Cats &amp; Kittens</a></div>` : ''}
     </div>
     <div class="seo-card faq">
       <h2>Questions about ${adoption ? 'adopting' : 'buying and selling'} ${esc(many)} ${esc(inPlace)}</h2>
@@ -2367,7 +2512,11 @@ async function servePetsPage(page, env) {
   // ── Structured data ──
   const crumbs = [{ name: 'Home', url: 'https://puppyplace.ng/' }, { name: 'Pets', url: 'https://puppyplace.ng/pets.html' }];
   if (adoption) crumbs.push({ name: 'Pets for adoption', url: canonical });
-  else if (kind.type) {
+  else if (breed) {
+    crumbs.push({ name: `${kind.title} for sale`, url: `https://puppyplace.ng${petsPagePath(kind, null, false)}` });
+    crumbs.push({ name: breed.title, url: `https://puppyplace.ng${petsPagePath(kind, null, false, breed)}` });
+    if (city) crumbs.push({ name: city.name, url: canonical });
+  } else if (kind.type) {
     crumbs.push({ name: `${kind.title} for sale`, url: `https://puppyplace.ng${petsPagePath(kind, null, false)}` });
     if (city) crumbs.push({ name: city.name, url: canonical });
   } else if (city) crumbs.push({ name: `Pets for sale in ${city.name}`, url: canonical });
@@ -2383,7 +2532,7 @@ async function servePetsPage(page, env) {
         description,
         inLanguage: 'en-NG',
         isPartOf: { '@id': 'https://puppyplace.ng/#website' },
-        about: { '@type': 'Thing', name: `${kind.title} ${adoption ? 'for adoption' : 'for sale'} ${inPlace}` },
+        about: { '@type': 'Thing', name: `${topTitle} ${adoption ? 'for adoption' : 'for sale'} ${inPlace}` },
         mainEntity: {
           '@type': 'ItemList',
           numberOfItems: count,
@@ -2403,6 +2552,8 @@ async function servePetsPage(page, env) {
   const preset = {
     types: kind.type ? [kind.type] : [],
     cityRe: city ? city.words : '',
+    // The listings the server filed under this breed, so the browser filters the same way
+    breedIds: breed ? shown.map(p => p.id) : null,
     adoption,
     emptyHtml,
   };
@@ -2434,6 +2585,13 @@ function petsSitemapPaths(pets) {
   const paths = [];
   for (const k of PET_KINDS) if (petsInPage(pets, k, null, false).length) paths.push(petsPagePath(k, null, false));
   if (pets.some(p => p.listing_type === 'adoption')) paths.push('/pets-for-adoption.html');
+  for (const b of PET_BREEDS) {
+    const kind = PET_KINDS.find(k => k.type === b.type);
+    if (petsInPage(pets, kind, null, false, b).some(p => !p.sold_at)) paths.push(petsPagePath(kind, null, false, b));
+    for (const c of PET_CITIES) {
+      if (petsInPage(pets, kind, c, false, b).filter(p => !p.sold_at).length >= CITY_PAGE_MIN) paths.push(petsPagePath(kind, c, false, b));
+    }
+  }
   for (const c of PET_CITIES) {
     for (const k of [ALL_PETS_KIND, ...PET_KINDS]) {
       if (petsInPage(pets, k, c, false).length >= CITY_PAGE_MIN) paths.push(petsPagePath(k, c, false));
@@ -2538,13 +2696,16 @@ function renderPetPage(p, guide = null) {
   // Search titles read the way people search: "Cane Corso Puppies for Sale in Lagos – ₦550,000"
   const petKind  = PET_KINDS.find(k => k.type === petKindOf(p)) || ALL_PETS_KIND;
   const petCity  = petCityOf(p);
+  const petBreed = petBreedOf(p);
   const litterN  = Number((String(p.specs || '').match(/\b(\d{1,2})\s*(?:pups?|puppies|kittens?)\b/i) || [])[1] || 0);
   const weeks    = ageWeeks(p.age);
   const youngTitle = weeks !== null && weeks < 52
     ? ({ Dog: litterN > 1 ? 'Puppies' : 'Puppy', Cat: litterN > 1 ? 'Kittens' : 'Kitten' }[p.type] || '')
     : '';
   const placeName = petCity ? petCity.name : String(p.location || '').split(',').pop().trim().slice(0, 40);
-  const titleLead = [p.breed || p.type, youngTitle, isAdopt ? 'for Adoption' : 'for Sale', placeName ? 'in ' + placeName : ''].filter(Boolean).join(' ');
+  // "Boerboel puppies" typed as the breed would read "Boerboel puppies Puppy for Sale"
+  const titleBreed = youngTitle ? String(p.breed || '').replace(/\s+(?:puppies|puppy|pups?|kittens?)\s*$/i, '').trim() : '';
+  const titleLead = [titleBreed || p.breed || p.type, youngTitle, isAdopt ? 'for Adoption' : 'for Sale', placeName ? 'in ' + placeName : ''].filter(Boolean).join(' ');
   const pageTitle = `${sold ? `${soldLabel}: ` : ''}${titleLead}${!isAdopt && p.price ? ' – ' + naira(p.price) : ''} | PuppyPlace.ng`;
   const healthWords = [p.vaccinated && 'vaccinated', p.dewormed && 'dewormed'].filter(Boolean).join(' and ');
   const metaDesc = plainText([
@@ -2581,9 +2742,12 @@ function renderPetPage(p, guide = null) {
   }).replace(/<\//g, '<\\/');
   const crumbs = [{ name: 'Home', url: 'https://puppyplace.ng/' }, { name: 'Pets', url: 'https://puppyplace.ng/pets.html' }];
   if (petKind.type) crumbs.push({ name: `${petKind.title} for sale`, url: `https://puppyplace.ng${petsPagePath(petKind, null, false)}` });
-  if (petKind.type && petCity) crumbs.push({ name: petCity.name, url: `https://puppyplace.ng${petsPagePath(petKind, petCity, false)}` });
+  if (petBreed) crumbs.push({ name: petBreed.title, url: `https://puppyplace.ng${petsPagePath(petKind, null, false, petBreed)}` });
+  else if (petKind.type && petCity) crumbs.push({ name: petCity.name, url: `https://puppyplace.ng${petsPagePath(petKind, petCity, false)}` });
   crumbs.push({ name: breed, url: petUrl });
   const moreLinks = [
+    petBreed && petCity ? [petsPagePath(petKind, petCity, false, petBreed), `More ${petBreed.title.toLowerCase().replace(petBreed.name.toLowerCase(), petBreed.name)} for sale in ${petCity.name}`] : null,
+    petBreed ? [petsPagePath(petKind, null, false, petBreed), `All ${petBreed.title.toLowerCase().replace(petBreed.name.toLowerCase(), petBreed.name)} for sale in Nigeria`] : null,
     petCity && petKind.type ? [petsPagePath(petKind, petCity, false), `More ${petKind.title.toLowerCase()} for sale in ${petCity.name}`] : null,
     petKind.type ? [petsPagePath(petKind, null, false), `All ${petKind.title.toLowerCase()} for sale in Nigeria`] : null,
     petCity ? [petsPagePath(ALL_PETS_KIND, petCity, false), `All pets for sale in ${petCity.name}`] : ['/pets.html', 'All pets for sale in Nigeria'],

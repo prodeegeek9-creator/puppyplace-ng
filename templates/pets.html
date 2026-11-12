@@ -498,10 +498,11 @@ svg{flex-shrink:0}
 import { renderPetCard, genderOf, ageWeeks, MAIN_TYPES } from '/pet-cards.js';
 
 // The worker puts every live listing and this page's preset (pet type, city,
-// adoption) into the page, so nothing is fetched here
+// adoption, breed) into the page, so nothing is fetched here
 const PRESET = JSON.parse(document.getElementById('presetData').textContent);
 const _allPets = JSON.parse(document.getElementById('petsData').textContent);
 const cityRe = PRESET.cityRe ? new RegExp(PRESET.cityRe, 'i') : null;
+const breedIds = PRESET.breedIds ? new Set(PRESET.breedIds) : null;
 
 let _view = 'grid';
 let _savedOnly = false;
@@ -514,6 +515,7 @@ function persistSaved(){ try { localStorage.setItem('pp_pet_wish', JSON.stringif
 function matches(p){
   if (_savedOnly) return _saved.includes(p.id);
   if (cityRe && !cityRe.test(p.location || '')) return false;
+  if (breedIds && !breedIds.has(p.id)) return false;
   if (PRESET.adoption && p.listing_type !== 'adoption') return false;
   if (state.types.length) {
     const t = MAIN_TYPES.includes(p.type) ? p.type : 'other';
