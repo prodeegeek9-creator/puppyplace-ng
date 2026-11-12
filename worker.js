@@ -2073,6 +2073,18 @@ function jsonResp(data, status) {
   });
 }
 
+// A listing photo as a link-preview image: through /api/og-img (1200px JPEG
+// with a Content-Length, which WhatsApp needs). Photos are stored as Supabase
+// links, or as the site's /img/ links to the same files. Null for anything else.
+function ogImageFor(photo, env) {
+  const u = String(photo || '');
+  const base = env.SUPABASE_URL;
+  if (!u || !base) return null;
+  const local = u.match(/^(?:https:\/\/puppyplace\.ng)?\/img\/([^?#]+)/);
+  const src = local ? `${base}/storage/v1/object/public/${IMG_BUCKET}/${local[1]}` : u;
+  return src.startsWith(`${base}/storage/`) ? `https://puppyplace.ng/api/og-img?url=${encodeURIComponent(src)}` : null;
+}
+
 async function handleOgImageProxy(request, url, env, ctx) {
   const imgUrl = url.searchParams.get('url');
   const supabaseHost = env.SUPABASE_URL ? new URL(env.SUPABASE_URL).host : null;
@@ -2269,7 +2281,7 @@ function matchBreedPage(pathname) {
 }
 
 async function getLivePets(env) {
-  const r = await petsJson(env, `pets?active=eq.true&order=created_at.desc&select=${PET_LIST_FIELDS}`);
+  const r = await petsJson(env, `pets?active=eq.true&order=created_at.desc&select=${PET_LIST_FIELDS},created_at`);
   if (!r.ok) throw new Error(`pets ${r.status}`);
   return Array.isArray(r.body) ? availableFirst(r.body) : [];
 }
@@ -2560,9 +2572,16 @@ async function servePetsPage(page, env) {
   // JSON inside <script> must not be able to close the tag
   const scriptJson = v => JSON.stringify(v).replace(/</g, '\\u003c');
 
+  // Link previews show this page's first available pet with a photo
+  const ogPet = available.find(p => ogImageFor(p.image_url || (p.image_urls && p.image_urls[0]), env));
+  const ogImage = ogPet ? ogImageFor(ogPet.image_url || ogPet.image_urls[0], env) : 'https://puppyplace.ng/images/pets-hero-puppy.jpg';
+  const ogAlt = ogPet ? `${ogPet.breed || ogPet.type} ${ogPet.listing_type === 'adoption' ? 'for adoption' : 'for sale'}${ogPet.location ? ` in ${ogPet.location}` : ''}` : `${topTitle} on PuppyPlace.ng`;
+
   const fill = {
     TITLE: esc(title),
     DESCRIPTION: esc(description),
+    OG_IMAGE: esc(ogImage),
+    OG_IMAGE_ALT: esc(ogAlt),
     ROBOTS: indexable ? 'index,follow,max-image-preview:large' : 'noindex,follow',
     CANONICAL: canonical,
     JSONLD: scriptJson(jsonLd),
@@ -2582,23 +2601,36 @@ async function servePetsPage(page, env) {
 // Listing pages worth a place in the sitemap: each type page with listings,
 // each type-and-city page with enough of them, and the adoption page
 function petsSitemapPaths(pets) {
-  const paths = [];
-  for (const k of PET_KINDS) if (petsInPage(pets, k, null, false).length) paths.push(petsPagePath(k, null, false));
-  if (pets.some(p => p.listing_type === 'adoption')) paths.push('/pets-for-adoption.html');
+  const pages = [];
+  const add = (path, list) => pages.push({ path, pets: list });
+  for (const k of PET_KINDS) { const l = petsInPage(pets, k, null, false); if (l.length) add(petsPagePath(k, null, false), l); }
+  const adopt = pets.filter(p => p.listing_type === 'adoption');
+  if (adopt.length) add('/pets-for-adoption.html', adopt);
   for (const b of PET_BREEDS) {
     const kind = PET_KINDS.find(k => k.type === b.type);
-    if (petsInPage(pets, kind, null, false, b).some(p => !p.sold_at)) paths.push(petsPagePath(kind, null, false, b));
+    const l = petsInPage(pets, kind, null, false, b);
+    if (l.some(p => !p.sold_at)) add(petsPagePath(kind, null, false, b), l);
     for (const c of PET_CITIES) {
-      if (petsInPage(pets, kind, c, false, b).filter(p => !p.sold_at).length >= CITY_PAGE_MIN) paths.push(petsPagePath(kind, c, false, b));
+      const lc = petsInPage(pets, kind, c, false, b);
+      if (lc.filter(p => !p.sold_at).length >= CITY_PAGE_MIN) add(petsPagePath(kind, c, false, b), lc);
     }
   }
   for (const c of PET_CITIES) {
     for (const k of [ALL_PETS_KIND, ...PET_KINDS]) {
-      if (petsInPage(pets, k, c, false).length >= CITY_PAGE_MIN) paths.push(petsPagePath(k, c, false));
+      const l = petsInPage(pets, k, c, false);
+      if (l.length >= CITY_PAGE_MIN) add(petsPagePath(k, c, false), l);
     }
   }
-  return paths;
+  return pages;
 }
+
+// The newest of some dates, as YYYY-MM-DD, or '' when there are none
+function newestDate(...dates) {
+  const ds = dates.flat().filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)).sort();
+  return ds.length ? ds[ds.length - 1].slice(0, 10) : '';
+}
+// When a listing last changed: put up, edited or marked sold
+const petChanged = p => newestDate(p.updated_at, p.created_at, p.sold_at);
 
 async function servePetPage(slug, env) {
   if (!env.SUPABASE_URL) return html(petErrorPage('Server not configured.'), 503);
@@ -2609,7 +2641,7 @@ async function servePetPage(slug, env) {
     );
     const rows = await res.json();
     if (!rows || !rows.length) return html(petNotFoundPage(), 404);
-    return html(renderPetPage(rows[0], await approvedGuide(rows[0].breed, env)), 200);
+    return html(renderPetPage(rows[0], await approvedGuide(rows[0].breed, env), env), 200);
   } catch (e) {
     return html(petErrorPage('Failed to load pet.'), 500);
   }
@@ -2681,7 +2713,7 @@ function petLitter(p) {
   return m ? { n: m[1], word: /kit/.test(m[2]) ? 'Kittens' : /chick/.test(m[2]) ? 'Chicks' : 'Puppies' } : null;
 }
 
-function renderPetPage(p, guide = null) {
+function renderPetPage(p, guide = null, env = {}) {
   const typeEmoji = {Dog:'🐕',Cat:'🐈',Bird:'🦜',Rabbit:'🐰',Fish:'🐠','Guinea Pig':'🐹',Reptile:'🦎'};
   const typeBg   = {Dog:'linear-gradient(135deg,#fdeee7,#fbd4c3)',Cat:'linear-gradient(135deg,#e8f5e9,#c8e6c9)',Bird:'linear-gradient(135deg,#e3f2fd,#bbdefb)',Rabbit:'linear-gradient(135deg,#f3e5f5,#e1bee7)',Fish:'linear-gradient(135deg,#e0f7fa,#b2ebf2)','Guinea Pig':'linear-gradient(135deg,#fff9c4,#fff59d)',Reptile:'linear-gradient(135deg,#f1f8e9,#dcedc8)'};
   const emoji = typeEmoji[p.type] || '🐾';
@@ -2716,7 +2748,7 @@ function renderPetPage(p, guide = null) {
   ].filter(Boolean).join(' '), 160);
   const petUrl   = `https://puppyplace.ng/pets/${escUrl(p.slug)}`;
   const mainImg  = imgs[0] ? escUrl(imgs[0]) : '';
-  const ogImg    = mainImg ? `https://puppyplace.ng/api/og-img?url=${encodeURIComponent(imgs[0])}` : '';
+  const ogImg    = mainImg ? ogImageFor(imgs[0], env) || '' : '';
   const breed    = p.breed || p.type || 'Pet';
   const kind     = String(p.type || 'pet').toLowerCase();
   const youngWord = {dog:'puppy', cat:'kitten', rabbit:'bunny', bird:'bird', fish:'fish'}[kind] || kind;
@@ -3774,7 +3806,7 @@ function errorPage(msg) {
 
 // slug (+ updated_at when the table has it) for every row matching filter
 async function sitemapRows(env, table, filter) {
-  for (const fields of ['slug,updated_at', 'slug']) {
+  for (const fields of ['slug,updated_at', 'slug,created_at', 'slug']) {
     try {
       const res = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}?${filter}&select=${fields}`, { headers: sbHeaders(env) });
       if (!res.ok) { console.error(`sitemap ${table} (${fields}): ${res.status} ${(await res.text()).slice(0, 200)}`); continue; }
@@ -3792,26 +3824,6 @@ async function serveSitemap(env) {
     return new Response('Server not configured', { status: 503 });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  const staticPages = [
-    { loc: 'https://puppyplace.ng/', lastmod: today },
-    { loc: 'https://puppyplace.ng/shop.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/about.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/contact.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/blog.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/pets.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/privacy.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/terms.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/faq.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/shipping.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/returns.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/track-order.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/sell.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/sell-my-dog.html', lastmod: today },
-    { loc: 'https://puppyplace.ng/careers.html', lastmod: today },
-  ];
-
   // Each source is fetched on its own and a failure only drops that source,
   // so one bad query never takes the whole sitemap down
   const [posts, products, petRows, livePets] = await Promise.all([
@@ -3820,18 +3832,45 @@ async function serveSitemap(env) {
     sitemapRows(env, 'pets', 'active=eq.true&order=created_at.desc'),
     getLivePets(env).catch(e => { console.error('sitemap pet pages:', e.message); return []; }),
   ]);
-  const pets = petRows.filter(p => p.slug).map(p => ({ loc: `https://puppyplace.ng/pets/${encodeURIComponent(p.slug)}`, lastmod: (p.updated_at || today).slice(0, 10) }));
+
+  // A lastmod is only given when it is a real date of change: one that is
+  // always today teaches search engines to ignore it
+  const liveBySlug = new Map(livePets.map(p => [p.slug, p]));
+  const pets = petRows.filter(p => p.slug).map(p => ({ loc: `https://puppyplace.ng/pets/${encodeURIComponent(p.slug)}`, lastmod: petChanged({ ...liveBySlug.get(p.slug), ...p }) }));
+  const newestPet = newestDate(livePets.map(petChanged));
+  const newestProduct = newestDate(products.map(p => p.updated_at));
+  const newestPost = newestDate(posts.map(p => p.published_at));
+
+  // The pages that list pets, products or posts change when those do; the
+  // rest change only when the site is edited, so they carry no date
+  const staticPages = [
+    { loc: 'https://puppyplace.ng/', lastmod: newestDate(newestPet, newestProduct, newestPost) },
+    { loc: 'https://puppyplace.ng/shop.html', lastmod: newestProduct },
+    { loc: 'https://puppyplace.ng/about.html' },
+    { loc: 'https://puppyplace.ng/contact.html' },
+    { loc: 'https://puppyplace.ng/blog.html', lastmod: newestPost },
+    { loc: 'https://puppyplace.ng/pets.html', lastmod: newestPet },
+    { loc: 'https://puppyplace.ng/privacy.html' },
+    { loc: 'https://puppyplace.ng/terms.html' },
+    { loc: 'https://puppyplace.ng/faq.html' },
+    { loc: 'https://puppyplace.ng/shipping.html' },
+    { loc: 'https://puppyplace.ng/returns.html' },
+    { loc: 'https://puppyplace.ng/track-order.html' },
+    { loc: 'https://puppyplace.ng/sell.html' },
+    { loc: 'https://puppyplace.ng/sell-my-dog.html' },
+    { loc: 'https://puppyplace.ng/careers.html' },
+  ];
 
   const toUrl = (loc, lastmod) =>
     `  <url>\n    <loc>${loc}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
 
   const staticUrls = staticPages.map(p => toUrl(p.loc, p.lastmod));
   const usedCats = new Set(posts.map(p => blogCategory(p).slug));
-  const catUrls = BLOG_CATS.filter(c => usedCats.has(c.slug)).map(c => toUrl(`https://puppyplace.ng${blogCatPath(c)}`, today));
+  const catUrls = BLOG_CATS.filter(c => usedCats.has(c.slug)).map(c => toUrl(`https://puppyplace.ng${blogCatPath(c)}`, newestDate(posts.filter(p => blogCategory(p).slug === c.slug).map(p => p.published_at))));
   const postUrls = posts.map(p => toUrl(`https://puppyplace.ng${postPath(p)}`, p.published_at ? p.published_at.slice(0, 10) : ''));
   const productUrls = products.filter(p => p.slug).map(p => toUrl(`https://puppyplace.ng/product/${encodeURIComponent(p.slug)}.html`, p.updated_at ? p.updated_at.slice(0, 10) : ''));
   const petUrls = pets.map(p => toUrl(p.loc, p.lastmod));
-  const petPageUrls = petsSitemapPaths(livePets).map(path => toUrl(`https://puppyplace.ng${path}`, today));
+  const petPageUrls = petsSitemapPaths(livePets).map(({ path, pets: list }) => toUrl(`https://puppyplace.ng${path}`, newestDate(list.map(petChanged))));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...catUrls, ...postUrls, ...productUrls, ...petPageUrls, ...petUrls].join('\n')}\n</urlset>`;
 
