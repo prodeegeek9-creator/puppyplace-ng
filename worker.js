@@ -2176,17 +2176,24 @@ const PET_CITIES = [
 // A listing's breed is free text ("Boerbul puppies", "GSD"); the first breed of
 // the same pet type whose words appear in it is the listing's breed, so more
 // specific names come before the ones they contain (Bullmastiff before Bulldog).
-// [slug, name, pet type, words, plural for birds]
+// [slug, name, pet type, words, plural title for birds, rabbits and fish]
 const PET_BREEDS = [
   ['bullmastiff', 'Bullmastiff', 'Dog', 'bull ?mastiffs?'],
   ['tibetan-mastiff', 'Tibetan Mastiff', 'Dog', 'tibetan mastiffs?'],
   ['neapolitan-mastiff', 'Neapolitan Mastiff', 'Dog', 'neapolitans?(?: mastiffs?)?'],
   ['boerboel', 'Boerboel', 'Dog', 'boer ?boels?|boer ?buls?|boer ?bulls?|south african mastiffs?'],
+  ['english-mastiff', 'English Mastiff', 'Dog', '(?:old )?(?:english )?mastiffs?'],
   ['french-bulldog', 'French Bulldog', 'Dog', 'french bull ?dogs?|frenchies|frenchie'],
+  ['staffordshire-bull-terrier', 'Staffordshire Bull Terrier', 'Dog', 'staffordshires?(?: bull)?(?: terriers?)?|staff(?:y|ies)|staffies'],
+  ['bull-terrier', 'Bull Terrier', 'Dog', 'bull terriers?'],
+  ['dogo-argentino', 'Dogo Argentino', 'Dog', 'dogos?(?: argentinos?)?|argentinos?'],
+  ['presa-canario', 'Presa Canario', 'Dog', 'presas?(?: canarios?)?|perro de presa|canarios?'],
   ['american-bully', 'American Bully', 'Dog', 'american bull(?:y|ies)|(?:xl|pocket|exotic|standard) bull(?:y|ies)|bull(?:y|ies)(?: xl)?'],
   ['pit-bull', 'Pit Bull', 'Dog', 'pit ?bulls?|apbt'],
   ['english-bulldog', 'English Bulldog', 'Dog', '(?<!american )(?:english |british )?bull ?dogs?'],
   ['german-shepherd', 'German Shepherd', 'Dog', 'german sh[ea]pp?h?[ae]rds?|gsd|alsatians?'],
+  ['central-asian-shepherd', 'Central Asian Shepherd', 'Dog', 'central asians?(?: shepherds?| ovcharkas?)?|alabais?'],
+  ['kangal', 'Kangal', 'Dog', 'kangals?|anatolian(?: shepherds?)?'],
   ['caucasian-shepherd', 'Caucasian Shepherd', 'Dog', 'caucasians?(?: shepherds?| ovcharkas?)?|ovcharkas?'],
   ['belgian-malinois', 'Belgian Malinois', 'Dog', 'malinois|belgian shepherds?'],
   ['rottweiler', 'Rottweiler', 'Dog', 'rott?w[ei]+l+[ea]rs?|rotties|rottie|rotty'],
@@ -2197,8 +2204,11 @@ const PET_BREEDS = [
   ['shih-tzu', 'Shih Tzu', 'Dog', 'shih? ?tzus?|shitzus?|shihtzus?'],
   ['maltese', 'Maltese', 'Dog', 'maltese'],
   ['chihuahua', 'Chihuahua', 'Dog', 'chihuahuas?|chiwawas?'],
+  ['pomsky', 'Pomsky', 'Dog', 'pomsk(?:y|ies)'],
   ['pomeranian', 'Pomeranian', 'Dog', 'pomeranians?|poms?'],
   ['yorkshire-terrier', 'Yorkshire Terrier', 'Dog', 'yorkshires?(?: terriers?)?|yorkies?'],
+  ['maltipoo', 'Maltipoo', 'Dog', 'maltipoos?'],
+  ['goldendoodle', 'Goldendoodle', 'Dog', 'golden ?doodles?'],
   ['poodle', 'Poodle', 'Dog', '(?:toy |teacup |miniature |mini |standard )?poodles?'],
   ['golden-retriever', 'Golden Retriever', 'Dog', 'golden(?: retrievers?)?(?! ?doodles?)'],
   ['labrador-retriever', 'Labrador Retriever', 'Dog', 'labradors?(?: retrievers?)?|labs?'],
@@ -2213,6 +2223,27 @@ const PET_BREEDS = [
   ['beagle', 'Beagle', 'Dog', 'beagles?'],
   ['pug', 'Pug', 'Dog', 'pugs?'],
   ['bichon-frise', 'Bichon Frise', 'Dog', 'bichons?(?: fris[eé])?'],
+  ['japanese-spitz', 'Japanese Spitz', 'Dog', '(?:japanese )?spitz(?:es)?'],
+  ['shiba-inu', 'Shiba Inu', 'Dog', 'shibas?(?: inus?)?'],
+  ['australian-shepherd', 'Australian Shepherd', 'Dog', 'australian shepherds?|aussies?'],
+  ['border-collie', 'Border Collie', 'Dog', '(?:border )?collies?'],
+  ['boxer', 'Boxer', 'Dog', 'boxers?'],
+  ['dalmatian', 'Dalmatian', 'Dog', 'dalmatians?'],
+  ['weimaraner', 'Weimaraner', 'Dog', 'weimaraners?'],
+  ['rhodesian-ridgeback', 'Rhodesian Ridgeback', 'Dog', 'rhodesians?(?: ridgebacks?)?|ridgebacks?'],
+  ['saint-bernard', 'Saint Bernard', 'Dog', '(?:saint|st\\.?) ?bernards?'],
+  ['bernese-mountain-dog', 'Bernese Mountain Dog', 'Dog', 'berneses?(?: mountain dogs?)?'],
+  ['great-pyrenees', 'Great Pyrenees', 'Dog', '(?:great )?pyrenees'],
+  ['shar-pei', 'Shar Pei', 'Dog', 'shar ?peis?'],
+  ['schnauzer', 'Schnauzer', 'Dog', '(?:miniature |mini |giant |standard )?schnauzers?'],
+  ['miniature-pinscher', 'Miniature Pinscher', 'Dog', 'min(?:iature)? ?pin(?:scher)?s?'],
+  ['cocker-spaniel', 'Cocker Spaniel', 'Dog', 'cocker(?: spaniels?)?s?'],
+  ['cavalier-king-charles', 'Cavalier King Charles Spaniel', 'Dog', 'cavaliers?(?: king charles)?(?: spaniels?)?|king charles(?: spaniels?)?'],
+  ['pekingese', 'Pekingese', 'Dog', 'pekingese|pekinese|pekes?'],
+  ['havanese', 'Havanese', 'Dog', 'havanese'],
+  ['basset-hound', 'Basset Hound', 'Dog', 'bassets?(?: hounds?)?'],
+  ['himalayan-cat', 'Himalayan', 'Cat', 'himalayans?'],
+  ['exotic-shorthair', 'Exotic Shorthair', 'Cat', 'exotics?(?: short ?hairs?)?'],
   ['persian-cat', 'Persian', 'Cat', 'persians?'],
   ['siamese-cat', 'Siamese', 'Cat', 'siamese'],
   ['maine-coon', 'Maine Coon', 'Cat', 'maine ?coons?'],
@@ -2220,21 +2251,46 @@ const PET_BREEDS = [
   ['ragdoll', 'Ragdoll', 'Cat', 'rag ?dolls?'],
   ['bengal-cat', 'Bengal', 'Cat', 'bengals?'],
   ['sphynx', 'Sphynx', 'Cat', 'sph[iy]nx'],
+  ['scottish-fold', 'Scottish Fold', 'Cat', 'scottish folds?|scottish'],
+  ['russian-blue', 'Russian Blue', 'Cat', 'russian blues?'],
+  ['abyssinian', 'Abyssinian', 'Cat', 'abyssinians?'],
   ['african-grey-parrot', 'African Grey Parrot', 'Bird', 'african gr[ae]ys?(?: parrots?)?|gr[ae]y parrots?', 'African Grey Parrots'],
   ['macaw', 'Macaw', 'Bird', 'macaws?', 'Macaws'],
   ['cockatiel', 'Cockatiel', 'Bird', 'cockatiels?', 'Cockatiels'],
   ['lovebird', 'Lovebird', 'Bird', 'love ?birds?', 'Lovebirds'],
+  ['ringneck', 'Indian Ringneck', 'Bird', '(?:indian )?ring ?necks?(?: parakeets?| parrots?)?', 'Indian Ringnecks'],
   ['budgie', 'Budgie', 'Bird', 'budgies?|budgerigars?|parakeets?', 'Budgies'],
   ['canary', 'Canary', 'Bird', 'canar(?:y|ies)', 'Canaries'],
+  ['cockatoo', 'Cockatoo', 'Bird', 'cockatoos?', 'Cockatoos'],
+  ['conure', 'Conure', 'Bird', 'conures?', 'Conures'],
+  ['eclectus', 'Eclectus Parrot', 'Bird', 'eclectus(?: parrots?)?', 'Eclectus Parrots'],
+  ['amazon-parrot', 'Amazon Parrot', 'Bird', 'amazons?(?: parrots?)?', 'Amazon Parrots'],
+  ['finch', 'Finch', 'Bird', 'finch(?:es)?', 'Finches'],
+  ['holland-lop', 'Holland Lop', 'Rabbit', 'holland lops?'],
+  ['mini-lop', 'Mini Lop', 'Rabbit', '(?:mini|dwarf) lops?'],
+  ['netherland-dwarf', 'Netherland Dwarf', 'Rabbit', 'netherlands? dwarfs?|dwarfs?'],
+  ['lionhead-rabbit', 'Lionhead', 'Rabbit', 'lion ?heads?'],
+  ['flemish-giant', 'Flemish Giant', 'Rabbit', 'flemish(?: giants?)?'],
+  ['new-zealand-white', 'New Zealand White', 'Rabbit', 'new zealand(?: whites?)?'],
+  ['arowana', 'Arowana', 'Fish', 'arr?[ao]wanas?', 'Arowanas'],
+  ['koi', 'Koi', 'Fish', 'koi(?: carps?| fish)?', 'Koi Fish'],
+  ['flowerhorn', 'Flowerhorn', 'Fish', 'flower ?horns?', 'Flowerhorns'],
+  ['goldfish', 'Goldfish', 'Fish', 'gold ?fish', 'Goldfish'],
+  ['oscar-fish', 'Oscar', 'Fish', 'oscars?(?: fish)?', 'Oscar Fish'],
+  ['betta-fish', 'Betta', 'Fish', 'bettas?(?: fish)?|siamese fighting fish|fighter fish', 'Betta Fish'],
+  ['guppy', 'Guppy', 'Fish', 'gupp(?:y|ies)', 'Guppies'],
 ].map(([slug, name, type, words, plural]) => {
-  const young = type === 'Dog' ? `${name} puppies` : type === 'Cat' ? `${name} kittens` : plural;
+  const animal = type.toLowerCase();
+  const dogOrCat = type === 'Dog' || type === 'Cat';
+  // Birds and fish go by the breed name alone ("a Macaw", "Koi"); dogs, cats and rabbits take the animal
+  const named = type === 'Bird' || type === 'Fish';
   return {
-    slug, name, type, words: `\\b(?:${words})\\b`, re: new RegExp(`\\b(?:${words})\\b`, 'i'),
-    // "Boerboel Puppies", "Persian Cats & Kittens", "Lovebirds"
-    title: type === 'Dog' ? `${name} Puppies` : type === 'Cat' ? `${name} Cats & Kittens` : plural,
-    one: type === 'Bird' ? name : `${name} ${type.toLowerCase()}`,
-    many: type === 'Bird' ? plural : `${name} ${type.toLowerCase()}s`,
-    young,
+    slug, name, type, animal, dogOrCat, words: `\\b(?:${words})\\b`, re: new RegExp(`\\b(?:${words})\\b`, 'i'),
+    // "Boerboel Puppies", "Persian Cats & Kittens", "Lovebirds", "Holland Lop Rabbits"
+    title: type === 'Dog' ? `${name} Puppies` : type === 'Cat' ? `${name} Cats & Kittens` : plural || `${name} ${type}s`,
+    one: named ? name : `${name} ${animal}`,
+    many: named ? plural : `${name} ${animal}s`,
+    young: type === 'Dog' ? `${name} puppies` : type === 'Cat' ? `${name} kittens` : named ? plural : `${name} ${animal}s`,
   };
 });
 
@@ -2381,7 +2437,7 @@ async function servePetsPage(page, env) {
       ? `${lead}${count >= CITY_PAGE_MIN ? ` – ${count} Listings` : ''} | PuppyPlace.ng`
       : `${lead}${stats ? ` – Prices from ${naira(stats.min)}` : ''} | PuppyPlace.ng`;
     h1 = `${esc(breed.title)} for Sale<br/>in <span>${esc(place)}</span>`;
-    sub = `Buy ${esc(breed.young)}${breed.type === 'Bird' ? '' : ` and adult ${esc(breed.many)}`} from breeders and owners ${inPlace}. See photos, prices and health details, then chat with the seller on WhatsApp.`;
+    sub = `Buy ${esc(breed.young)}${breed.dogOrCat ? ` and adult ${esc(breed.many)}` : ''} from breeders and owners ${inPlace}. See photos, prices and health details, then chat with the seller on WhatsApp.`;
   } else if (adoption) {
     title = 'Pets for Adoption in Nigeria – Adopt a Dog or Cat | PuppyPlace.ng';
     h1 = 'Pets for Adoption<br/>in <span>Nigeria</span>';
@@ -2451,7 +2507,8 @@ async function servePetsPage(page, env) {
     return { b, n };
   }).filter(x => x.n >= (city ? CITY_PAGE_MIN : 1)).sort((x, y) => y.n - x.n).slice(0, 16)
     .map(({ b, n }) => `<a href="${petsPagePath(kind, city, false, b)}">${esc(b.title)}${city ? ` in ${esc(city.name)}` : ''} <span>${n}</span></a>`);
-  const breedLinksTitle = breed ? `Other ${kind.type === 'Bird' ? 'birds' : `${kind.one} breeds`} ${inPlace}` : `Popular ${kind.type ? `${kind.one} breeds` : 'breeds'} ${inPlace}`;
+  const breedWord = kind.type === 'Dog' || kind.type === 'Cat' ? `${kind.one} breeds` : kind.many;
+  const breedLinksTitle = breed ? `Other ${breedWord} ${inPlace}` : `Popular ${kind.type ? breedWord : 'breeds'} ${inPlace}`;
   const adoptCount = pets.filter(p => p.listing_type === 'adoption').length;
 
   const one = breed ? breed.one : kind.type === 'other' ? 'pet' : kind.one;
@@ -2461,19 +2518,23 @@ async function servePetsPage(page, env) {
   const sellExternal = sellHref.startsWith('http') ? ' target="_blank" rel="noopener"' : '';
 
   const buyIntro = count
-    ? `There ${count === 1 ? 'is' : 'are'} ${countWords} ${adoption ? 'up for adoption' : 'listed'} ${inPlace} right now${stats && !adoption ? `, priced from ${naira(stats.min)} to ${naira(stats.max)}` : ''}.${breeds.length ? ` Popular breeds include ${esc(listJoin(breeds))}.` : ''}`
+    ? `There ${count === 1 ? 'is' : 'are'} ${countWords} ${adoption ? 'up for adoption' : 'listed'} ${inPlace} right now${stats && !adoption ? `, ${stats.min === stats.max ? `priced at ${naira(stats.min)}` : `priced from ${naira(stats.min)} to ${naira(stats.max)}`}` : ''}.${breeds.length ? ` Popular breeds include ${esc(listJoin(breeds))}.` : ''}`
     : `There are no ${esc(many)} listed ${esc(inPlace)} right now. New listings go up every week, so check back soon.`;
 
   const faqs = breed ? [
     [`How much does ${aOne} cost in ${place}?`,
       stats
-        ? `On PuppyPlace right now, ${breed.many} for sale ${inPlace} cost from ${naira(stats.min)} to ${naira(stats.max)}, and the middle price is about ${naira(stats.median)}. The price depends on age, pedigree, vaccinations and the quality of the parents.`
-        : `The price depends on age, pedigree, vaccinations and the quality of the parents. Open the ${breed.name} listings on PuppyPlace to compare current prices ${inPlace}.`],
+        ? `On PuppyPlace right now, ${breed.many} for sale ${inPlace} ${stats.min === stats.max ? `cost about ${naira(stats.min)}` : `cost from ${naira(stats.min)} to ${naira(stats.max)}, and the middle price is about ${naira(stats.median)}`}. ${breed.dogOrCat ? 'The price depends on age, pedigree, vaccinations and the quality of the parents.' : 'The price depends on age, size, colour and health.'}`
+        : `${breed.dogOrCat ? 'The price depends on age, pedigree, vaccinations and the quality of the parents.' : 'The price depends on age, size, colour and health.'} Open the ${breed.name} listings on PuppyPlace to compare current prices ${inPlace}.`],
     [`Where can I buy ${aOne} in ${place}?`,
-      `${count ? `PuppyPlace has ${countWords} listed ${inPlace} right now. ` : ''}Open a listing to see its photos, age, health details and price, then tap Contact on WhatsApp to talk to the seller directly. Arrange to see the ${breed.type === 'Bird' ? 'bird' : breed.type.toLowerCase()} in person before you pay.`],
-    [`What should I check before buying ${aOrAn(breed.type === 'Dog' ? `${breed.name} puppy` : breed.type === 'Cat' ? `${breed.name} kitten` : breed.name)}?`,
+      `${count ? `PuppyPlace has ${countWords} listed ${inPlace} right now. ` : ''}Open a listing to see its photos, age, health details and price, then tap Contact on WhatsApp to talk to the seller directly. Arrange to see the ${breed.animal} in person before you pay.`],
+    [`What should I check before buying ${aOrAn(breed.type === 'Dog' ? `${breed.name} puppy` : breed.type === 'Cat' ? `${breed.name} kitten` : breed.one)}?`,
       breed.type === 'Bird'
         ? 'See the bird in person, check that it is alert, eats well and has clean feathers, eyes and vent, and ask the seller about its age, diet and any health checks.'
+        : breed.type === 'Rabbit'
+        ? 'See the rabbit in person, check that it is alert and eating, with clear eyes, clean ears and nose and a clean bottom, and ask the seller about its age and diet.'
+        : breed.type === 'Fish'
+        ? 'See the fish in its tank, check that it swims normally, with clear eyes, whole fins and no white spots or sores, and ask what water and food it is used to.'
         : `Ask to see the vaccination card and deworming record, see the ${breed.type === 'Dog' ? 'puppy' : 'kitten'} with its mother if you can, and check that it is active, with clear eyes and a clean coat. A vet check before you pay is worth it.`],
     [`How do I sell my ${breed.one}?`,
       `List it free on PuppyPlace. Send the breed, age, price, location and a few clear photos to our listing assistant on WhatsApp. We check the details and publish your listing, and buyers contact you directly.`],
@@ -2484,7 +2545,7 @@ async function servePetsPage(page, env) {
       `Browse the ${many} listed on PuppyPlace, open one to see its photos, age, health details and price, then tap Contact on WhatsApp to talk to the seller. Arrange to meet, see the ${one} in person and check its health or vaccination records before you pay anything.`],
     [`How much does ${aOne === 'fish' ? 'fish' : `a ${one}`} cost in ${place}?`,
       stats && !adoption
-        ? `On PuppyPlace right now, ${many} for sale ${inPlace} cost from ${naira(stats.min)} to ${naira(stats.max)}, and the middle price is about ${naira(stats.median)}. The price depends on the breed, age, pedigree, vaccinations and the quality of the parents.`
+        ? `On PuppyPlace right now, ${many} for sale ${inPlace} ${stats.min === stats.max ? `cost about ${naira(stats.min)}` : `cost from ${naira(stats.min)} to ${naira(stats.max)}, and the middle price is about ${naira(stats.median)}`}. The price depends on the breed, age, pedigree, vaccinations and the quality of the parents.`
         : `The price depends on the breed, age, pedigree, vaccinations and the quality of the parents. Open the listings on PuppyPlace to compare current prices ${inPlace}.`],
     [`How do I sell my ${one} in ${place}?`,
       `List it free on PuppyPlace. Send the breed, age, price, location and a few clear photos to our listing assistant on WhatsApp. We check the details and publish your listing, and buyers contact you directly on WhatsApp.`],
@@ -2500,7 +2561,7 @@ async function servePetsPage(page, env) {
     <div class="seo-card">
       <h2>${adoption ? 'Adopt a pet in Nigeria' : `Buy ${esc(aOne)} ${esc(inPlace)}`}</h2>
       <p>${buyIntro}</p>
-      ${guide ? `<h2>About the ${esc(breed.name)}</h2>${guideParas(guide)}<p><em>A general guide to the breed, not a promise about any one ${esc(breed.type === 'Bird' ? 'bird' : breed.type.toLowerCase())}.</em></p>` : ''}
+      ${guide ? `<h2>About the ${esc(breed.name)}</h2>${guideParas(guide)}<p><em>A general guide to the breed, not a promise about any one ${esc(breed.animal)}.</em></p>` : ''}
       <p>Every listing is checked by PuppyPlace before it goes live. Open a listing to see its photos, age and health details, then chat with the seller directly on WhatsApp. Always see the pet and its health records first, and never pay any money, not even a deposit, before you have seen it.</p>
       <h2>Sell your ${esc(one)} on PuppyPlace</h2>
       <p>Listing is free. Send the breed, age, price, location and a few clear photos on WhatsApp, and we publish your listing after a quick check. Buyers across Nigeria contact you directly, with no middleman.</p>
