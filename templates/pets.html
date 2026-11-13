@@ -195,6 +195,21 @@ svg{flex-shrink:0}
 .seo-links a:hover{border-color:var(--orange);color:var(--orange)}
 .seo-links a span{color:var(--gray);font-weight:500}
 .faq{grid-column:1/-1}
+/* Breed guide on breed pages */
+.breed-guide{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:28px 30px;margin:-30px 0 24px;scroll-margin-top:84px}
+.breed-guide + .seo{margin-top:0}
+.breed-guide h2{font-size:24px;font-weight:800;color:#111;letter-spacing:-.01em;margin-bottom:12px}
+.breed-guide h3{font-size:16px;font-weight:800;color:#111;margin-bottom:6px}
+.breed-guide p{font-size:14.5px;line-height:1.75;color:#4a4d55}
+.bg-lead{font-size:15.5px!important;color:#2b2d33!important;max-width:880px}
+.bg-facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin:20px 0 24px}
+.bg-facts div{background:var(--light);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.bg-facts dt{font-size:11.5px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.bg-facts dd{font-size:14px;font-weight:700;color:var(--text);line-height:1.4}
+.bg-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px 34px}
+.bg-cols .wide{grid-column:1/-1;background:#fff7f3;border:1px solid #fbd9c9;border-radius:12px;padding:16px 18px}
+.bg-note{margin-top:18px;font-size:12.5px!important;color:var(--gray)!important}
+@media(max-width:760px){.breed-guide{padding:20px 18px;margin-top:-50px}.breed-guide h2{font-size:20px}.bg-cols{grid-template-columns:1fr}.bg-facts{grid-template-columns:1fr 1fr}}
 .faq details{border-top:1px solid var(--border);padding:14px 0}
 .faq details:first-of-type{border-top:none}
 .faq summary{cursor:pointer;font-size:15px;font-weight:700;color:var(--text);list-style:none;display:flex;justify-content:space-between;gap:16px}
@@ -277,6 +292,8 @@ svg{flex-shrink:0}
   .pet-grid.list .pt-view{font-size:10.5px;padding:7px 12px}
 }
 @media(max-width:480px){.nav-logo{font-size:18px;white-space:nowrap;gap:6px}.nav-right{gap:10px}.nav-cta{padding:7px 11px;white-space:nowrap}}
+@media(max-width:420px){.nav{padding:0 12px}.nav-right{gap:8px}}
+@media(max-width:388px){.nav-cta{display:none}}
 @media(max-width:380px){
   .hero h1{font-size:29px}
   .nav-cta{display:none}

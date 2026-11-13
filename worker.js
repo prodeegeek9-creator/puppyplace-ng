@@ -1,6 +1,7 @@
 import BLOG_TEMPLATE from './templates/blog.html';
 import PETS_TEMPLATE from './templates/pets.html';
 import { renderPetCard, ageWeeks, MAIN_TYPES } from './pet-cards.js';
+import { BREED_GUIDES, FACT_LABELS } from './breeds/index.js';
 
 export default {
   // Nightly (wrangler.jsonc → triggers): clear posted social videos out of storage.
@@ -2374,6 +2375,24 @@ function listJoin(items) {
 }
 const naira = n => '₦' + Number(n).toLocaleString('en-NG');
 
+// "The Boerboel is a giant breed." / "The Koi is a large fish, 60–90 cm long."
+function sizeSentence(breed, size) {
+  if (!size) return '';
+  const m = /^(.*?)\s*\((.*)\)$/.exec(size);
+  const word = (m ? m[1] : size).toLowerCase();
+  if (m && (breed.type === 'Bird' || breed.type === 'Fish')) return `The ${breed.name} is a ${word} ${breed.animal}, ${m[2]}.`;
+  return `The ${breed.name} is a ${word} breed.`;
+}
+
+// "Adults usually weigh 20–60 kg and stand 33–57 cm tall at the shoulder, depending on type."
+function bigAnswer(breed, f) {
+  const by = /,\s*by (\w+)$/;
+  const dep = (by.exec(f.weight || '') || by.exec(f.height || '') || [])[1];
+  const w = (f.weight || '').replace(by, ''), h = (f.height || '').replace(by, '');
+  const parts = [w && `weigh ${w}`, h && `stand ${h} tall${breed.type === 'Fish' || breed.type === 'Bird' ? '' : ' at the shoulder'}`].filter(Boolean);
+  return [sizeSentence(breed, f.size), parts.length ? `Adults usually ${parts.join(' and ')}${dep ? `, depending on ${dep}` : ''}.` : ''].filter(Boolean).join(' ');
+}
+
 // "a Boerboel dog", "an Akita dog"
 const aOrAn = w => `${/^[aeiou]/i.test(w) ? 'an' : 'a'} ${w}`;
 
@@ -2414,7 +2433,9 @@ async function servePetsPage(page, env) {
   }
 
   const shown = petsInPage(pets, kind, city, adoption, breed);
-  const guide = breed && !failed ? await breedPageGuide(breed, shown, env) : null;
+  // The written breed guide (breeds/), or else one approved in Admin → Breed guides
+  const info = breed ? BREED_GUIDES[breed.slug] || null : null;
+  const guide = breed && !info && !failed ? await breedPageGuide(breed, shown, env) : null;
   // Sold pets are shown, stamped, after the rest, but the counts, prices and
   // what search engines are told is for sale are the pets still available.
   const available = shown.filter(p => !p.sold_at);
@@ -2435,7 +2456,7 @@ async function servePetsPage(page, env) {
     const lead = `${breed.title} for Sale in ${place}`;
     title = city
       ? `${lead}${count >= CITY_PAGE_MIN ? ` – ${count} Listings` : ''} | PuppyPlace.ng`
-      : `${lead}${stats ? ` – Prices from ${naira(stats.min)}` : ''} | PuppyPlace.ng`;
+      : `${lead}${stats ? ` – Prices from ${naira(stats.min)}` : info ? ' – Price & Breed Guide' : ''} | PuppyPlace.ng`;
     h1 = `${esc(breed.title)} for Sale<br/>in <span>${esc(place)}</span>`;
     sub = `Buy ${esc(breed.young)}${breed.dogOrCat ? ` and adult ${esc(breed.many)}` : ''} from breeders and owners ${inPlace}. See photos, prices and health details, then chat with the seller on WhatsApp.`;
   } else if (adoption) {
@@ -2463,14 +2484,16 @@ async function servePetsPage(page, env) {
   const countWords = count === 1 ? `1 ${breed ? breed.one : kind.type === 'other' ? 'pet' : kind.one}` : `${count} ${many}`;
   const adoptN = available.filter(p => p.listing_type === 'adoption').length;
   const forWhat = adoption || (count && adoptN === count) ? 'for adoption' : adoptN ? 'for sale and adoption' : 'for sale';
-  description = [
+  description = breed && info && !city && !count
+    ? `${breed.name} breed guide: size, temperament, care, health and how ${breed.dogOrCat || breed.type === 'Rabbit' ? 'it copes' : 'to keep it'} in Nigeria's heat. See ${breed.many} for sale and prices on PuppyPlace.ng.`
+    : [
     count ? `Browse ${countWords} ${forWhat} ${inPlace}${stats ? ` from ${naira(stats.min)}` : ''}.` : `${breed ? breed.title : kind.title} ${adoption ? 'for adoption' : 'for sale'} ${inPlace} on PuppyPlace.ng.`,
-    breed && guide ? 'Read about the breed, compare prices,' : '',
+    breed && (guide || info) ? 'Read the breed guide, compare prices,' : '',
     breeds.length ? `${breeds.slice(0, 3).join(', ')} and more.` : '',
-    breed && guide ? 'and chat with sellers on WhatsApp.' : 'Chat with sellers on WhatsApp, or list your pet free.',
+    breed && (guide || info) ? 'and chat with sellers on WhatsApp.' : 'Chat with sellers on WhatsApp, or list your pet free.',
   ].filter(Boolean).join(' ');
 
-  const indexable = !failed && (isMain || (city ? count >= CITY_PAGE_MIN : count >= 1));
+  const indexable = !failed && (isMain || (city ? count >= CITY_PAGE_MIN : count >= 1 || Boolean(info)));
   const topTitle = breed ? breed.title : kind.title;
 
   // ── Pills: real links, so every type page is one click from every other ──
@@ -2521,7 +2544,16 @@ async function servePetsPage(page, env) {
     ? `There ${count === 1 ? 'is' : 'are'} ${countWords} ${adoption ? 'up for adoption' : 'listed'} ${inPlace} right now${stats && !adoption ? `, ${stats.min === stats.max ? `priced at ${naira(stats.min)}` : `priced from ${naira(stats.min)} to ${naira(stats.max)}`}` : ''}.${breeds.length ? ` Popular breeds include ${esc(listJoin(breeds))}.` : ''}`
     : `There are no ${esc(many)} listed ${esc(inPlace)} right now. New listings go up every week, so check back soon.`;
 
+  const f = info?.facts || {};
+  const guideFaqs = info && !city ? [
+    f.weight || f.height || f.size ? [`How big does ${aOrAn(breed.name)} get?`, bigAnswer(breed, f)] : null,
+    f.life ? [`How long does ${aOrAn(breed.name)} live?`, `${breed.many[0].toUpperCase()}${breed.many.slice(1)} usually live ${f.life}. ${breed.type === 'Fish' ? 'Good food, a big enough tank and clean, well-filtered water help it live longer.' : 'Good food, regular vet checks and keeping it at a healthy weight help it live longer.'}`] : null,
+    [`Can ${aOrAn(breed.name)} live in Nigeria's heat?`, info.nigeria],
+    [`What is the ${breed.name} like as a pet?`, info.temperament],
+    [`What health problems does the ${breed.name} have?`, info.health],
+  ].filter(Boolean) : [];
   const faqs = breed ? [
+    ...guideFaqs,
     [`How much does ${aOne} cost in ${place}?`,
       stats
         ? `On PuppyPlace right now, ${breed.many} for sale ${inPlace} ${stats.min === stats.max ? `cost about ${naira(stats.min)}` : `cost from ${naira(stats.min)} to ${naira(stats.max)}, and the middle price is about ${naira(stats.median)}`}. ${breed.dogOrCat ? 'The price depends on age, pedigree, vaccinations and the quality of the parents.' : 'The price depends on age, size, colour and health.'}`
@@ -2557,10 +2589,26 @@ async function servePetsPage(page, env) {
       `Yes. Some owners rehome their pets for free. Look for the green Adoption label on a listing, or browse all pets for adoption on PuppyPlace.`],
   ];
 
-  const seo = `  <section class="seo" aria-label="Buying and selling ${esc(many)} ${esc(inPlace)}">
+  const guidePath = breed ? petsPagePath(kind, null, false, breed) : '';
+  const careTitle = breed?.type === 'Fish' ? 'Tank and care' : breed?.type === 'Bird' ? 'Care and diet' : 'Care and exercise';
+  const guideHtml = info && !city ? `  <section class="breed-guide" id="breed-guide" aria-labelledby="breed-guide-h">
+    <h2 id="breed-guide-h">${esc(breed.name)} breed guide</h2>
+    <p class="bg-lead">${esc(info.about)}</p>
+    <dl class="bg-facts">${Object.keys(FACT_LABELS).filter(k => info.facts[k]).map(k => `<div><dt>${FACT_LABELS[k]}</dt><dd>${esc(info.facts[k])}</dd></div>`).join('')}</dl>
+    <div class="bg-cols">
+      <div><h3>Temperament</h3><p>${esc(info.temperament)}</p></div>
+      <div><h3>${careTitle}</h3><p>${esc(info.care)}</p></div>
+      <div><h3>Health</h3><p>${esc(info.health)}</p></div>
+      <div class="wide"><h3>Keeping ${esc(aOrAn(breed.one))} in Nigeria</h3><p>${esc(info.nigeria)}</p></div>
+    </div>
+    <p class="bg-note">Figures are typical for the breed; every ${esc(breed.animal)} is different. Ask a vet before you buy if you are unsure.</p>
+  </section>
+` : '';
+  const seo = guideHtml + `  <section class="seo" aria-label="Buying and selling ${esc(many)} ${esc(inPlace)}">
     <div class="seo-card">
       <h2>${adoption ? 'Adopt a pet in Nigeria' : `Buy ${esc(aOne)} ${esc(inPlace)}`}</h2>
       <p>${buyIntro}</p>
+      ${info && city ? `<h2>About the ${esc(breed.name)}</h2><p>${esc(info.about)}</p><p><a href="${guidePath}#breed-guide">Read the full ${esc(breed.name)} breed guide</a>: size, temperament, care, health and keeping ${esc(aOrAn(breed.one))} in Nigeria.</p>` : ''}
       ${guide ? `<h2>About the ${esc(breed.name)}</h2>${guideParas(guide)}<p><em>A general guide to the breed, not a promise about any one ${esc(breed.animal)}.</em></p>` : ''}
       <p>Every listing is checked by PuppyPlace before it goes live. Open a listing to see its photos, age and health details, then chat with the seller directly on WhatsApp. Always see the pet and its health records first, and never pay any money, not even a deposit, before you have seen it.</p>
       <h2>Sell your ${esc(one)} on PuppyPlace</h2>
@@ -2670,7 +2718,7 @@ function petsSitemapPaths(pets) {
   for (const b of PET_BREEDS) {
     const kind = PET_KINDS.find(k => k.type === b.type);
     const l = petsInPage(pets, kind, null, false, b);
-    if (l.some(p => !p.sold_at)) add(petsPagePath(kind, null, false, b), l);
+    if (BREED_GUIDES[b.slug] || l.some(p => !p.sold_at)) add(petsPagePath(kind, null, false, b), l);
     for (const c of PET_CITIES) {
       const lc = petsInPage(pets, kind, c, false, b);
       if (lc.filter(p => !p.sold_at).length >= CITY_PAGE_MIN) add(petsPagePath(kind, c, false, b), lc);
@@ -2790,6 +2838,8 @@ function renderPetPage(p, guide = null, env = {}) {
   const petKind  = PET_KINDS.find(k => k.type === petKindOf(p)) || ALL_PETS_KIND;
   const petCity  = petCityOf(p);
   const petBreed = petBreedOf(p);
+  // Shown when no guide for the breed has been approved in Admin → Breed guides
+  const petInfo = petBreed ? BREED_GUIDES[petBreed.slug] || null : null;
   const litterN  = Number((String(p.specs || '').match(/\b(\d{1,2})\s*(?:pups?|puppies|kittens?)\b/i) || [])[1] || 0);
   const weeks    = ageWeeks(p.age);
   const youngTitle = weeks !== null && weeks < 52
@@ -3218,7 +3268,7 @@ svg{flex-shrink:0}
     <div class="facts">${factsHtml}</div>
   </section>
 
-  ${guide ? renderGuide(breed, guide) : ''}
+  ${guide ? renderGuide(breed, guide) : petInfo ? renderGuide(petBreed.name, `About: ${petInfo.about}\nTemperament: ${petInfo.temperament}`).replace(/<\/div><\/section>$/, `<p><a href="${petsPagePath(petKind, null, false, petBreed)}#breed-guide" style="color:#ed6436;font-weight:700">Read the full ${esc(petBreed.name)} breed guide →</a></p></div></section>`) : ''}
 
   <section class="card safety">
     <div class="sec-head">${I.tips}<div><h2>Safety tips when buying a pet</h2><p>Keep yourself and your new pet safe with these simple tips.</p></div></div>
