@@ -594,12 +594,28 @@ async function storeSellerPhoto(src, path, env) {
 
   const key = env.SUPABASE_SERVICE_KEY;
   const file = `${path}.${PHOTO_TYPES[type]}`;
-  const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/hero-images/${file}`, {
-    method: 'POST',
-    headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': type, 'x-upsert': 'true' },
-    body: bytes,
-  });
-  if (!up.ok) throw new Error('storage upload failed');
+  // Our storage refusing the photo (a project over its plan, a key, an outage)
+  // is not something the seller can fix: it is marked `ours` so the caller
+  // answers 502, and Vendwyze keeps the seller's answers and tells the owner,
+  // instead of telling the seller their listing is wrong.
+  let up;
+  try {
+    up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/hero-images/${file}`, {
+      method: 'POST',
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': type, 'x-upsert': 'true' },
+      body: bytes,
+    });
+  } catch (e) {
+    const err = new Error(`storage upload failed (${e?.message ?? 'no answer'})`);
+    err.ours = true;
+    throw err;
+  }
+  if (!up.ok) {
+    const why = (await up.text().catch(() => '')).replace(/\s+/g, ' ').trim().slice(0, 160);
+    const err = new Error(`storage upload failed (${up.status}${why ? `: ${why}` : ''})`);
+    err.ours = true;
+    throw err;
+  }
   return `${env.SUPABASE_URL}/storage/v1/object/public/hero-images/${file}`;
 }
 
@@ -655,6 +671,10 @@ async function handleSellerListing(request, env, ctx) {
     try {
       imageUrls.push(await storeSellerPhoto(photos[i], `seller-pets/${slug}-${i + 1}`, env));
     } catch (e) {
+      if (e.ours) {
+        console.error('seller photo not stored:', e.message);
+        return jsonResp({ error: 'Could not save the photo', details: [`photo ${i + 1}: ${e.message}`] }, 502);
+      }
       return jsonResp({ error: 'Invalid listing', details: [`photo ${i + 1}: ${e.message}`] }, 400);
     }
   }

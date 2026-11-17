@@ -59,6 +59,7 @@ Content-Type: application/json
 | 200 | `{"ok":true,"status":"pending","duplicate":true,…}` | The same number sent the same breed in the last 15 minutes; the existing pending listing is returned and nothing new is saved. |
 | 400 | `{"error":"Invalid listing","details":["…"]}` | Tell the seller what to fix (each detail is a plain sentence). |
 | 401 | `{"error":"Unauthorized"}` | Wrong or missing key. |
+| 502 | `{"error":"Could not save the photo","details":["photo 1: storage upload failed (402: …)"]}` | PuppyPlace's own storage refused the photo (a project over its plan, a key, an outage). Not the seller's doing: Vendwyze keeps their answers so one YES retries, and tells the store owner the reason. |
 | 503 | `{"error":"Server not configured"}` | `SELLER_API_KEY` (or the Supabase keys) are not set. |
 
 ## Suggested bot behaviour
