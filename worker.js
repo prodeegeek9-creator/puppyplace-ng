@@ -3117,7 +3117,18 @@ function petLitter(p) {
   return m ? { n: m[1], word: /kit/.test(m[2]) ? 'Kittens' : /chick/.test(m[2]) ? 'Chicks' : 'Puppies' } : null;
 }
 
+// "Posted 14 Nov 2026, 3:42 pm" in Lagos time, for the pet page (empty when the row has no date).
+function postedLabel(iso) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d)) return '';
+  const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Lagos' });
+  const time = d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Africa/Lagos' }).replace(/\s?(am|pm)/i, (m, x) => ' ' + x.toLowerCase());
+  return `${day}, ${time}`;
+}
+
 function renderPetPage(p, guide = null, env = {}) {
+  const postedText = postedLabel(p.created_at);
+  const postedHtml = postedText ? `<div class="posted"><time datetime="${esc(new Date(p.created_at).toISOString())}">Posted ${esc(postedText)}</time></div>` : '';
   const typeEmoji = {Dog:'🐕',Cat:'🐈',Bird:'🦜',Rabbit:'🐰',Fish:'🐠','Guinea Pig':'🐹',Reptile:'🦎'};
   const typeBg   = {Dog:'linear-gradient(135deg,#fdeee7,#fbd4c3)',Cat:'linear-gradient(135deg,#e8f5e9,#c8e6c9)',Bird:'linear-gradient(135deg,#e3f2fd,#bbdefb)',Rabbit:'linear-gradient(135deg,#f3e5f5,#e1bee7)',Fish:'linear-gradient(135deg,#e0f7fa,#b2ebf2)','Guinea Pig':'linear-gradient(135deg,#fff9c4,#fff59d)',Reptile:'linear-gradient(135deg,#f1f8e9,#dcedc8)'};
   const emoji = typeEmoji[p.type] || '🐾';
@@ -3404,6 +3415,7 @@ svg{flex-shrink:0}
 .pg-chip{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-radius:50px;border:1px solid var(--border);background:#f8f9fb;font-size:13px;font-weight:500;color:var(--text)}
 .pg-chip.ok{background:#eefaf3;border-color:#9fdcb9;color:var(--green);font-size:12px}
 .pg-chip.ped{background:#fff6ee;border-color:#f5c9a5;color:#c25a12;font-size:12px}
+.posted{font-size:13px;color:#6b6b6b;margin:-4px 0 12px}
 .specs{display:flex;gap:14px;align-items:flex-start;background:#f6f7f9;border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.6;color:var(--text);white-space:pre-line;margin-bottom:18px}
 .specs svg{margin-top:1px}
 .divider{height:1px;background:var(--border);margin-bottom:16px}
@@ -3545,6 +3557,7 @@ svg{flex-shrink:0}
       <h1>${esc(breed)}</h1>
       <div class="seller"><span class="avatar">${esc(seller.trim().charAt(0).toUpperCase())}</span>${esc(seller)}${I.check}</div>
       ${p.location ? `<div class="loc">${I.pin}${esc(p.location)}</div>` : ''}
+      ${postedHtml}
       ${chips ? `<div class="chips">${chips}</div>` : ''}
       ${p.specs ? `<div class="specs">${p.type === 'Dog' ? I.dog : I.aPaw.replace(/26/g, '22')}<div>${esc(p.specs)}</div></div>` : ''}
       <div class="divider"></div>
