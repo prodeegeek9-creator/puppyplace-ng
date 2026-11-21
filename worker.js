@@ -64,6 +64,9 @@ export default {
     if (url.pathname === '/api/dm/report' && request.method === 'POST') return handleDmReport(request, url, env, ctx);
     if (url.pathname === '/api/admin/messages' && request.method === 'POST') return handleAdminMessages(request, env);
     if (url.pathname === '/api/admin/leads' && request.method === 'POST') return handleAdminLeads(request, url, env);
+    if (url.pathname === '/api/blog-comments' && request.method === 'GET') return handleBlogCommentsList(url, env);
+    if (url.pathname === '/api/blog-comments' && request.method === 'POST') return handleBlogCommentPost(request, url, env, ctx);
+    if (url.pathname === '/api/admin/comments' && request.method === 'POST') return handleAdminComments(request, env);
 
     // Pet listings sent in by sellers through Vendwyze; saved hidden until approved in admin
     if (url.pathname === '/api/seller-listings' && request.method === 'POST') {
@@ -1648,6 +1651,139 @@ async function handleAdminLeads(request, url, env) {
       };
     }),
   }, 200);
+}
+
+/* ── BLOG COMMENTS ──────────────────────────────────────────────────────────
+ * Readers comment under a blog post (public/pp-comments.js, on every post page).
+ * Reading is open; writing needs the same WhatsApp sign-in as buyers, and only the
+ * first name is ever shown. A clean comment shows at once. One with a link, an
+ * email address, a phone number or payment words is held for Admin → Comments,
+ * and the store owner is told on WhatsApp. supabase/blog_comments.sql makes the
+ * table; until it has been run the section hides itself.
+ */
+const COMMENT_MAX = 1000;
+const COMMENTS_PER_HOUR = 5;
+const COMMENTS_PER_DAY = 20;
+const POST_SLUG = /^[a-z0-9][a-z0-9-]{0,159}$/i;
+const LINK_IN_TEXT = /https?:\/\/|www\.|\b[a-z0-9-]{2,}\.(com|ng|net|org|io|co|info|biz|xyz|me|shop|store|online|site|link|top)\b/i;
+const EMAIL_IN_TEXT = /\S+@\S+\.\S+/;
+const PHONE_IN_TEXT = /\+?\d[\d\s().-]{8,}\d/;
+
+// Why a comment waits for the admin instead of showing at once, or null.
+function commentHoldReason(body) {
+  if (LINK_IN_TEXT.test(body)) return 'it has a link';
+  if (EMAIL_IN_TEXT.test(body)) return 'it has an email address';
+  if (PHONE_IN_TEXT.test(body)) return 'it has a phone number';
+  if (SCAM.test(body)) return 'it mentions payment (a deposit, a transfer, an account number…)';
+  return null;
+}
+
+// The name shown under a comment: the first word of the reader's name.
+function commentName(account) {
+  const first = String(account?.name ?? '').trim().split(/\s+/)[0].replace(/[^\p{L}'’-]/gu, '').slice(0, 30);
+  return first || 'A reader';
+}
+
+const publicComment = (c) => ({ id: c.id, name: c.author_name, body: c.body, at: c.created_at, team: c.is_team === true, parent_id: c.parent_id || null });
+
+// GET /api/blog-comments?slug=…  → { ok, comments: [{ id, name, body, at, team, parent_id }] }, oldest first.
+// `ready: false` when the table has not been made yet: the page then hides the section.
+async function handleBlogCommentsList(url, env) {
+  const slug = url.searchParams.get('slug') || '';
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY || !POST_SLUG.test(slug)) return userJson({ ok: true, comments: [], ready: false });
+  const r = await sbJson(env, `blog_comments?post_slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=id,author_name,body,created_at,is_team,parent_id&order=created_at.asc&limit=300`);
+  if (!r.ok) return userJson({ ok: true, comments: [], ready: false });
+  return userJson({ ok: true, comments: r.body.map(publicComment), ready: true });
+}
+
+// POST /api/blog-comments { slug, body }  (signed in)  → { ok, held, comment }
+async function handleBlogCommentPost(request, url, env, ctx) {
+  if (!accountsReady(env)) return userJson({ error: 'Comments are not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  const me = await sessionAccount(request, env);
+  if (!me) return userJson({ error: 'Sign in to comment', login: true }, 401);
+  let b;
+  try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
+  const slug = String(b?.slug ?? '');
+  const body = String(b?.body ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, COMMENT_MAX);
+  if (!POST_SLUG.test(slug)) return userJson({ error: 'That article was not found.' }, 404);
+  if (body.length < 2) return userJson({ error: 'Write a comment first.' }, 400);
+
+  const post = await sbJson(env, `blog_posts?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=id,slug,title&limit=1`);
+  if (!post.ok || !post.body[0]) return userJson({ error: 'That article was not found.' }, 404);
+
+  const hour = new Date(Date.now() - 3600e3).toISOString();
+  const day = new Date(Date.now() - 864e5).toISOString();
+  const mine = await sbJson(env, `blog_comments?account_id=eq.${me.id}&created_at=gte.${day}&select=id,created_at,post_slug,body&order=created_at.desc&limit=100`);
+  if (!mine.ok) return userJson({ error: 'Comments are not set up yet' }, 503);
+  if (mine.body.filter((c) => c.created_at >= hour).length >= COMMENTS_PER_HOUR) return userJson({ error: 'You have commented a lot in the last hour. Try again later.' }, 429);
+  if (mine.body.length >= COMMENTS_PER_DAY) return userJson({ error: 'You have reached the most comments for today. Try again tomorrow.' }, 429);
+  if (mine.body.some((c) => c.post_slug === slug && c.body === body)) return userJson({ error: 'You already posted that comment.' }, 409);
+
+  const reason = commentHoldReason(body);
+  const row = {
+    post_slug: slug,
+    post_title: post.body[0].title || null,
+    account_id: me.id,
+    author_name: commentName(me),
+    body,
+    status: reason ? 'held' : 'published',
+    held_reason: reason,
+  };
+  const saved = await sbJson(env, 'blog_comments', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(row) });
+  if (!saved.ok || !saved.body[0]) return userJson({ error: 'Could not post your comment. Try again.' }, 500);
+  if (reason) {
+    ctx.waitUntil(sendWhatsApp(env, { to: 'owner', text: `💬 A comment on "${row.post_title || slug}" is waiting for you: ${reason}. Publish or hide it in your site admin → Comments.` }).catch(() => {}));
+    return userJson({ ok: true, held: true });
+  }
+  return userJson({ ok: true, held: false, comment: publicComment(saved.body[0]) });
+}
+
+// POST /api/admin/comments { token, action: 'list' | 'set' | 'delete' | 'reply', id, status, parent_id, body }
+// Every comment, newest first, with who wrote it (the admin sees the number); publish, hide or
+// delete one; or answer one as the PuppyPlace team (shown under it, marked as the team).
+async function handleAdminComments(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+  const UUID = /^[0-9a-f-]{36}$/;
+
+  if (b.action === 'set') {
+    if (!UUID.test(String(b.id || '')) || !['published', 'held', 'hidden'].includes(b.status)) return jsonResp({ error: 'Which comment, and published, held or hidden?' }, 400);
+    const r = await sbJson(env, `blog_comments?id=eq.${b.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: b.status, held_reason: null }) });
+    return r.ok ? jsonResp({ ok: true }, 200) : jsonResp({ error: 'Could not change the comment' }, 500);
+  }
+  if (b.action === 'delete') {
+    if (!UUID.test(String(b.id || ''))) return jsonResp({ error: 'Which comment?' }, 400);
+    const r = await sbJson(env, `blog_comments?id=eq.${b.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    return r.ok ? jsonResp({ ok: true }, 200) : jsonResp({ error: 'Could not delete the comment' }, 500);
+  }
+  if (b.action === 'reply') {
+    const body = String(b.body ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, COMMENT_MAX);
+    if (!UUID.test(String(b.parent_id || '')) || !body) return jsonResp({ error: 'Which comment, and what to say?' }, 400);
+    const parent = await sbJson(env, `blog_comments?id=eq.${b.parent_id}&select=id,post_slug,post_title,parent_id&limit=1`);
+    if (!parent.ok || !parent.body[0]) return jsonResp({ error: 'That comment is gone' }, 404);
+    // One level only: a reply to a reply goes under the comment it answers.
+    const top = parent.body[0].parent_id || parent.body[0].id;
+    const r = await sbJson(env, 'blog_comments', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ post_slug: parent.body[0].post_slug, post_title: parent.body[0].post_title, account_id: null, author_name: 'PuppyPlace', body, status: 'published', is_team: true, parent_id: top }),
+    });
+    return r.ok ? jsonResp({ ok: true }, 200) : jsonResp({ error: 'Could not post the reply' }, 500);
+  }
+
+  const r = await sbJson(env, 'blog_comments?select=id,post_slug,post_title,account_id,author_name,body,status,held_reason,is_team,parent_id,created_at&order=created_at.desc&limit=300');
+  if (!r.ok) return jsonResp({ error: 'Comments are not set up yet. Run supabase/blog_comments.sql once in Supabase → SQL Editor.', setup: true }, 503);
+  const ids = [...new Set(r.body.map((c) => c.account_id).filter(Boolean))];
+  const people = [];
+  for (let i = 0; i < ids.length; i += 50) {
+    const p = await sbJson(env, `pp_accounts?id=in.(${ids.slice(i, i + 50).join(',')})&select=id,phone`);
+    if (p.ok) people.push(...p.body);
+  }
+  const phone = new Map(people.map((a) => [a.id, a.phone]));
+  return jsonResp({ ok: true, comments: r.body.map((c) => ({ ...c, phone: c.account_id ? phone.get(c.account_id) || null : null })) }, 200);
 }
 
 /* ── IMAGES THROUGH CLOUDFLARE ───────────────────────────────────────────
@@ -4010,12 +4146,14 @@ ${heroHtml}
 <div class="art-wrap">
   <div class="art-body">${injectAlsoRead(post.content || '')}</div>
   ${shopHtml}
+  ${POST_SLUG.test(String(post.slug || '')) ? `<section class="comments" id="comments" data-slug="${esc(post.slug)}" aria-label="Comments"></section>` : ''}
   ${related.length ? `<div class="art-divider"></div><div class="related"><div class="rel-label">More from the Blog</div><div class="rel-grid">${relCards}</div></div>` : '<div style="padding-bottom:80px"></div>'}
 </div>
 <footer class="footer">
   &copy; 2026 <a href="/index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria<br/><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/faq.html">FAQs</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
 </footer>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
+<script src="/pp-auth.js" defer></script><script src="/pp-comments.js" defer></script>
 </body>
 </html>`;
 }
