@@ -21,6 +21,8 @@ Until it is run the dashboard says so and the rest of the admin works as before.
 
   Where-from is remembered by `/pp-pixel.js` on every page (`pp_entry` in the browser's session storage) and sent by `pp-contact.js` with the tap (`/api/contact?…&fu=&er=&ep=&pg=`, and `src` on `/api/dm/send`). The Worker keeps our own pages' path and `?query` (the `utm_` tags say which post or ad) and another site's address without its query. **Run `supabase/lead_sources.sql` once** in Supabase → SQL Editor to add the four columns to `pet_leads`; until then leads are still saved and listed, without where-from (Leads says so).
 
+- **Blog Comments**: readers can comment under every blog post once they sign in with their WhatsApp number and code (only their first name shows, never the number; 5 comments an hour, 20 a day). A comment shows at once, unless it has a link, an email address, a phone number or payment words: that one waits, and you get a WhatsApp message. The **Comments** tab lists Waiting, Showing, Hidden or All, with who wrote it (number tappable), the post, and **Publish / Hide / Reply / Delete**. A reply is marked "PuppyPlace team" and shows under the comment. **Run `supabase/blog_comments.sql` once** (already run on the live database); until then the comment box stays hidden.
+
 ## API (admin token, from the sign-in)
 
 | Route | Body | Returns |
@@ -30,3 +32,7 @@ Until it is run the dashboard says so and the rest of the admin works as before.
 | `POST /api/admin/orders` | `{ token, action: 'status', id, status }` | `{ ok }` |
 | `POST /api/admin/leads` | `{ token, days }` | `{ ok, days, sources, leads }`, newest 500: `{ id, kind: 'whatsapp'\|'message', at, buyer: { name, phone }, pet: { slug, breed, type }, from_url, entry_ref, entry_page, page, thread_id }`; `sources` is false until `lead_sources.sql` has been run |
 | `POST /api/track-event` | `{ event, id?, name?, price?, path? }` | 204 always; `event` is `wishlist_add`, `cart_add`, `checkout_start` or `whatsapp_click`; bots and other origins are ignored; data centre and VPN networks are counted here (a button tap is a person), though their page views are not |
+| `GET /api/blog-comments?slug=` | none | `{ ok, ready, comments }`, published only, oldest first; no phone numbers |
+| `POST /api/blog-comments` | `{ slug, body }` (reader sign-in cookie) | `{ ok, held, comment? }`; 401 `{ login: true }` when not signed in; 409 duplicate; 429 over the limit |
+| `POST /api/admin/comments` | `{ token, action: 'list' }` | `{ ok, comments }` with `phone` and `held_reason`; 503 `setup: true` before the SQL |
+| `POST /api/admin/comments` | `{ token, action: 'set', id, status }` / `'delete', id` / `'reply', parent_id, body` | `{ ok }` |

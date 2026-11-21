@@ -572,6 +572,7 @@ input,select,textarea{font-family:'Nunito',sans-serif}
         <div class="sb-link" onclick="showPanel('edits',this)"><span class="sb-link-ico">✏️</span> Edit requests <span class="sb-badge" id="sbEditsCount">0</span></div>
         <div class="sb-link" onclick="showPanel('messages',this)"><span class="sb-link-ico">💬</span> Messages <span class="sb-badge" id="sbMsgCount">0</span></div>
         <div class="sb-link" onclick="showPanel('leads',this)"><span class="sb-link-ico">🎯</span> Leads</div>
+        <div class="sb-link" onclick="showPanel('comments',this)"><span class="sb-link-ico">🗨️</span> Comments <span class="sb-badge" id="sbCommentsCount">0</span></div>
         <div class="sb-link" onclick="showPanel('guides',this)"><span class="sb-link-ico">📘</span> Breed guides <span class="sb-badge" id="sbGuidesCount">0</span></div>
         <div class="sb-section">Store</div>
         <div class="sb-link" onclick="showPanel('hero',this)"><span class="sb-link-ico">🖼️</span> Hero Images</div>
@@ -875,6 +876,15 @@ input,select,textarea{font-family:'Nunito',sans-serif}
           <div id="msgList"><div class="dx-empty">Loading…</div></div>
         </div>
         <div class="dx-modal-bg" id="msgModalBg" onclick="if(event.target===this)this.style.display='none'"><div class="dx-modal" id="msgModal"></div></div>
+
+        <div class="panel" id="panelComments">
+          <div class="dx-toolbar">
+            <div><div class="dx-h">Blog comments</div><div class="dx-sub">What readers write under your articles. A clean comment shows at once; one with a link, an email, a phone number or payment words waits here for you.</div></div>
+            <div class="dx-tools"><input class="filter-sel" id="cmSearch" placeholder="Search comment, name, number or article" oninput="renderComments()" style="min-width:220px"/><button class="add-btn" onclick="loadComments()">↻ Refresh</button></div>
+          </div>
+          <div class="dx-pills" id="cmPills"></div>
+          <div id="cmList"><div class="dx-empty">Loading…</div></div>
+        </div>
 
         <div class="panel" id="panelLeads">
           <div class="dx-toolbar">
@@ -1479,7 +1489,7 @@ function showPanel(name, el){
   document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('on'));
   if(el) el.classList.add('on');
-  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',orders:'Orders',pets:'Pets',edits:'Edit Requests',messages:'Messages',leads:'Leads',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',products:'Products',blog:'Blog Posts',stats:'Stats',orders:'Orders',pets:'Pets',edits:'Edit Requests',messages:'Messages',leads:'Leads',comments:'Blog Comments',guides:'Breed Guides',hero:'Hero Images',homepage:'Homepage Settings',settings:'Settings'};
   const title = titles[name]||name;
   document.getElementById('pageTitle').textContent = title;
   const mobTitle = document.getElementById('mobPageTitle');
@@ -1493,6 +1503,7 @@ function showPanel(name, el){
   if(name==='edits') loadEdits();
   if(name==='messages') loadMessages();
   if(name==='leads') loadLeads();
+  if(name==='comments') loadComments();
   if(name==='blog') loadBlogPosts();
   if(name==='stats') loadStats();
   if(name==='pets') loadPets();
@@ -2203,6 +2214,60 @@ async function openMessages(id){
     ${t.reported_at?`<div class="dx-warn">🚩 Reported ${escHtml(ago(t.reported_at))}: ${escHtml(t.report_reason||'')}</div>`:''}
     <div style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;padding:4px 0">${msgs.map(x=>`<div style="align-self:${x.sender==='buyer'?'flex-start':'flex-end'};max-width:80%;background:${x.sender==='buyer'?'var(--light)':'rgba(237,100,54,.1)'};border-radius:12px;padding:8px 12px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere${x.flagged?';border:1.5px solid #e67e22':''}"><div style="font-size:11px;font-weight:800;color:var(--gray);margin-bottom:2px">${x.sender==='buyer'?'Buyer':'Seller'} · ${escHtml(fmtWhen(x.created_at))}${x.flagged?' · ⚠️ payment words':''}</div>${escHtml(x.body)}</div>`).join('')||'<div class="dx-empty">No messages</div>'}</div>
     <div class="dx-acts" style="margin-top:12px">${t.buyer?`<a class="dx-btn" href="https://wa.me/${escA(t.buyer.phone)}" target="_blank" rel="noopener">💬 WhatsApp buyer</a>`:''}<a class="dx-btn" href="https://wa.me/${escA(t.seller_phone)}" target="_blank" rel="noopener">💬 WhatsApp seller</a></div>`;
+}
+
+// ── Blog comments: publish, hide, delete, reply ──
+let _comments=[], _cmTab='held';
+function cmBadge(){ const n=_comments.filter(c=>c.status==='held').length; const b=document.getElementById('sbCommentsCount'); if(b) b.textContent=n; }
+async function loadComments(){
+  const box=document.getElementById('cmList');
+  box.innerHTML='<div class="dx-empty">Loading…</div>';
+  try{ _comments=(await adminApi('/api/admin/comments',{action:'list'})).comments||[]; }
+  catch(err){ box.innerHTML=`<div class="dx-notice">${escHtml(err.message)}</div>`; document.getElementById('cmPills').innerHTML=''; return; }
+  cmBadge(); renderComments();
+}
+function renderComments(){
+  const q=(document.getElementById('cmSearch').value||'').trim().toLowerCase();
+  const box=document.getElementById('cmList');
+  const count=s=>_comments.filter(c=>c.status===s).length;
+  document.getElementById('cmPills').innerHTML=[['held','⏳ Waiting',count('held')],['published','✅ Showing',count('published')],['hidden','🙈 Hidden',count('hidden')],['','All',_comments.length]]
+    .map(([v,l,n])=>`<button class="dx-pill${_cmTab===v?' on':''}" onclick="_cmTab='${v}';renderComments()">${l} · ${n}</button>`).join('');
+  const list=_comments.filter(c=>(!_cmTab||c.status===_cmTab)&&(!q||[c.body,c.author_name,c.phone,c.post_title,c.post_slug].some(v=>String(v||'').toLowerCase().includes(q))));
+  if(!_comments.length){ box.innerHTML='<div class="dx-card"><div class="dx-ok">No comments yet.</div></div>'; return; }
+  if(!list.length){ box.innerHTML=`<div class="dx-card"><div class="dx-ok">${_cmTab==='held'?'Nothing is waiting for you. 🎉':'Nothing here.'}</div></div>`; return; }
+  const badge=c=>c.status==='held'?'<span class="badge badge-popular">⏳ Waiting</span>':c.status==='hidden'?'<span class="badge" style="background:#6b7280;color:#fff">🙈 Hidden</span>':'<span class="badge badge-new">✅ Showing</span>';
+  box.innerHTML=list.map(c=>{
+    const id=sid(c.id);
+    return `<div class="dx-card" style="margin-bottom:12px">
+      <div class="dx-card-h"><div>
+        <div class="dx-card-t">${c.is_team?'↳ PuppyPlace team reply':escHtml(c.author_name||'A reader')}${!c.is_team&&c.phone?` <span style="font-weight:500;color:var(--gray)">· <a href="https://wa.me/${escA(String(c.phone).replace(/\D/g,''))}" target="_blank" rel="noopener" style="color:var(--orange)">+${escHtml(c.phone)}</a></span>`:''}</div>
+        <div class="dx-card-s">${escHtml(fmtStamp(c.created_at))} · ${escHtml(ago(c.created_at))} · on <a href="/posts/${escA(c.post_slug)}.html#comment-${escA(c.id)}" target="_blank" rel="noopener" style="color:var(--orange);font-weight:700">${escHtml(c.post_title||c.post_slug)}</a></div>
+      </div><div>${badge(c)}</div></div>
+      <div style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.6;margin:4px 0 8px">${escHtml(c.body)}</div>
+      ${c.status==='held'&&c.held_reason?`<div class="dx-warn">Waiting because ${escHtml(c.held_reason)}</div>`:''}
+      <div class="dx-acts">
+        ${c.status!=='published'?`<button class="dx-btn" onclick="setCommentStatus('${id}','published')">✅ Publish</button>`:''}
+        ${c.status!=='hidden'?`<button class="dx-btn" onclick="setCommentStatus('${id}','hidden')">🙈 Hide</button>`:''}
+        ${!c.is_team&&c.status==='published'?`<button class="dx-btn" onclick="document.getElementById('cmr-${id}').style.display='block';document.getElementById('cmrt-${id}').focus()">💬 Reply</button>`:''}
+        <button class="dx-btn" style="color:var(--red)" onclick="deleteComment('${id}')">🗑 Delete</button>
+      </div>
+      <div id="cmr-${id}" style="display:none;margin-top:10px"><textarea id="cmrt-${id}" class="form-input" rows="3" maxlength="1000" placeholder="Reply as the PuppyPlace team. It shows under the comment."></textarea><div class="dx-acts" style="margin-top:8px"><button class="dx-btn" onclick="sendCommentReply('${id}')">Send reply</button><button class="dx-btn" onclick="document.getElementById('cmr-${id}').style.display='none'">Cancel</button></div></div>
+    </div>`; }).join('');
+}
+async function setCommentStatus(id,status){
+  try{ await adminApi('/api/admin/comments',{action:'set',id,status}); }catch(err){ showToast('❌ '+err.message,'error'); return; }
+  showToast(status==='published'?'✅ Comment published':'Comment hidden','success'); loadComments();
+}
+async function deleteComment(id){
+  if(!confirm('Delete this comment for good? Any replies under it go too.')) return;
+  try{ await adminApi('/api/admin/comments',{action:'delete',id}); }catch(err){ showToast('❌ '+err.message,'error'); return; }
+  showToast('Comment deleted','success'); loadComments();
+}
+async function sendCommentReply(id){
+  const t=document.getElementById('cmrt-'+id), body=(t.value||'').trim();
+  if(!body){ showToast('Write your reply first','warning'); return; }
+  try{ await adminApi('/api/admin/comments',{action:'reply',parent_id:id,body}); }catch(err){ showToast('❌ '+err.message,'error'); return; }
+  showToast('✅ Reply posted under the comment','success'); loadComments();
 }
 
 // ── Leads: who tapped Contact on WhatsApp or sent a message, and where they came from ──
@@ -3360,6 +3425,7 @@ async function _extendedInit() {
   loadDashboard();
   adminApi('/api/admin/edits',{action:'list'}).then(d=>{document.getElementById('sbEditsCount').textContent=(d.edits||[]).length;}).catch(()=>{});
   adminApi('/api/admin/messages',{action:'list'}).then(d=>{_threads=d.threads||[];msgBadge();}).catch(()=>{});
+  adminApi('/api/admin/comments',{action:'list'}).then(d=>{_comments=d.comments||[];cmBadge();}).catch(()=>{});
 }
 </script>
 </body>
