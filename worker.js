@@ -63,6 +63,7 @@ export default {
     if (url.pathname === '/api/dm/thread' && request.method === 'GET') return handleDmThread(request, url, env);
     if (url.pathname === '/api/dm/report' && request.method === 'POST') return handleDmReport(request, url, env, ctx);
     if (url.pathname === '/api/admin/messages' && request.method === 'POST') return handleAdminMessages(request, env);
+    if (url.pathname === '/api/admin/leads' && request.method === 'POST') return handleAdminLeads(request, url, env);
 
     // Pet listings sent in by sellers through Vendwyze; saved hidden until approved in admin
     if (url.pathname === '/api/seller-listings' && request.method === 'POST') {
@@ -1311,6 +1312,38 @@ const CONTACTS_PER_HOUR = 30;
 // Words that come before most pet scams in Nigeria: a deposit, a transfer, an account number.
 const SCAM = /\b(deposit|pay(ment)? (first|before|upfront|now)|transfer|account (number|no|details)|acct|bank details|opay|palmpay|moniepoint|kuda|western union|delivery fee|caution fee|\d{10})\b/i;
 
+// Where a buyer came from, for Admin → Leads. Our own pages keep their path and
+// ?query (the utm tags say which post or ad); another site keeps its address
+// without the query, which can carry tracking ids. Anything that is not a web
+// address is dropped.
+function cleanLink(v, host) {
+  const s = String(v ?? '').trim().slice(0, 400);
+  if (!s) return '';
+  let u;
+  try { u = new URL(s, `https://${host}`); } catch { return ''; }
+  if (!/^https?:$/.test(u.protocol)) return '';
+  if (s.startsWith('/') || u.hostname === host || u.hostname === `www.${host}`) return (u.pathname + u.search).slice(0, 200);
+  return (u.origin + u.pathname).slice(0, 200);
+}
+
+// { from_url, entry_ref, entry_page, page }: the page just before, where the
+// visit began and its first page, and the page the button was on. Only what there is.
+function leadSource(src, host) {
+  const o = src && typeof src === 'object' ? src : {};
+  const out = { from_url: cleanLink(o.from_url, host), entry_ref: cleanLink(o.entry_ref, host), entry_page: cleanLink(o.entry_page, host), page: cleanLink(o.page, host) };
+  return Object.fromEntries(Object.entries(out).filter(([, v]) => v));
+}
+
+// Saves a lead. The source columns come from supabase/lead_sources.sql: until it
+// has been run the lead is still kept, without them.
+async function recordLead(env, base, src) {
+  const post = (row) => sbJson(env, 'pet_leads', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+  let r = await post({ ...base, ...src });
+  if (!r.ok && Object.keys(src).length) r = await post(base);
+  if (!r.ok) console.error('pet lead not saved:', r.status, JSON.stringify(r.body).slice(0, 200));
+  return r.ok;
+}
+
 async function sessionAccount(request, env) {
   const id = await readSession(request, env);
   return id ? accountById(env, id) : null;
@@ -1343,7 +1376,9 @@ async function handleContact(request, url, env, ctx) {
   const since = new Date(Date.now() - 3600e3).toISOString();
   const recent = await sbJson(env, `pet_leads?account_id=eq.${me.id}&created_at=gte.${since}&select=id`);
   if (recent.ok && recent.body.length >= CONTACTS_PER_HOUR) return userJson({ error: 'Too many in a short time. Try again later.' }, 429);
-  ctx.waitUntil(sbJson(env, 'pet_leads', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pet_id: String(pet.id), account_id: me.id, kind: 'whatsapp' }) }).catch(() => {}));
+  const q = url.searchParams;
+  const src = leadSource({ from_url: q.get('fu'), entry_ref: q.get('er'), entry_page: q.get('ep'), page: q.get('pg') }, url.hostname);
+  ctx.waitUntil(recordLead(env, { pet_id: String(pet.id), account_id: me.id, kind: 'whatsapp' }, src).catch(() => {}));
   ctx.waitUntil(sbJson(env, 'shop_events', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ event: 'whatsapp_click', path: `/pets/${pet.slug}`, item_id: String(pet.id), item_name: pet.breed }) }).catch(() => {}));
 
   const text = `Hi, I'm interested in the ${pet.breed}${pet.name ? ' (' + pet.name + ')' : ''} listed on PuppyPlace.ng: ${SITE}/pets/${pet.slug}`;
@@ -1410,7 +1445,7 @@ async function handleDmSend(request, url, env, ctx) {
         thread = again.ok ? again.body[0] : null;
         if (!thread) return userJson({ error: 'Could not start the conversation. Try again.' }, 500);
       }
-      if (made.ok) ctx.waitUntil(sbJson(env, 'pet_leads', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pet_id: String(pet.id), account_id: me.id, kind: 'message' }) }).catch(() => {}));
+      if (made.ok) ctx.waitUntil(recordLead(env, { pet_id: String(pet.id), account_id: me.id, kind: 'message' }, leadSource(b?.src, url.hostname)).catch(() => {}));
     }
     role = 'buyer';
   }
@@ -1556,6 +1591,63 @@ async function handleAdminMessages(request, env) {
   const rank = (x) => (x.reported_at ? 0 : x.flagged ? 1 : 2);
   const threads = t.body.map((x) => ({ ...x, buyer: who.get(x.buyer_id) || null })).sort((a, z) => rank(a) - rank(z));
   return jsonResp({ ok: true, threads }, 200);
+}
+
+// POST /api/admin/leads { token, days }  → every tap of "Contact on WhatsApp" and every
+// first "Send message" in the last days, newest first: who, which pet, when, and where
+// from. `sources` is false until supabase/lead_sources.sql has been run: the list still
+// works, without the where-from.
+async function handleAdminLeads(request, url, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+
+  const days = Math.min(90, Math.max(1, parseInt(b.days, 10) || 30));
+  const since = new Date(Date.now() - days * 864e5).toISOString();
+  const base = 'id,pet_id,account_id,kind,created_at';
+  const read = (cols) => sbJson(env, `pet_leads?created_at=gte.${since}&select=${cols}&order=created_at.desc&limit=500`);
+  let sources = true;
+  let r = await read(`${base},from_url,entry_ref,entry_page,page`);
+  if (!r.ok) { sources = false; r = await read(base); }
+  if (!r.ok) return jsonResp({ error: 'Leads are not set up yet. Run supabase/messages.sql once in Supabase → SQL Editor.', setup: true }, 503);
+  const leads = Array.isArray(r.body) ? r.body : [];
+
+  // Look the people, the pets and the conversations up in small groups: a long list in one address is refused.
+  const chunks = (ids) => { const out = []; for (let i = 0; i < ids.length; i += 50) out.push(ids.slice(i, i + 50)); return out; };
+  const rows = async (ids, path) => (await Promise.all(chunks(ids).map((c) => path(c)))).flatMap((x) => (x.ok && Array.isArray(x.body) ? x.body : []));
+  const accountIds = [...new Set(leads.map((l) => l.account_id).filter(Boolean))];
+  const petIds = [...new Set(leads.map((l) => String(l.pet_id)))];
+  const [accounts, pets, threads] = await Promise.all([
+    rows(accountIds, (c) => sbJson(env, `pp_accounts?id=in.(${c.join(',')})&select=id,name,phone`)),
+    rows(petIds, (c) => petsJson(env, `pets?id=in.(${c.map(encodeURIComponent).join(',')})&select=id,slug,breed,type`)),
+    rows(accountIds, (c) => sbJson(env, `pet_threads?buyer_id=in.(${c.join(',')})&select=id,pet_id,buyer_id&limit=1000`)),
+  ]);
+  const who = new Map(accounts.map((a) => [a.id, a]));
+  const what = new Map(pets.map((p) => [String(p.id), p]));
+  const chat = new Map(threads.map((t) => [`${t.pet_id}|${t.buyer_id}`, t.id]));
+
+  return jsonResp({
+    ok: true,
+    days,
+    sources,
+    leads: leads.map((l) => {
+      const a = who.get(l.account_id);
+      const p = what.get(String(l.pet_id));
+      return {
+        id: l.id,
+        kind: l.kind,
+        at: l.created_at,
+        buyer: a ? { name: a.name || null, phone: a.phone } : null,
+        pet: p ? { slug: p.slug, breed: p.breed, type: p.type } : null,
+        from_url: l.from_url || null,
+        entry_ref: l.entry_ref || null,
+        entry_page: l.entry_page || null,
+        page: l.page || null,
+        thread_id: l.kind === 'message' ? chat.get(`${l.pet_id}|${l.account_id}`) || null : null,
+      };
+    }),
+  }, 200);
 }
 
 /* ── IMAGES THROUGH CLOUDFLARE ───────────────────────────────────────────
@@ -1885,9 +1977,15 @@ async function handleMetaShopFeed(env) {
   });
 }
 
+// Where a visit began, kept for the tab: the first page and the site or post it
+// came from. A buyer who taps Contact or Send message on a pet page sends it with
+// the tap, and Admin → Leads shows it. Runs on every page, before the Pixel, and
+// nothing is sent from here.
+const ENTRY_JS = "(function(){try{if(localStorage.getItem('pp_notrack'))return;var s=sessionStorage;if(!s.getItem('pp_entry'))s.setItem('pp_entry',JSON.stringify({ref:document.referrer||'',page:location.pathname+location.search}));}catch(e){}})();\n";
+
 function handlePixelScript(env) {
   const id = String(env.META_PIXEL_ID || '').trim();
-  const js = /^\d{5,20}$/.test(id)
+  const js = ENTRY_JS + (/^\d{5,20}$/.test(id)
     ? `(function(){
 try{if(localStorage.getItem('pp_notrack')){window.ppPixel=function(){};return;}}catch(e){}
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
@@ -1896,7 +1994,7 @@ var EV={cart_add:'AddToCart',wishlist_add:'AddToWishlist',checkout_start:'Initia
 window.ppPixel=function(e,pid,name,price){var ev=EV[e];if(!ev)return;var d={currency:'NGN',value:Number(price)||0};if(pid){d.content_ids=[String(pid)];d.content_type='product';if(name)d.content_name=String(name);}fbq('track',ev,d);};
 var p=window.__pp_prod;if(p&&p.id)fbq('track','ViewContent',{content_ids:[String(p.id)],content_type:'product',content_name:p.n||'',value:Number(p.p)||0,currency:'NGN'});
 })();`
-    : '/* Meta Pixel: set META_PIXEL_ID to switch it on. */window.ppPixel=function(){};';
+    : '/* Meta Pixel: set META_PIXEL_ID to switch it on. */window.ppPixel=function(){};');
   return new Response(js, { status: 200, headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });
 }
 

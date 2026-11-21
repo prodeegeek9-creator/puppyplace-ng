@@ -29,11 +29,29 @@
     setTimeout(function () { t.remove(); }, 4000);
   }
 
+  // Where this buyer came from, sent with the tap so Admin → Leads can show it:
+  // the page just before this one, where the visit began (kept by /pp-pixel.js, or
+  // here if it has not run yet) and its first page, and this page.
+  function source() {
+    var here = location.pathname + location.search;
+    var s = { from_url: document.referrer || '', entry_ref: '', entry_page: '', page: here };
+    try {
+      var e = JSON.parse(sessionStorage.getItem('pp_entry') || 'null');
+      if (!e) { e = { ref: document.referrer || '', page: here }; sessionStorage.setItem('pp_entry', JSON.stringify(e)); }
+      s.entry_ref = e.ref || ''; s.entry_page = e.page || '';
+    } catch (x) { /* storage refused: the tap still works */ }
+    return s;
+  }
+  function sourceQuery() {
+    var s = source(), q = function (v) { return encodeURIComponent(String(v).slice(0, 300)); };
+    return '&fu=' + q(s.from_url) + '&er=' + q(s.entry_ref) + '&ep=' + q(s.entry_page) + '&pg=' + q(s.page);
+  }
+
   function chatOnWhatsApp(btn) {
     var slug = btn.getAttribute('data-slug');
     btn.disabled = true;
     var open = function () {
-      return A.api('/api/contact?slug=' + encodeURIComponent(slug)).then(function (d) { location.href = d.url; });
+      return A.api('/api/contact?slug=' + encodeURIComponent(slug) + sourceQuery()).then(function (d) { location.href = d.url; });
     };
     open().catch(function (e) {
       if (e.status !== 401) throw e;
@@ -74,13 +92,13 @@
       var text = ta.value.trim();
       if (!text) { msg.textContent = 'Write a message first.'; return; }
       msg.textContent = ''; go.disabled = true;
-      A.api('/api/dm/send', { slug: slug, body: text }).catch(function (e) {
+      A.api('/api/dm/send', { slug: slug, body: text, src: source() }).catch(function (e) {
         if (e.status !== 401) throw e;
         bg.style.display = 'none';
         return A.login({ title: 'Send your message', why: 'Sign in so the seller can reply to you.' }).then(function (acc) {
           bg.style.display = '';
           if (!acc) { go.disabled = false; return null; }
-          return A.api('/api/dm/send', { slug: slug, body: text });
+          return A.api('/api/dm/send', { slug: slug, body: text, src: source() });
         });
       }).then(function (d) {
         if (!d) return;
