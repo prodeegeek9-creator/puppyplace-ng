@@ -3675,6 +3675,10 @@ const BLOG_CATS = [
     intro: 'Breed guides, prices in Nigeria and what to know before you buy or adopt a pet.',
     re: /\b(prices?|cost\w*|breeds?|buy\w*|adopt\w*|choos\w*|for sale|german shepherd|boerboel|rottweiler|caucasian|lhasa|chihuahua|pit ?bull|husky|persian)\b/ },
 ];
+// Posts the daily news workflow saves with this exact category name. No title words place a post here.
+BLOG_CATS.push({ slug: 'pet-news-nigeria', name: 'Pet News Nigeria', emoji: '📰', color: '#1d6fb8',
+  intro: 'News about pets in Nigeria: pet events, dog shows, vet and animal courses, polo clubs and more, with the source named.',
+  re: /(?!)/ });
 const BLOG_CAT_FALLBACK = { slug: 'pet-care', name: 'Pet Care Tips', emoji: '🐾', color: '#ed6436',
   intro: 'Everyday advice for looking after dogs, cats and other pets in Nigeria.' };
 BLOG_CATS.push(BLOG_CAT_FALLBACK);
