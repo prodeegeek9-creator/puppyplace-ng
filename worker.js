@@ -218,6 +218,47 @@ function cleanEnv(env) {
   });
 }
 
+// Posts taken down in the Nov 2026 blog clean-up (duplicates, broken or off-topic
+// posts). Each old link 301s to the post that now covers the topic, or to the
+// blog index (null), so visitors and Google never land on a dead page.
+const RETIRED_POSTS = {
+  'harmful-foods-cats-dogs-nigeria': "harmful-foods-for-cats-and-dogs-nigeria",
+  'guide-on-how-to-stimulate-kitten-to-pee-and-poop': "how-to-help-newborn-kitten-pee-and-poop-safely",
+  'how-to-stimulate-kitten-pee-poop': "how-to-help-newborn-kitten-pee-and-poop-safely",
+  'why-nigerian-dogs-vomit-yellow-liquid-bile-treatment': "home-remedies-dog-vomiting-bile-yellow-liquid",
+  'why-dog-vomiting-yellow-foam-treatment': "home-remedies-dog-vomiting-bile-yellow-liquid",
+  'cost-to-properly-train-a-dog': "cost-to-train-a-dog-what-to-expect",
+  'cost-of-dog-training-in-nigeria-price-guide': "cost-to-train-a-dog-what-to-expect",
+  'cost-to-train-a-dog-nigeria': "cost-to-train-a-dog-what-to-expect",
+  'cost-of-professional-dog-training-nigeria': "cost-to-train-a-dog-what-to-expect",
+  'cost-to-train-a-dog-in-nigeria-price-guide': "cost-to-train-a-dog-what-to-expect",
+  'feeding-3-week-old-kitten-without-mother-nigerian-guide': "what-to-feed-2-week-old-orphaned-kitten-nigeria",
+  'how-to-stop-dog-barking-at-night-guide': "how-to-stop-dog-barking-late-at-night",
+  'best-foods-to-increase-blood-in-dogs-naturally': "best-blood-building-foods-for-dogs-and-cats-nigeria",
+  'dog-flea-treatment-on-cats-danger-emergency': "dog-flea-medicine-on-cat-risks",
+  'safety-risks-benefits-raw-meat-diet-dogs': "comprehensive-guide-to-safe-raw-meats-for-dogs-nigeria",
+  'what-raw-meat-can-dogs-not-eat-safe-feeding-guide': "comprehensive-guide-to-safe-raw-meats-for-dogs-nigeria",
+  'how-to-kill-ticks-on-dogs-immediately-safe-nigeria-guide': "how-to-kill-fleas-and-ticks-immediately-on-dogs-and-cats",
+  'how-to-treat-low-blood-anemia-in-dogs': "how-to-treat-low-blood-anemia-in-dogs-nigeria",
+  'emergency-guide-dog-vomiting-and-pooping-blood-nigeria': "puppy-pooping-blood-and-vomiting-emergency-guide",
+  'safely-deworming-puppy-at-home-guide': "can-you-deworm-puppy-without-vet-nigeria",
+  'best-vitamins-and-supplements-for-senior-dogs': "essential-vitamins-and-supplements-for-senior-dogs",
+  'how-to-make-homemade-kitten-milk-replacer-formula-emergency': "how-to-make-homemade-kitten-milk-replacer-emergency",
+  'how-long-after-eating-bone-dog-gets-sick-symptoms-timeline': "how-long-after-eating-chicken-bone-will-dog-be-sick",
+  'understanding-the-3-3-3-rule-for-cat-adjustment': "guide-to-the-3-3-3-rule-for-adopting-a-new-cat",
+  'best-medications-and-home-care-for-dog-tick-fever': "best-medicine-for-tick-fever-in-dogs-nigeria-treatment",
+  'how-to-get-rid-of-cat-fleas-in-house-quickly': "how-to-get-rid-of-fleas-in-infested-house-with-pets",
+  'how-to-treat-flea-poisoning-in-cats-emergency-guide': "how-to-treat-permethrin-poisoning-in-cats-emergency-guide",
+  'what-to-do-if-dog-licks-dettol-antiseptic-poisoning-nigeria': "dog-licked-dettol-chloroxylenol-poisoning-emergency-guide",
+  'fastest-safe-ways-to-remove-ticks-from-puppies': "how-to-get-rid-of-ticks-on-dogs-in-nigeria-treatment-prevention",
+  'best-age-to-start-dog-training': "best-age-to-start-puppy-training",
+  'emergency-guide-dog-poisoning-rat-killer-nigeria': "how-to-treat-poisoned-dog-at-home-nigeria",
+  'what-to-do-if-dog-swallows-chicken-bone': "what-to-do-if-chicken-bone-stuck-in-dogs-throat",
+  'friendliest-cat-breeds-for-families-and-first-time-owners': null,
+  'best-medicated-antifungal-shampoo-for-ringworm-in-dogs': "best-medicine-dog-skin-infection-treatment-guide",
+  'how-beginners-can-start-coding-step-by-step': null
+};
+
 // Link path for a blog post; falls back to the id for posts saved without a slug
 function postPath(p) {
   return `/posts/${encodeURIComponent(String(p.slug || p.id || ''))}.html`;
@@ -3420,6 +3461,10 @@ ${pageScript}
 }
 
 async function servePost(slug, env) {
+  if (Object.prototype.hasOwnProperty.call(RETIRED_POSTS, slug)) {
+    const to = RETIRED_POSTS[slug];
+    return Response.redirect(`https://puppyplace.ng${to ? postPath({ slug: to }) : '/blog.html'}`, 301);
+  }
   if (!env.SUPABASE_URL) {
     return html(errorPage('Server not configured.'), 503);
   }
@@ -3896,7 +3941,7 @@ function renderPost(post, related, shop = { items: [], shopUrl: '/shop.html', la
     description:   plainText(post.excerpt) || plainText(post.content, 200),
     image:         post.featured_image || '',
     articleSection: cat.name,
-    author:    { '@type': 'Organization', name: 'PuppyPlace.ng' },
+    author:    { '@type': 'Person', name: post.author || 'Oluwafemi', jobTitle: 'Founder, PuppyPlace.ng', url: 'https://puppyplace.ng/about.html' },
     publisher: { '@type': 'Organization', name: 'PuppyPlace.ng', url: 'https://puppyplace.ng' },
     datePublished: post.published_at || '',
     dateModified:  post.updated_at || post.published_at || '',
@@ -3969,6 +4014,10 @@ a.art-cat{display:inline-block}
 /* Content */
 .art-wrap{max-width:780px;margin:0 auto;width:100%;flex:1}
 .art-body{padding:56px 24px 0}
+.author-box{display:flex;gap:14px;align-items:flex-start;margin:8px 24px 32px;padding:18px 20px;border:1px solid var(--border);border-radius:var(--r);background:#fff}
+.author-ico{font-size:30px;line-height:1}
+.author-name{font-weight:900;margin-bottom:4px}
+.author-bio{font-size:15px;color:#555;line-height:1.6}
 .art-body h2{font-size:26px;font-weight:900;margin:40px 0 14px;color:var(--black);line-height:1.3}
 .art-body h3{font-size:22px;font-weight:900;margin:34px 0 12px;color:var(--black);line-height:1.35}
 .art-body h4{font-size:21px;font-weight:900;margin:36px 0 12px;color:var(--black)}
@@ -4009,6 +4058,11 @@ ${heroHtml}
 <nav class="crumbs" aria-label="Breadcrumb"><a href="/index.html">Home</a> › <a href="/blog.html">Blog</a> › <a href="${blogCatPath(cat)}">${esc(cat.name)}</a></nav>
 <div class="art-wrap">
   <div class="art-body">${injectAlsoRead(post.content || '')}</div>
+  <div class="author-box">
+    <div class="author-ico">🐾</div>
+    <div><div class="author-name">Written by ${esc(post.author || 'Oluwafemi')}</div>
+    <div class="author-bio">Founder of PuppyPlace.ng and owner of Prodeegee Kennel, raising Cane Corsos in Lagos. Our guides are general advice: for a sick or injured pet, always see a vet.</div></div>
+  </div>
   ${shopHtml}
   ${related.length ? `<div class="art-divider"></div><div class="related"><div class="rel-label">More from the Blog</div><div class="rel-grid">${relCards}</div></div>` : '<div style="padding-bottom:80px"></div>'}
 </div>
