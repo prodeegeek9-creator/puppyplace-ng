@@ -10,6 +10,9 @@
     // serves "/" and redirects old extensionless addresses.
     "html_handling": "none"
   },
+  // Cloudflare Images: worker.js stamps the faded PuppyPlace logo on every
+  // uploaded photo (see WATERMARK in worker.js)
+  "images": { "binding": "IMAGES" },
   // Page templates bundled into the Worker (kept out of the public assets
   // by .assetsignore)
   "rules": [

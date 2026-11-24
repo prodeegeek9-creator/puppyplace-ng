@@ -569,6 +569,10 @@ async function handleHeroUpload(request, url, env, ctx) {
   const ext  = PHOTO_TYPES[file.type];
   const path = `upload-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const key  = env.SUPABASE_SERVICE_KEY;
+  // Site graphics (hero banners, homepage backgrounds) are sent with
+  // watermark=0; every other photo is stamped with the logo.
+  const raw  = new Uint8Array(await file.arrayBuffer());
+  const body = formData.get('watermark') === '0' ? raw : await watermarkPhoto(env, raw, file.type);
 
   const uploadRes = await fetch(
     `${env.SUPABASE_URL}/storage/v1/object/${bucket}/${path}`,
@@ -579,9 +583,7 @@ async function handleHeroUpload(request, url, env, ctx) {
         'Authorization': `Bearer ${key}`,
         'Content-Type':  file.type,
       },
-      body: file.stream(),
-      // Cloudflare Workers requires duplex for streaming uploads
-      duplex: 'half',
+      body,
     }
   );
 
@@ -637,6 +639,7 @@ async function storeSellerPhoto(src, path, env) {
   if (!PHOTO_TYPES[type]) throw new Error('not a JPEG, PNG, WebP, GIF or AVIF image');
   if (bytes.byteLength > MAX_PHOTO_BYTES) throw new Error('larger than 8 MB');
 
+  bytes = await watermarkPhoto(env, bytes, type);
   const key = env.SUPABASE_SERVICE_KEY;
   const file = `${path}.${PHOTO_TYPES[type]}`;
   // Our storage refusing the photo (a project over its plan, a key, an outage)
@@ -1272,7 +1275,7 @@ async function handleMePhoto(request, url, env, ctx) {
   const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/hero-images/${path}`, {
     method: 'POST',
     headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': file.type },
-    body: await file.arrayBuffer(),
+    body: await watermarkPhoto(env, new Uint8Array(await file.arrayBuffer()), file.type),
   });
   if (!up.ok) return userJson({ error: 'Could not upload that photo. Try again.' }, 500);
   shrinkLater(ctx, env, [path]);
@@ -1935,6 +1938,54 @@ async function shrinkStoredPhoto(env, fileOrUrl) {
 const shrinkLater = (ctx, env, files) => ctx.waitUntil(
   Promise.all(files.map((f) => shrinkStoredPhoto(env, f).catch((err) => console.error('shrink failed:', f, err?.message ?? err))))
 );
+
+/* ── WATERMARK ──────────────────────────────────────────────────────────
+ * Every uploaded photo gets the PuppyPlace logo stamped faintly across its
+ * middle (the way Jiji marks listing photos), so a copied photo still says
+ * where it came from. It is burned into the stored file at upload time, before
+ * shrinking. The logo is /images/watermark.png when that file exists (a white
+ * logo on a see-through background looks best), else the site logo.
+ * It needs the Images binding (wrangler.jsonc → "images"); without it, or if
+ * stamping fails, the photo is saved unmarked rather than refused.
+ */
+const WATERMARK_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const WATERMARK_SIZE = 0.45;    // logo width as a share of the photo's shorter side
+const WATERMARK_OPACITY = 0.35; // faded: visible, but the pet stays the subject
+const WATERMARK_ASSET = '/images/watermark.png';
+
+let watermarkLogo = null; // the logo's bytes, kept while this Worker instance lives
+async function watermarkLogoBytes(env) {
+  if (watermarkLogo) return watermarkLogo;
+  let r = await env.ASSETS?.fetch(new Request(`https://puppyplace.ng${WATERMARK_ASSET}`)).catch(() => null);
+  if (!r?.ok || !/^image\//.test(r.headers.get('Content-Type') || '')) {
+    r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/public/${IMG_BUCKET}/${SITE_ICON}`, { cf: { cacheEverything: true, cacheTtl: 86400 } });
+  }
+  if (!r.ok) throw new Error(`logo not found (${r.status})`);
+  watermarkLogo = new Uint8Array(await r.arrayBuffer());
+  return watermarkLogo;
+}
+
+const bytesStream = (bytes) => new Blob([bytes]).stream();
+
+// Photo bytes → the same photo, same type, with the faded logo in the middle.
+// Never throws: on any problem the photo comes back as it was.
+async function watermarkPhoto(env, bytes, type) {
+  if (!env.IMAGES || !WATERMARK_TYPES.has(type)) return bytes;
+  try {
+    const logo = await watermarkLogoBytes(env);
+    const info = await env.IMAGES.info(bytesStream(bytes));
+    const side = Math.min(info.width || 1000, info.height || 1000);
+    const width = Math.max(80, Math.round(side * WATERMARK_SIZE));
+    const out = await env.IMAGES.input(bytesStream(bytes))
+      .draw(env.IMAGES.input(bytesStream(logo)).transform({ width }), { opacity: WATERMARK_OPACITY })
+      .output({ format: type, quality: 88 });
+    const marked = new Uint8Array(await out.response().arrayBuffer());
+    return marked.byteLength ? marked : bytes;
+  } catch (err) {
+    console.error('watermark failed:', err?.message ?? err);
+    return bytes;
+  }
+}
 
 // Every photo file in hero-images: [{ name, size }], folders followed.
 async function listStoredPhotos(env) {

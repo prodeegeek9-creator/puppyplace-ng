@@ -3256,6 +3256,7 @@ async function uploadHeroImage(input, settingKey, imgId, prevId, urlInputId) {
   const fd = new FormData();
   fd.append('file', compressed);
   fd.append('bucket', 'hero-images');
+  fd.append('watermark', '0'); // site graphic, not a photo for sale
   let publicUrl;
   try {
     const res  = await heroUpload(fd);
@@ -3362,6 +3363,7 @@ async function hpHandleUpload(input, key) {
   const fd = new FormData();
   fd.append('file', compressed);
   fd.append('bucket', 'hero-images');
+  fd.append('watermark', '0'); // site graphic, not a photo for sale
   let url;
   try {
     const res  = await heroUpload(fd);
