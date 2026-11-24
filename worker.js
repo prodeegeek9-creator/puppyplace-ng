@@ -43,6 +43,7 @@ export default {
     if (url.pathname.startsWith('/img/') && (request.method === 'GET' || request.method === 'HEAD')) return handleImage(request, url, env, ctx);
     if (url.pathname === '/api/admin/data' && request.method === 'POST') return handleAdminData(request, env);
     if (url.pathname === '/api/admin/shrink-photos' && request.method === 'POST') return handleAdminShrink(request, env);
+    if (url.pathname === '/api/admin/watermark-photos' && request.method === 'POST') return handleAdminWatermark(request, env, ctx);
     if (url.pathname === '/api/admin/pets' && request.method === 'POST') return handleAdminPets(request, env);
 
     // Seller accounts: log in with a WhatsApp code or the link the assistant sends,
@@ -567,12 +568,12 @@ async function handleHeroUpload(request, url, env, ctx) {
   }
 
   const ext  = PHOTO_TYPES[file.type];
-  const path = `upload-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const key  = env.SUPABASE_SERVICE_KEY;
   // Site graphics (hero banners, homepage backgrounds) are sent with
   // watermark=0; every other photo is stamped with the logo.
   const raw  = new Uint8Array(await file.arrayBuffer());
-  const body = formData.get('watermark') === '0' ? raw : await watermarkPhoto(env, raw, file.type);
+  const { bytes: body, marked } = formData.get('watermark') === '0' ? { bytes: raw, marked: false } : await watermarkPhoto(env, raw, file.type);
+  const path = markedName(`upload-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`, marked, ext);
 
   const uploadRes = await fetch(
     `${env.SUPABASE_URL}/storage/v1/object/${bucket}/${path}`,
@@ -639,9 +640,10 @@ async function storeSellerPhoto(src, path, env) {
   if (!PHOTO_TYPES[type]) throw new Error('not a JPEG, PNG, WebP, GIF or AVIF image');
   if (bytes.byteLength > MAX_PHOTO_BYTES) throw new Error('larger than 8 MB');
 
-  bytes = await watermarkPhoto(env, bytes, type);
+  const wm = await watermarkPhoto(env, bytes, type);
+  bytes = wm.bytes;
   const key = env.SUPABASE_SERVICE_KEY;
-  const file = `${path}.${PHOTO_TYPES[type]}`;
+  const file = markedName(path, wm.marked, PHOTO_TYPES[type]);
   // Our storage refusing the photo (a project over its plan, a key, an outage)
   // is not something the seller can fix: it is marked `ours` so the caller
   // answers 502, and Vendwyze keeps the seller's answers and tells the owner,
@@ -1270,12 +1272,13 @@ async function handleMePhoto(request, url, env, ctx) {
   const ext = PHOTO_TYPES[file.type];
   if (!ext) return userJson({ error: 'Send a JPEG, PNG or WebP photo.' }, 400);
   if (file.size > MAX_PHOTO_BYTES) return userJson({ error: 'That photo is larger than 8 MB.' }, 400);
-  const path = `seller-pets/edits/${id}/${crypto.randomUUID()}.${ext}`;
+  const wm = await watermarkPhoto(env, new Uint8Array(await file.arrayBuffer()), file.type);
+  const path = markedName(`seller-pets/edits/${id}/${crypto.randomUUID()}`, wm.marked, ext);
   const key = env.SUPABASE_SERVICE_KEY;
   const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/hero-images/${path}`, {
     method: 'POST',
     headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': file.type },
-    body: await watermarkPhoto(env, new Uint8Array(await file.arrayBuffer()), file.type),
+    body: wm.bytes,
   });
   if (!up.ok) return userJson({ error: 'Could not upload that photo. Try again.' }, 500);
   shrinkLater(ctx, env, [path]);
@@ -1967,10 +1970,16 @@ async function watermarkLogoBytes(env) {
 
 const bytesStream = (bytes) => new Blob([bytes]).stream();
 
-// Photo bytes → the same photo, same type, with the faded logo in the middle.
-// Never throws: on any problem the photo comes back as it was.
+// Photo bytes → { bytes, marked }: the same photo, same type, with the faded
+// logo in the middle. Never throws: on any problem the photo comes back as it
+// was, with marked false. Marked files are saved with WATERMARK_SUFFIX in their
+// name, which is how the backfill below knows a photo is already done.
+const WATERMARK_SUFFIX = '-wm';
+const isWatermarked = (file) => /-wm\.[a-z]+$/i.test(file);
+const markedName = (base, marked, ext) => `${base}${marked ? WATERMARK_SUFFIX : ''}.${ext}`;
+
 async function watermarkPhoto(env, bytes, type) {
-  if (!env.IMAGES || !WATERMARK_TYPES.has(type)) return bytes;
+  if (!env.IMAGES || !WATERMARK_TYPES.has(type)) return { bytes, marked: false };
   try {
     const logo = await watermarkLogoBytes(env);
     const info = await env.IMAGES.info(bytesStream(bytes));
@@ -1980,11 +1989,113 @@ async function watermarkPhoto(env, bytes, type) {
       .draw(env.IMAGES.input(bytesStream(logo)).transform({ width }), { opacity: WATERMARK_OPACITY })
       .output({ format: type, quality: 88 });
     const marked = new Uint8Array(await out.response().arrayBuffer());
-    return marked.byteLength ? marked : bytes;
+    return marked.byteLength ? { bytes: marked, marked: true } : { bytes, marked: false };
   } catch (err) {
     console.error('watermark failed:', err?.message ?? err);
-    return bytes;
+    return { bytes, marked: false };
   }
+}
+
+/* Older listing photos, from before the watermark: Admin → Settings →
+ * "Watermark old listing photos" stamps every pet's photos that are not marked
+ * yet. Each is saved under a new "-wm" name and the pet (and any pending edit
+ * request) is pointed at it, so visitors see the marked copy at once instead of
+ * a cached unmarked one. The unmarked seller-pets/ originals are then deleted;
+ * admin uploads (upload-…) are left, since one might also be used elsewhere.
+ */
+// A photo link (ours on Supabase, including the odd ".co//storage" one, or our
+// /img/ copy) → its path in hero-images; null for anything else.
+function storedPhotoPath(env, u) {
+  const m = /^https:\/\/(?:[a-z0-9]+\.supabase\.co\/+storage\/v1\/object\/public\/hero-images|puppyplace\.ng\/img)\/([^?#]+)/i.exec(String(u || ''));
+  if (!m) return null;
+  try { return decodeURIComponent(m[1]); } catch { return null; }
+}
+const needsWatermark = (env, u) => {
+  const p = storedPhotoPath(env, u);
+  return !!p && !isWatermarked(p) && IMG_RESIZABLE.test(p) && p !== SITE_ICON;
+};
+const petPhotos = (p) => [...new Set([p.image_url, ...(Array.isArray(p.image_urls) ? p.image_urls : [])].filter((u) => typeof u === 'string'))];
+
+// One stored photo → its marked copy's public link (or throws).
+async function watermarkStoredPhoto(env, file) {
+  const key = env.SUPABASE_SERVICE_KEY;
+  const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/public/${IMG_BUCKET}/${file}?wm=${Date.now()}`);
+  if (!r.ok) throw new Error(`not found (${r.status})`);
+  const type = (r.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+  const wm = await watermarkPhoto(env, new Uint8Array(await r.arrayBuffer()), type);
+  if (!wm.marked) throw new Error('could not stamp it');
+  const ext = PHOTO_TYPES[type] || file.split('.').pop();
+  const next = markedName(file.replace(/\.[a-z0-9]+$/i, ''), true, ext);
+  const put = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${IMG_BUCKET}/${next}`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': type, 'x-upsert': 'true' },
+    body: wm.bytes,
+  });
+  if (!put.ok) throw new Error(`save failed (${put.status})`);
+  return { next, url: `${env.SUPABASE_URL}/storage/v1/object/public/${IMG_BUCKET}/${next}` };
+}
+
+async function watermarkPet(env, ctx, id) {
+  const r = await sbJson(env, `pets?id=eq.${encodeURIComponent(id)}&select=id,image_url,image_urls&limit=1`);
+  const pet = r.ok && r.body?.[0];
+  if (!pet) return { id, marked: 0, failed: 0, error: 'pet not found' };
+  const swap = new Map(), failures = [], saved = [];
+  for (const u of petPhotos(pet).filter((u) => needsWatermark(env, u))) {
+    try { const m = await watermarkStoredPhoto(env, storedPhotoPath(env, u)); swap.set(u, m.url); saved.push(m.next); }
+    catch (err) { failures.push(err?.message || 'failed'); }
+  }
+  if (!swap.size) return { id, marked: 0, failed: failures.length, error: failures[0] };
+  const to = (u) => swap.get(u) || u;
+  const patch = {};
+  if (pet.image_url) patch.image_url = to(pet.image_url);
+  if (Array.isArray(pet.image_urls)) patch.image_urls = pet.image_urls.map(to);
+  const up = await sbJson(env, `pets?id=eq.${encodeURIComponent(pet.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+  if (!up.ok) return { id, marked: 0, failed: swap.size, error: `could not update the listing (${up.status})` };
+  // A seller's pending change request may list the old links too.
+  const edits = await sbJson(env, `pet_edits?pet_id=eq.${encodeURIComponent(pet.id)}&status=eq.pending&select=id,changes`);
+  for (const e of (edits.ok && Array.isArray(edits.body) ? edits.body : [])) {
+    if (!Array.isArray(e.changes?.image_urls) || !e.changes.image_urls.some((u) => swap.has(u))) continue;
+    await sbJson(env, `pet_edits?id=eq.${e.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ changes: { ...e.changes, image_urls: e.changes.image_urls.map(to) } }) });
+  }
+  const old = [...swap.keys()].map((u) => storedPhotoPath(env, u)).filter((p) => p.startsWith('seller-pets/'));
+  if (old.length) {
+    const key = env.SUPABASE_SERVICE_KEY;
+    await fetch(`${env.SUPABASE_URL}/storage/v1/object/${IMG_BUCKET}`, {
+      method: 'DELETE',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefixes: old }),
+    }).catch(() => {});
+  }
+  shrinkLater(ctx, env, saved);
+  return { id, marked: swap.size, failed: failures.length, ...(failures.length ? { error: failures[0] } : {}) };
+}
+
+// POST /api/admin/watermark-photos { token, action: 'list' } → { pets: [ids], photos }
+//                                  { token, action: 'mark', ids: [...up to 3] } → results
+async function handleAdminWatermark(request, env, ctx) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
+  let b;
+  try { b = await request.json(); } catch { return jsonResp({ error: 'Invalid request' }, 400); }
+  if (!(await verifyToken(b?.token, env))) return jsonResp({ error: 'Unauthorized' }, 401);
+  if (!env.IMAGES) return jsonResp({ error: 'Cloudflare Images is not connected to the Worker yet (wrangler.jsonc → "images").' }, 503);
+  if (b.action === 'list') {
+    const pets = [];
+    let photos = 0;
+    for (let offset = 0; ; offset += 1000) {
+      const r = await sbJson(env, `pets?select=id,image_url,image_urls&order=id.asc&limit=1000&offset=${offset}`);
+      if (!r.ok) return jsonResp({ error: `could not list pets (${r.status})` }, 502);
+      for (const p of r.body) {
+        const n = petPhotos(p).filter((u) => needsWatermark(env, u)).length;
+        if (n) { pets.push(p.id); photos += n; }
+      }
+      if (r.body.length < 1000) break;
+    }
+    return jsonResp({ ok: true, pets, photos }, 200);
+  }
+  if (b.action !== 'mark') return jsonResp({ error: 'Unknown action' }, 400);
+  const ids = (Array.isArray(b.ids) ? b.ids : []).filter((x) => typeof x === 'string' || typeof x === 'number').slice(0, 3);
+  const results = await Promise.all(ids.map((id) => watermarkPet(env, ctx, id).catch((err) => ({ id, marked: 0, failed: 1, error: err?.message || 'failed' }))));
+  return jsonResp({ ok: true, results }, 200);
 }
 
 // Every photo file in hero-images: [{ name, size }], folders followed.

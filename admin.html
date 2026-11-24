@@ -755,6 +755,15 @@ input,select,textarea{font-family:'Nunito',sans-serif}
                 <button class="settings-save" id="shrinkRunBtn" onclick="shrinkRun()" style="display:none">🗜️ Shrink them</button>
               </div>
             </div>
+            <div class="settings-card">
+              <h3>🐾 Watermark old listing photos</h3>
+              <p>New photos get the faded PuppyPlace logo automatically. This stamps it on listing photos uploaded before that. Each photo gets a new link and the listing is updated to use it. Photos already marked are skipped, so it is safe to run again.</p>
+              <div id="wmStatus" style="background:#f1f3f5;border-radius:10px;padding:14px;font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">Press “Check” to see how many listing photos have no watermark yet.</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="settings-save" id="wmCheckBtn" onclick="wmCheck()">🔍 Check</button>
+                <button class="settings-save" id="wmRunBtn" onclick="wmRun()" style="display:none">🐾 Watermark them</button>
+              </div>
+            </div>
           </div>
           <div class="danger-zone">
             <h3>⚠️ Danger Zone</h3>
@@ -2362,6 +2371,38 @@ async function shrinkRun(){
   const reasons=Object.entries(why).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${escHtml(k)}: ${fmtN(n)}`).join(' · ');
   st.innerHTML=`✅ Done. <strong>${fmtN(shrunk)}</strong> photos made smaller, <strong>${fmtMB(saved)}</strong> saved.`+(skipped?` ${fmtN(skipped)} ${skipped===1?'was':'were'} left as ${skipped===1?'it was':'they were'} (${reasons}). You can run it again later.`:'');
   run.disabled=chk.disabled=false; run.style.display='none'; _shrinkList=[];
+}
+
+// ── Watermark old listing photos: three pets at a time ──
+let _wmPets=[];
+async function wmCheck(){
+  const st=document.getElementById('wmStatus'), run=document.getElementById('wmRunBtn');
+  st.textContent='Looking through the listings…'; run.style.display='none';
+  try{
+    const d=await adminApi('/api/admin/watermark-photos',{action:'list'});
+    _wmPets=d.pets||[];
+    st.innerHTML=_wmPets.length?`<strong>${fmtN(d.photos)}</strong> photos on <strong>${fmtN(_wmPets.length)}</strong> listings have no watermark yet.`:'Every listing photo is watermarked. ✅';
+    run.style.display=_wmPets.length?'':'none';
+  }catch(err){ st.textContent='❌ '+err.message; }
+}
+async function wmRun(){
+  if(!_wmPets.length) return;
+  if(!confirm(`Stamp the PuppyPlace watermark on the photos of ${_wmPets.length} listings? This can't be undone.`)) return;
+  const st=document.getElementById('wmStatus'), run=document.getElementById('wmRunBtn'), chk=document.getElementById('wmCheckBtn');
+  run.disabled=chk.disabled=true;
+  let marked=0, failed=0; const why={};
+  const total=_wmPets.length;
+  for(let i=0;i<total;i+=3){
+    const ids=_wmPets.slice(i,i+3);
+    try{
+      const d=await adminApi('/api/admin/watermark-photos',{action:'mark',ids});
+      for(const r of d.results||[]){ marked+=r.marked||0; failed+=r.failed||0; if(r.error) why[r.error]=(why[r.error]||0)+1; }
+    }catch(err){ failed+=ids.length; why[err.message]=(why[err.message]||0)+1; }
+    st.innerHTML=`Working… ${fmtN(Math.min(total,i+3))} of ${fmtN(total)} listings · <strong>${fmtN(marked)}</strong> photos watermarked`+(failed?` · ${fmtN(failed)} not done`:'');
+  }
+  const reasons=Object.entries(why).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${escHtml(k)}: ${fmtN(n)}`).join(' · ');
+  st.innerHTML=`✅ Done. <strong>${fmtN(marked)}</strong> photos watermarked.`+(failed?` ${fmtN(failed)} not done (${reasons}). You can run it again.`:'');
+  run.disabled=chk.disabled=false; run.style.display='none'; _wmPets=[];
 }
 
 function deletePetById(id){ const p=_pets.find(x=>String(x.id)===String(id)); if(p) deletePet(p.id,p.breed||p.name||'this pet'); }
