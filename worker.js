@@ -4296,6 +4296,7 @@ async function serveSitemap(env) {
     { loc: 'https://puppyplace.ng/track-order.html' },
     { loc: 'https://puppyplace.ng/sell.html' },
     { loc: 'https://puppyplace.ng/sell-my-dog.html' },
+    { loc: 'https://puppyplace.ng/dog-pregnancy-calculator.html' },
     { loc: 'https://puppyplace.ng/careers.html' },
   ];
 
