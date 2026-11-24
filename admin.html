@@ -2373,7 +2373,7 @@ async function shrinkRun(){
   run.disabled=chk.disabled=false; run.style.display='none'; _shrinkList=[];
 }
 
-// ── Watermark old listing photos: three pets at a time ──
+// ── Watermark old listing photos: one listing per request (Workers subrequest limit) ──
 let _wmPets=[];
 async function wmCheck(){
   const st=document.getElementById('wmStatus'), run=document.getElementById('wmRunBtn');
@@ -2392,13 +2392,13 @@ async function wmRun(){
   run.disabled=chk.disabled=true;
   let marked=0, failed=0; const why={};
   const total=_wmPets.length;
-  for(let i=0;i<total;i+=3){
-    const ids=_wmPets.slice(i,i+3);
+  for(let i=0;i<total;i++){
+    const ids=_wmPets.slice(i,i+1);
     try{
       const d=await adminApi('/api/admin/watermark-photos',{action:'mark',ids});
       for(const r of d.results||[]){ marked+=r.marked||0; failed+=r.failed||0; if(r.error) why[r.error]=(why[r.error]||0)+1; }
     }catch(err){ failed+=ids.length; why[err.message]=(why[err.message]||0)+1; }
-    st.innerHTML=`Working… ${fmtN(Math.min(total,i+3))} of ${fmtN(total)} listings · <strong>${fmtN(marked)}</strong> photos watermarked`+(failed?` · ${fmtN(failed)} not done`:'');
+    st.innerHTML=`Working… ${fmtN(i+1)} of ${fmtN(total)} listings · <strong>${fmtN(marked)}</strong> photos watermarked`+(failed?` · ${fmtN(failed)} not done`:'');
   }
   const reasons=Object.entries(why).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${escHtml(k)}: ${fmtN(n)}`).join(' · ');
   st.innerHTML=`✅ Done. <strong>${fmtN(marked)}</strong> photos watermarked.`+(failed?` ${fmtN(failed)} not done (${reasons}). You can run it again.`:'');

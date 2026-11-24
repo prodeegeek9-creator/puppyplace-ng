@@ -2071,7 +2071,10 @@ async function watermarkPet(env, ctx, id) {
 }
 
 // POST /api/admin/watermark-photos { token, action: 'list' } → { pets: [ids], photos }
-//                                  { token, action: 'mark', ids: [...up to 3] } → results
+//                                  { token, action: 'mark', ids: [one id] } → results
+// One listing per request: up to 6 photos is ~30 subrequests (fetch, Images
+// info + draw, save, each), under the Workers free plan's 50 per request. Three
+// at a time went over it and the request was cut off mid-way.
 async function handleAdminWatermark(request, env, ctx) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return jsonResp({ error: 'Server not configured' }, 503);
   let b;
@@ -2093,7 +2096,7 @@ async function handleAdminWatermark(request, env, ctx) {
     return jsonResp({ ok: true, pets, photos }, 200);
   }
   if (b.action !== 'mark') return jsonResp({ error: 'Unknown action' }, 400);
-  const ids = (Array.isArray(b.ids) ? b.ids : []).filter((x) => typeof x === 'string' || typeof x === 'number').slice(0, 3);
+  const ids = (Array.isArray(b.ids) ? b.ids : []).filter((x) => typeof x === 'string' || typeof x === 'number').slice(0, 1);
   const results = await Promise.all(ids.map((id) => watermarkPet(env, ctx, id).catch((err) => ({ id, marked: 0, failed: 1, error: err?.message || 'failed' }))));
   return jsonResp({ ok: true, results }, 200);
 }
