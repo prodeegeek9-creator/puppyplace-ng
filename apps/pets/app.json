@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "PuppyPlace Pets",
+    "slug": "puppyplace-pets",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "puppyplace-pets",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "ng.puppyplace.pets",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "ng.puppyplace.pets",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#ED6436",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PuppyPlace Pets uses your photos so you can add pictures of the pet you are listing.",
+          "cameraPermission": "PuppyPlace Pets uses the camera so you can take pictures of the pet you are listing.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ED6436",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

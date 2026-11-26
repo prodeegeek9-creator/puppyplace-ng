@@ -32,7 +32,10 @@ A seller's account is their WhatsApp number. Nobody fills in a sign-up form.
 | `POST /api/me/edit` `{ pet_id, kind: 'edit' \| 'remove', changes, note }` | Sends a change or take-down for review |
 | `POST /api/me/photo` (multipart `file`) | Uploads a photo for a change request |
 | `POST /api/me/sold` `{ pet_id, sold }` | Marks the seller's own live listing sold, or available again (`sold: false`) |
+| `POST /api/me/listing` | A new listing from the PuppyPlace Pets app (fields as `/api/seller-listings`), pending until approved, at most 5 a day |
 | `POST /api/admin/edits` `{ token, action: 'list' \| 'approve' \| 'reject', id, note }` | Admin review |
+
+The PuppyPlace Pets app (`apps/pets`) signs in the same way, sends `"app": true` to `/api/auth/verify` to get the session token back, and sends it as `Authorization: Bearer u1.…`; every route above accepts that header as well as the cookie.
 
 ## Numbers on My listings
 

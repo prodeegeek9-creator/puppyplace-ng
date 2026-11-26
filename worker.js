@@ -56,6 +56,7 @@ export default {
     if (url.pathname === '/api/me/edit' && request.method === 'POST') return handleMeEdit(request, url, env, ctx);
     if (url.pathname === '/api/me/photo' && request.method === 'POST') return handleMePhoto(request, url, env, ctx);
     if (url.pathname === '/api/me/sold' && request.method === 'POST') return handleMeSold(request, url, env, ctx);
+    if (url.pathname === '/api/me/listing' && request.method === 'POST') return handleMeListing(request, url, env, ctx);
     if (url.pathname === '/api/admin/edits' && request.method === 'POST') return handleAdminEdits(request, env, ctx);
     if (url.pathname === '/api/contact' && request.method === 'GET') return handleContact(request, url, env, ctx);
     if (url.pathname === '/api/dm/send' && request.method === 'POST') return handleDmSend(request, url, env, ctx);
@@ -681,7 +682,12 @@ async function handleSellerListing(request, env, ctx) {
   let b;
   try { b = await request.json(); } catch { return jsonResp({ error: 'Body must be JSON' }, 400); }
   if (!b || typeof b !== 'object') return jsonResp({ error: 'Body must be a JSON object' }, 400);
+  return saveListing(b, env, ctx);
+}
 
+// Saves a listing hidden (pending approval in Admin → Pets). Shared by the
+// WhatsApp assistant (above) and signed-in sellers in the app (/api/me/listing).
+async function saveListing(b, env, ctx) {
   const breed = cleanText(b.breed, 80);
   const whatsapp = normalizeWhatsapp(b.whatsapp);
   const photos = Array.isArray(b.photos) ? b.photos.filter(Boolean) : [];
@@ -870,11 +876,22 @@ async function makeSession(env, accountId) {
   return `u1.${accountId}.${expiry}.${sig}`;
 }
 
-async function readSession(request, env) {
-  if (!env.ADMIN_TOKEN_SECRET) return null;
+// The browser keeps the session in the pp_s cookie; the PuppyPlace Pets app
+// (apps/pets) keeps the same token and sends it as "Authorization: Bearer u1.…".
+// A browser never adds that header by itself, so it needs no same-site check.
+function sessionToken(request) {
+  const h = /^Bearer\s+(u1\.[^\s]+)$/i.exec(request.headers.get('Authorization') || '');
+  if (h) return h[1];
   const m = /(?:^|;\s*)pp_s=([^;]+)/.exec(request.headers.get('Cookie') || '');
   if (!m) return null;
-  const parts = decodeURIComponent(m[1]).split('.');
+  try { return decodeURIComponent(m[1]); } catch { return null; }
+}
+
+async function readSession(request, env) {
+  if (!env.ADMIN_TOKEN_SECRET) return null;
+  const token = sessionToken(request);
+  if (!token) return null;
+  const parts = token.split('.');
   if (parts.length !== 4 || parts[0] !== 'u1') return null;
   const [, id, expiry, sig] = parts;
   if (!/^[0-9a-f-]{36}$/.test(id) || !(Number(expiry) > Date.now())) return null;
@@ -1091,7 +1108,9 @@ async function handleAuthVerify(request, url, env) {
 
   let account;
   try { account = await upsertAccount(env, phone, { name }); } catch { return userJson({ error: 'Could not log you in. Try again.' }, 500); }
-  return userJson({ ok: true, account: { name: account.name, phone: account.phone } }, 200, sessionCookie(await makeSession(env, account.id)));
+  const session = await makeSession(env, account.id);
+  // The app asks with { app: true } and keeps the token itself (no cookies there).
+  return userJson({ ok: true, account: { name: account.name, phone: account.phone }, ...(b?.app === true ? { token: session } : {}) }, 200, sessionCookie(session));
 }
 
 // GET /login-link?t=…  A page with a button: WhatsApp and others open links to
@@ -1261,6 +1280,37 @@ async function handleMeSold(request, url, env, ctx) {
 }
 
 // POST /api/me/photo (multipart: file) → { url }, for a photo in a change request
+// POST /api/me/listing { breed, type, listing_type, price, age, location,
+// description, name, vaccinated, dewormed, pedigree, photos, whatsapp? }
+// A signed-in seller lists a pet from the PuppyPlace Pets app. The same rules as
+// the WhatsApp assistant: saved hidden until approved in Admin → Pets. The
+// account's own number (confirmed by its WhatsApp code) owns the listing, and is
+// the number buyers get unless another is given.
+const APP_LISTINGS_PER_DAY = 5;
+async function handleMeListing(request, url, env, ctx) {
+  if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  const account = await sessionAccount(request, env);
+  if (!account) return userJson({ error: 'Sign in to list a pet', login: true }, 401);
+  let b;
+  try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
+  if (!b || typeof b !== 'object') return userJson({ error: 'Invalid request' }, 400);
+  const since = new Date(Date.now() - 864e5).toISOString();
+  const recent = await sbJson(env, `pet_owners?phone=eq.${account.phone}&created_at=gte.${since}&select=pet_id`);
+  if (recent.ok && recent.body.length >= APP_LISTINGS_PER_DAY) return userJson({ error: 'You have listed a lot of pets today. Try again tomorrow.' }, 429);
+  const res = await saveListing({
+    ...b,
+    whatsapp: b.whatsapp || account.phone,
+    seller_name: b.seller_name || account.name,
+    owner_phone: account.phone,
+  }, env, ctx);
+  // No log-in link for someone already signed in.
+  const out = await res.json();
+  delete out.manage_url;
+  delete out.breed_guide;
+  return userJson(out, res.status);
+}
+
 async function handleMePhoto(request, url, env, ctx) {
   if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
   if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
@@ -1571,7 +1621,7 @@ async function handleDmThreads(request, env) {
 // GET /api/dm/unread → { count } of conversations with something new for me (the
 // message icon's badge). Free for visitors who aren't signed in: no cookie, no lookup.
 async function handleDmUnread(request, env) {
-  if (!accountsReady(env) || !/(?:^|;\s*)pp_s=/.test(request.headers.get('Cookie') || '')) return userJson({ count: 0 });
+  if (!accountsReady(env) || !sessionToken(request)) return userJson({ count: 0 });
   const me = await sessionAccount(request, env);
   if (!me) return userJson({ count: 0, signedIn: false });
   const myPets = (await listingsFor(env, me.phone, 'id')).map((p) => encodeURIComponent(p.id));
