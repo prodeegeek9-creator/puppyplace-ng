@@ -10,7 +10,7 @@ database: listings, accounts, messages and photos are the same as on the site.
 
 | Tab / screen | What it does | Site API |
 |---|---|---|
-| **Pets** | Every live pet, search (breed, city), filters (dogs, cats, birds, rabbits, fish, other; sale / adoption), pull to refresh | `GET /api/pets` |
+| **Pets** (home) | A native copy of puppyplace.ng/pets.html as it looks on a phone: dark nav (search, saved, messages, account, Contact Us), hero with search and trust row, type pills, Filters panel (type, age, gender, location, vaccinated, price), sort, grid/list cards with hearts (saved on the phone), the buying and selling text, browse links, questions and footer. Same fonts (Plus Jakarta Sans, Nunito), colours, icons and filter rules as `templates/pets.html` and `pet-cards.js`; keep them in step when the page changes | `GET /api/pets`, `GET /api/pets-page` (new) |
 | **Pet page** | Photos, price, details, description, share. **WhatsApp** opens a chat with the seller; **Message** writes to them in the app. On your own listing: mark as sold / available | `GET /api/contact`, `POST /api/me/sold` |
 | **List a pet** | Photos (gallery or camera, up to 6), type, breed, sale or adoption, price, age, location, description, health. Saved **pending** until approved in Admin → Pets, as with the WhatsApp assistant | `POST /api/me/listing` (new) |
 | **Messages** | Conversations as buyer or seller, unread badge, reply, report. Updates every 20 seconds while open | `/api/dm/*` |
@@ -30,6 +30,7 @@ Deploy the site before releasing the app.
 - `POST /api/auth/verify` with `"app": true` also returns the session `token`.
 - Every signed-in route accepts that token in an `Authorization: Bearer u1.…`
   header as well as the `pp_s` cookie.
+- `GET /api/pets-page`: the words and links of `/pets.html` below the listings (and the hero title), as data, so the app's home matches the page.
 - `POST /api/me/listing`: a signed-in seller lists a pet (same fields as
   `/api/seller-listings`; photos as `data:` URIs). Pending until approved, owned
   by the account's number, at most 5 a day per account. The admin alert

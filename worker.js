@@ -38,6 +38,7 @@ export default {
       return handleHeroUpload(request, url, env, ctx);
     }
     if (url.pathname === '/api/pets' && request.method === 'GET') return handlePublicPets(env);
+    if (url.pathname === '/api/pets-page' && request.method === 'GET') return servePetsPage({ kind: ALL_PETS_KIND, city: null, adoption: false }, env, true);
     if (url.pathname === '/feeds/meta-shop.csv' && (request.method === 'GET' || request.method === 'HEAD')) return handleMetaShopFeed(env);
     if (url.pathname === '/pp-pixel.js' && request.method === 'GET') return handlePixelScript(env);
     if (url.pathname.startsWith('/img/') && (request.method === 'GET' || request.method === 'HEAD')) return handleImage(request, url, env, ctx);
@@ -2931,7 +2932,7 @@ function guideParas(summary) {
   }).join('');
 }
 
-async function servePetsPage(page, env) {
+async function servePetsPage(page, env, asData = false) {
   const { kind, city, adoption, breed = null } = page;
   let pets, failed = false;
   try {
@@ -3196,6 +3197,10 @@ async function servePetsPage(page, env) {
   const ogImage = ogPet ? ogImageFor(ogPet.image_url || ogPet.image_urls[0], env) : 'https://puppyplace.ng/images/pets-hero-puppy.jpg';
   const ogAlt = ogPet ? `${ogPet.breed || ogPet.type} ${ogPet.listing_type === 'adoption' ? 'for adoption' : 'for sale'}${ogPet.location ? ` in ${ogPet.location}` : ''}` : `${topTitle} on PuppyPlace.ng`;
 
+  // GET /api/pets-page: the same words and links, as data, for the PuppyPlace
+  // Pets app (apps/pets), which draws this page natively.
+  if (asData) return petsPageJson({ h1, sub, buyIntro, one, aOne, sellHref, adoptCount, adoption, kindLinks, cityLinks, breedLinks, breedLinksTitle, topTitle, many, inPlace, faqs, failed });
+
   const fill = {
     TITLE: esc(title),
     DESCRIPTION: esc(description),
@@ -3215,6 +3220,41 @@ async function servePetsPage(page, env) {
   };
   const out = PETS_TEMPLATE.replace(/\{\{([A-Z0-9_]+)\}\}/g, (m, k) => (k in fill ? fill[k] : m));
   return html(out, failed ? 503 : 200);
+}
+
+const unesc = (v) => String(v ?? '').replace(/<[^>]*>/g, '').replace(/&(amp|lt|gt|quot|#39);/g, (m, e) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" })[e]);
+// The page's links (<a href="…">label <span>n</span></a>) as { href, label, n }
+const linkData = (list) => list.map((a) => {
+  const m = /^<a href="([^"]*)">(.*?)(?: <span>(\d+)<\/span>)?<\/a>$/.exec(a);
+  return m ? { href: m[1], label: unesc(m[2]), n: m[3] ? Number(m[3]) : null } : null;
+}).filter(Boolean);
+
+function petsPageJson(d) {
+  // h1 is "Line one<br/>in <span>Place</span>": lines, and the orange part
+  const lines = String(d.h1).split('<br/>').map((l) => {
+    const m = /^(.*?)<span>(.*?)<\/span>(.*)$/.exec(l);
+    return m ? { text: unesc(m[1]), accent: unesc(m[2]), after: unesc(m[3]) } : { text: unesc(l), accent: '', after: '' };
+  });
+  const browse = [
+    linkData(d.kindLinks).length ? { title: 'Browse by pet', links: linkData(d.kindLinks) } : null,
+    linkData(d.cityLinks).length ? { title: `${d.topTitle} by city`, links: linkData(d.cityLinks) } : null,
+    linkData(d.breedLinks).length ? { title: d.breedLinksTitle, links: linkData(d.breedLinks) } : null,
+  ].filter(Boolean);
+  const body = {
+    h1: lines,
+    sub: unesc(d.sub),
+    buy_title: d.adoption ? 'Adopt a pet in Nigeria' : `Buy ${d.aOne} ${d.inPlace}`,
+    buy_intro: unesc(d.buyIntro),
+    checked: 'Every listing is checked by PuppyPlace before it goes live. Open a listing to see its photos, age and health details, then chat with the seller directly on WhatsApp. Always see the pet and its health records first, and never pay any money, not even a deposit, before you have seen it.',
+    sell_title: `Sell your ${d.one} on PuppyPlace`,
+    sell_text: 'Listing is free. Send the breed, age, price, location and a few clear photos on WhatsApp, and we publish your listing after a quick check. Buyers across Nigeria contact you directly, with no middleman.',
+    sell_cta: { label: `List your ${d.one} free`, href: d.sellHref },
+    adoption_cta: d.adoptCount && !d.adoption ? { label: 'Pets for adoption', href: '/pets-for-adoption.html' } : null,
+    browse: browse.length ? browse : [{ title: 'Browse pets', links: [{ href: '/pets.html', label: '🐾 All pets in Nigeria', n: null }, { href: '/dogs-for-sale.html', label: '🐕 Dogs & Puppies', n: null }, { href: '/cats-for-sale.html', label: '🐱 Cats & Kittens', n: null }] }],
+    faq_title: `Questions about ${d.adoption ? 'adopting' : 'buying and selling'} ${d.many} ${d.inPlace}`,
+    faqs: d.faqs.map(([q, a]) => ({ q, a })),
+  };
+  return new Response(JSON.stringify(body), { status: d.failed ? 503 : 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': d.failed ? 'no-store' : 'public, max-age=60' } });
 }
 
 // Listing pages worth a place in the sitemap: each type page with listings,

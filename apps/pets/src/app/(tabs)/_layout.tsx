@@ -34,7 +34,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Pets',
-          headerTitle: 'PuppyPlace Pets',
+          headerShown: false,
           tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? 'paw' : 'paw-outline'} color={color as string} size={size} />,
         }}
       />
