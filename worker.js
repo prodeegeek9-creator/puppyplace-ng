@@ -2969,7 +2969,7 @@ async function servePetsPage(page, env) {
   } else if (isMain) {
     title = 'Pets for Sale in Nigeria – Buy & Sell Dogs, Cats & More | PuppyPlace.ng';
     h1 = 'Find Your Perfect Pet<br/>in <span>Nigeria</span>';
-    sub = 'Buy, sell or adopt healthy dogs, cats, birds, rabbits and more from trusted breeders across Nigeria.';
+    sub = 'Buy, sell or adopt dogs, cats, birds, rabbits and more from breeders and owners across Nigeria.';
   } else {
     const lead = `${kind.title} for Sale in ${place}`;
     title = city
@@ -2979,10 +2979,10 @@ async function servePetsPage(page, env) {
         : `${lead} – Buy or Sell ${kind.one === 'fish' ? 'Fish' : `a ${kind.one[0].toUpperCase()}${kind.one.slice(1)}`} | PuppyPlace.ng`;
     h1 = `${esc(kind.title)} for Sale<br/>in <span>${esc(place)}</span>`;
     sub = kind.type === 'other'
-      ? `Buy guinea pigs, reptiles and other pets from trusted owners ${inPlace}. Chat with sellers directly on WhatsApp.`
+      ? `Buy guinea pigs, reptiles and other pets from owners ${inPlace}. Chat with sellers directly on WhatsApp.`
       : kind.type
-        ? `Buy healthy ${kind.many}${kind.young ? ` and ${kind.young}` : ''} from trusted breeders and owners ${inPlace}. Chat with sellers directly on WhatsApp.`
-        : `Buy, sell or adopt healthy dogs, cats, birds, rabbits and more from trusted sellers ${inPlace}.`;
+        ? `Buy ${kind.many}${kind.young ? ` and ${kind.young}` : ''} from breeders and owners ${inPlace}. Chat with sellers directly on WhatsApp.`
+        : `Buy, sell or adopt dogs, cats, birds, rabbits and more from sellers ${inPlace}.`;
   }
   const countWords = count === 1 ? `1 ${breed ? breed.one : kind.type === 'other' ? 'pet' : kind.one}` : `${count} ${many}`;
   const adoptN = available.filter(p => p.listing_type === 'adoption').length;
@@ -3113,7 +3113,7 @@ async function servePetsPage(page, env) {
       <p>${buyIntro}</p>
       ${info && city ? `<h2>About the ${esc(breed.name)}</h2><p>${esc(info.about)}</p><p><a href="${guidePath}#breed-guide">Read the full ${esc(breed.name)} breed guide</a>: size, temperament, care, health and keeping ${esc(aOrAn(breed.one))} in Nigeria.</p>` : ''}
       ${guide ? `<h2>About the ${esc(breed.name)}</h2>${guideParas(guide)}<p><em>A general guide to the breed, not a promise about any one ${esc(breed.animal)}.</em></p>` : ''}
-      <p>Every listing is checked by PuppyPlace before it goes live. Open a listing to see its photos, age and health details, then chat with the seller directly on WhatsApp. Always see the pet and its health records first, and never pay any money, not even a deposit, before you have seen it.</p>
+      <p>PuppyPlace is a listing platform: we look over each listing before it goes live, but we don’t own, inspect or guarantee any pet, and every deal is between you and the seller (<a href="/terms.html#s9">Terms</a>). Open a listing to see its photos, age and health details, then chat with the seller directly on WhatsApp. Always see the pet and its health records first, and never pay any money, not even a deposit, before you have seen it.</p>
       <h2>Sell your ${esc(one)} on PuppyPlace</h2>
       <p>Listing is free. Send the breed, age, price, location and a few clear photos on WhatsApp, and we publish your listing after a quick check. Buyers across Nigeria contact you directly, with no middleman.</p>
       <div class="seo-ctas">
@@ -3501,7 +3501,8 @@ function renderPetPage(p, guide = null, env = {}) {
     : wa
     ? `<button type="button" class="btn-wa" data-pp-contact="whatsapp" ${contactData}>${I.wa}Contact on WhatsApp</button>
        <button type="button" class="btn-ask" data-pp-contact="message" ${contactData}>${I.chat}Send a message</button>
-       <p class="cta-note">Sign in once with your WhatsApp number. Messages here keep your number private.</p>`
+       <p class="cta-note">Sign in once with your WhatsApp number. Messages here keep your number private.</p>
+       <p class="cta-note pg-liab">PuppyPlace doesn’t own or sell this ${esc(youngWord)}. Any deal is between you and the seller, at your own risk. <a href="/terms.html#s9">Terms</a></p>`
     : `<a class="btn-ask" href="/contact.html">${I.chat}Ask a question</a>`;
 
   const socials = PET_FOOTER_SOCIALS.filter(s => s.url);
@@ -3633,6 +3634,8 @@ svg{flex-shrink:0}
 .btn-wa,.btn-ask{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;border-radius:50px;font:700 16px 'Nunito',sans-serif;border:0;cursor:pointer;transition:all .2s}
 .btn-wa:disabled,.btn-ask:disabled{opacity:.6;cursor:wait}
 .cta-note{margin:-12px 0 22px;font-size:12.5px;color:#868686;text-align:center;line-height:1.5}
+.cta-note.pg-liab{margin-top:-14px}.cta-note a,.liab a{color:inherit;text-decoration:underline}
+.liab{margin:16px 0 0;font-size:12.5px;color:#6b6b6b;line-height:1.6}
 .btn-wa{background:#22c35e;color:#fff;margin-bottom:12px}
 .btn-wa:hover{background:#1aa850}
 .btn-ask{border:1.5px solid var(--orange);color:var(--orange);background:#fff;margin-bottom:22px}
@@ -3794,6 +3797,7 @@ svg{flex-shrink:0}
       <div class="tip">${I.tick}<span>Don’t pay any money,<br/>not even a deposit,<br/>before seeing the pet.</span></div>
       <div class="tip">${I.tick}<span>Trust your instincts.<br/>If it feels off, walk away.</span></div>
     </div>
+    <p class="liab"><strong>PuppyPlace is a listing platform, not the seller.</strong> We don’t own, breed, inspect or sell the pets listed here, and we don’t verify sellers or guarantee a pet’s breed, age, health or papers. Any payment, sale or adoption is between you and the seller, and PuppyPlace is not responsible for it. See our <a href="/terms.html#s9">Terms, section 9</a>.</p>
   </section>
 
   <nav class="more" aria-label="More pets">${moreLinks.map(([href, label]) => `<a href="${href}">${esc(label)} ${I.right}</a>`).join('')}</nav>

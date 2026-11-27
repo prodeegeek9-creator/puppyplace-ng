@@ -9,6 +9,15 @@
  * Only a browser that has signed in asks the server anything ("pp_in", set by
  * pp-auth.js and the signed-in pages), so other visitors cost nothing.
  */
+// Every public page loads this file, so it also brings in the "follow us" popup.
+(function () {
+  if (window.ppFollow || document.querySelector('script[src^="/pp-follow.js"]')) return;
+  var s = document.createElement('script');
+  s.src = '/pp-follow.js';
+  s.defer = true;
+  document.head.appendChild(s);
+})();
+
 (function () {
   if (window.ppAccount) return;
   var mounts = [].slice.call(document.querySelectorAll('[data-pp-account]'));
