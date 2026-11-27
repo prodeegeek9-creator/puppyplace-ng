@@ -29,6 +29,7 @@ A seller's account is their WhatsApp number. Nobody fills in a sign-up form.
 | `GET` / `POST /login-link?t=` | The one-tap link: a button, then log in |
 | `POST /api/auth/logout` | Logs out |
 | `GET /api/me` | The account, its listings and its requests (`?brief=1`: the account and its listings' ids and slugs, for the header) |
+| `POST /api/me/cancel` `{ pet_id }` | Deletes the seller's own listing that is not approved yet, with its photos (a live one is marked sold instead) |
 | `POST /api/me/edit` `{ pet_id, changes, note }` | Sends a change for review (there is no take-down request: sellers mark the pet sold) |
 | `POST /api/me/photo` (multipart `file`) | Uploads a photo for a change request |
 | `POST /api/me/sold` `{ pet_id, sold }` | Marks the seller's own live listing sold, or available again (`sold: false`) |

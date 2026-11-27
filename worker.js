@@ -56,6 +56,7 @@ export default {
     if (url.pathname === '/api/me/edit' && request.method === 'POST') return handleMeEdit(request, url, env, ctx);
     if (url.pathname === '/api/me/photo' && request.method === 'POST') return handleMePhoto(request, url, env, ctx);
     if (url.pathname === '/api/me/sold' && request.method === 'POST') return handleMeSold(request, url, env, ctx);
+    if (url.pathname === '/api/me/cancel' && request.method === 'POST') return handleMeCancel(request, url, env, ctx);
     if (url.pathname === '/api/admin/edits' && request.method === 'POST') return handleAdminEdits(request, env, ctx);
     if (url.pathname === '/api/contact' && request.method === 'GET') return handleContact(request, url, env, ctx);
     if (url.pathname === '/api/dm/send' && request.method === 'POST') return handleDmSend(request, url, env, ctx);
@@ -964,8 +965,15 @@ async function deleteSoldPets(env, now = Date.now()) {
   const ids = r.body.map((p) => encodeURIComponent(p.id));
   const d = await sbJson(env, `pets?id=in.(${ids.join(',')})&sold_at=lt.${encodeURIComponent(cutoff)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
   if (!d.ok) throw new Error(`could not delete sold pets (${d.status})`);
+  const photos = await deleteSellerPhotos(env, r.body);
+  return { deleted: r.body.length, photos };
+}
+
+// Deleted pets → their seller-pets/… photos (which no other listing uses) are
+// deleted from storage too. Returns how many.
+async function deleteSellerPhotos(env, pets) {
   const prefix = `${env.SUPABASE_URL}/storage/v1/object/public/hero-images/`;
-  const photos = [...new Set(r.body.flatMap((p) => [p.image_url, ...(Array.isArray(p.image_urls) ? p.image_urls : [])]))]
+  const photos = [...new Set(pets.flatMap((p) => [p.image_url, ...(Array.isArray(p.image_urls) ? p.image_urls : [])]))]
     .filter((u) => typeof u === 'string' && u.startsWith(`${prefix}seller-pets/`))
     .map((u) => decodeURIComponent(u.slice(prefix.length).split('?')[0]));
   const key = env.SUPABASE_SERVICE_KEY;
@@ -976,7 +984,7 @@ async function deleteSoldPets(env, now = Date.now()) {
       body: JSON.stringify({ prefixes: photos.slice(i, i + 100) }),
     }).catch(() => {});
   }
-  return { deleted: r.body.length, photos: photos.length };
+  return photos.length;
 }
 
 async function upsertAccount(env, phone, { name, seller, login = true } = {}) {
@@ -1237,6 +1245,34 @@ async function handleMeEdit(request, url, env, ctx) {
   const what = kind === 'remove' ? 'take down their' : `change the ${list} of their`;
   ctx.waitUntil(sendWhatsApp(env, { to: 'owner', text: `✏️ ${account.name || '+' + account.phone} asked to ${what} *${pet.breed}* listing. Review it in your site admin → Edit requests.` }));
   return userJson({ ok: true, edit: saved.body[0] });
+}
+
+// POST /api/me/cancel { pet_id } → deletes the seller's own listing that has
+// not been approved yet (live listings are marked sold instead), with its
+// photos, straight away. The owner is told.
+async function handleMeCancel(request, url, env, ctx) {
+  if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
+  if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
+  const id = await readSession(request, env);
+  const account = id ? await accountById(env, id) : null;
+  if (!account) return userJson({ error: 'Not logged in' }, 401);
+  let b;
+  try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
+  const pet = (await listingsFor(env, account.phone, LISTING_FIELDS)).find((p) => String(p.id) === String(b?.pet_id));
+  if (!pet) return userJson({ error: 'That listing is not yours.' }, 404);
+  if (pet.active !== false) return userJson({ error: `This listing is already live. Use “Mark as ${soldWord(pet)}” instead.` }, 400);
+  const pid = encodeURIComponent(pet.id);
+  // active=eq.false: if it was approved a moment ago, it is left alone.
+  const d = await sbJson(env, `pets?id=eq.${pid}&active=eq.false`, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+  if (!d.ok) return userJson({ error: 'Could not cancel the listing. Try again.' }, 500);
+  if (!Array.isArray(d.body) || !d.body.length) return userJson({ error: `This listing has just gone live. Use “Mark as ${soldWord(pet)}” instead.` }, 409);
+  ctx.waitUntil(Promise.all([
+    deleteSellerPhotos(env, d.body),
+    sbJson(env, `pet_owners?pet_id=eq.${pid}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }),
+    sbJson(env, `pet_edits?pet_id=eq.${pid}&status=eq.pending`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'withdrawn', decided_at: new Date().toISOString() }) }),
+    sendWhatsApp(env, { to: 'owner', text: `🗑️ ${account.name || '+' + account.phone} cancelled their *${pet.breed}* listing before it was approved.` }),
+  ]).catch((err) => console.error('cancel clean-up failed:', err?.message ?? err)));
+  return userJson({ ok: true });
 }
 
 // POST /api/me/sold { pet_id, sold } → marks the seller's own pet sold, or

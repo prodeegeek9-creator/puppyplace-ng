@@ -178,6 +178,20 @@ function render() {
     ${L.length ? `<div class="list">${L.map(card).join('')}</div>` : `<div class="card empty">You have no listings on this number yet.<br/><a class="btn" style="margin-top:14px" href="/sell-my-dog.html">List a pet for free</a></div>`}`;
   app.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openEdit(b.dataset.edit)));
   app.querySelectorAll('[data-sold]').forEach((b) => (b.onclick = () => markSold(b.dataset.sold, b.dataset.to === 'sold', b)));
+  app.querySelectorAll('[data-cancel]').forEach((b) => (b.onclick = () => cancelListing(b.dataset.cancel, b)));
+}
+
+// A listing not approved yet can be cancelled outright (a live one is marked sold).
+async function cancelListing(id, btn) {
+  const p = me.listings.find((x) => String(x.id) === String(id));
+  if (!p) return;
+  if (!confirm(`Cancel your ${p.breed || 'pet'} listing?\n\nIt hasn't been approved yet, so it will be deleted with its photos and won't appear on PuppyPlace. This can't be undone.`)) return;
+  btn.disabled = true;
+  try {
+    await api('/api/me/cancel', { method: 'POST', body: JSON.stringify({ pet_id: p.id }) });
+    await load();
+    flash('🗑️ Listing cancelled.');
+  } catch (e) { btn.disabled = false; alert(e.message); await load(); }
 }
 
 // Sold (or adopted): the listing stays up, stamped and greyed, for 30 days, then it is removed.
@@ -237,6 +251,7 @@ function card(p) {
         ${p.active !== false && !p.sold_at ? `<button class="btn small" data-sold="${esc(p.id)}" data-to="sold">Mark as ${soldLabel(p)}</button>` : ''}
         ${p.sold_at ? `<button class="btn ghost small" data-sold="${esc(p.id)}" data-to="available">Mark as available again</button>` : ''}
         ${p.sold_at ? '' : `<button class="btn ${p.active !== false ? 'ghost ' : ''}small" data-edit="${esc(p.id)}">Edit</button>`}
+        ${p.active === false ? `<button class="btn ghost small" data-cancel="${esc(p.id)}">Cancel listing</button>` : ''}
       </div>
     </div>
   </div>`;
