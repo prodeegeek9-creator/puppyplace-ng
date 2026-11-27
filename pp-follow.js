@@ -16,7 +16,7 @@
 
   // Add a network by giving it a url; one with an empty url is left out.
   var SOCIALS = [
-    { name: 'Facebook', handle: 'PuppyPlace NG', url: 'https://www.facebook.com/puppyplace_ng', color: '#1877f2',
+    { name: 'Facebook', handle: 'thepuppyplace.ng', url: 'https://www.facebook.com/thepuppyplace.ng', color: '#1877f2',
       icon: '<path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v7h4v-7h3l.5-4h-3.5V9c0-.6.4-1 1-1Z" fill="currentColor"/>' },
     { name: 'Instagram', handle: '@puppyplace_ng', url: 'https://www.instagram.com/puppyplace_ng', color: '#d62976',
       icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>' },

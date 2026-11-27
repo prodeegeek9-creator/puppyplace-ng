@@ -78,7 +78,7 @@ GET /api/seller-listings/status?slugs=boerboel-20261008-1019-ab12,lhasa-20261008
 Authorization: Bearer <SELLER_API_KEY>
 
 200 { "live": ["boerboel-…"], "pending": ["lhasa-…"], "missing": [],
-      "socials": [{ "name": "Facebook", "url": "https://www.facebook.com/puppyplace_ng" }, …],
+      "socials": [{ "name": "Facebook", "url": "https://www.facebook.com/thepuppyplace.ng" }, …],
       "social_posting": true }
 ```
 
