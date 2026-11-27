@@ -2546,7 +2546,7 @@ async function handleSellerListingStatus(request, url, env) {
     pending: slugs.filter((x) => found.get(x) === false),
     missing: slugs.filter((x) => !found.has(x)),
     // The store's own pages, for Vendwyze to put in the "your pet is live" message
-    socials: PET_FOOTER_SOCIALS.filter((s) => s.url).map(({ name, url }) => ({ name, url })),
+    socials: PET_FOOTER_SOCIALS.filter((s) => s.url && !s.off).map(({ name, url }) => ({ name, url })),
     // Admin → Pets: whether newly approved pets are posted to Facebook and Instagram
     social_posting: social,
   }, 200);
@@ -3292,9 +3292,11 @@ function petErrorPage(msg) {
 }
 
 // Social profiles shown in the pet page footer
+// off: true greys an account out in footers and leaves it out of what the
+// WhatsApp assistant posts. pp-socials.js has the same list for the browser.
 const PET_FOOTER_SOCIALS = [
   { name: 'Facebook',  url: 'https://www.facebook.com/thepuppyplace.ng', icon: '<path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v7h4v-7h3l.5-4h-3.5V9c0-.6.4-1 1-1Z" fill="currentColor"/>' },
-  { name: 'Instagram', url: 'https://www.instagram.com/puppyplace_ng', icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>' },
+  { name: 'Instagram', url: 'https://www.instagram.com/puppyplace_ng', off: true, icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>' },
   { name: 'TikTok',    url: 'https://www.tiktok.com/@puppyplace.ng', icon: '<path d="M16.6 2h-3.4v13.4a2.9 2.9 0 1 1-2.1-2.8V9.1a6.4 6.4 0 1 0 5.5 6.3V8.6a8 8 0 0 0 4.4 1.3V6.5a4.5 4.5 0 0 1-4.4-4.5Z" fill="currentColor"/>' },
   { name: 'X',         url: 'https://x.com/puppyplaceng', icon: '<path d="M17.8 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.2 21H2.1l7.3-8.3L1.8 3h6.4l4.4 5.9L17.8 3Zm-1.1 16.2h1.7L7.4 4.7H5.6l11.1 14.5Z" fill="currentColor"/>' },
 ];
@@ -3681,6 +3683,7 @@ svg{flex-shrink:0}
 .f-social{display:flex;gap:12px;min-width:160px;justify-content:flex-end}
 .f-social a{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:#fff}
 .f-social a:hover{background:var(--orange)}
+.f-social .pp-soc-off{opacity:.3;filter:grayscale(1);pointer-events:none}
 .f-bot{display:flex;justify-content:space-between;gap:16px;padding-top:18px;font-size:12px;color:rgba(255,255,255,.7)}
 .flag{display:inline-flex;width:18px;height:12px;margin-left:8px;vertical-align:-1px;border-radius:1px;overflow:hidden}
 .flag i{flex:1;background:#008751}.flag i:nth-child(2){background:#fff}
@@ -3809,7 +3812,7 @@ svg{flex-shrink:0}
     <div class="f-top">
       <div class="f-brand"><a class="nav-logo" href="/">🐾 Puppy<span>Place</span></a><div class="f-tag">Healthy Pets. Happy Homes.</div></div>
       <nav class="f-links"><a href="/">Home</a><a href="/shop.html">Shop</a><a href="/pets.html">Pets</a><a href="/blog.html">Blog</a><a href="/contact.html">Contact</a></nav>
-      <div class="f-social">${socials.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}"><svg width="15" height="15" viewBox="0 0 24 24">${s.icon}</svg></a>`).join('')}</div>
+      <div class="f-social">${socials.map(s => s.off ? `<a class="pp-soc-off" aria-disabled="true" aria-label="${esc(s.name)} (coming back soon)"><svg width="15" height="15" viewBox="0 0 24 24">${s.icon}</svg></a>` : `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}"><svg width="15" height="15" viewBox="0 0 24 24">${s.icon}</svg></a>`).join('')}</div>
     </div>
     <div class="f-bot"><span>© ${year} PuppyPlace. All rights reserved.</span><span>Trusted by pet lovers across Nigeria<span class="flag" aria-hidden="true"><i></i><i></i><i></i></span></span></div>
   </div>
@@ -4435,9 +4438,10 @@ ${heroHtml}
 </div>
 <footer class="footer">
   &copy; 2026 <a href="/index.html">PuppyPlace.ng</a> &mdash; Your trusted pet store in Nigeria<br/><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/faq.html">FAQs</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
+  <div data-pp-socials class="pp-soc-center"></div>
 </footer>
 <script>(function(){var s=Date.now(),p=location.pathname;try{if(localStorage.getItem('pp_notrack'))return;}catch(e){}var v=JSON.stringify({path:p,ref:document.referrer});if(navigator.sendBeacon)navigator.sendBeacon('/api/track-view',v);else fetch('/api/track-view',{method:'POST',body:v,keepalive:true}).catch(function(){});function send(){var t=Math.round((Date.now()-s)/1000);if(t<2||!navigator.sendBeacon)return;navigator.sendBeacon('/api/track-time',JSON.stringify({path:p,secs:t}));}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send();});window.addEventListener('pagehide',send);})();</script>
-<script src="/pp-auth.js" defer></script><script src="/pp-comments.js" defer></script>
+<script src="/pp-auth.js" defer></script><script src="/pp-comments.js" defer></script><script src="/pp-socials.js" defer></script>
 </body>
 </html>`;
 }
@@ -5271,6 +5275,7 @@ ${p.review_count > 0 ? `
     <a href="/privacy.html">Privacy</a>
   </div>
   <div class="footer-copy">&copy; 2026 PuppyPlace.ng &#x2014; All rights reserved.</div>
+  <div data-pp-socials class="pp-soc-center"></div>
 </footer>
 
 <script>window.__pp_prod=${JSON.stringify({id:String(p.id||''),n:name,e:p.emoji||'📦',cat:p.category||'',p:Number(p.price)||0,img:p.image_url||null}).replace(/<\//g,'<\\/')};</script>
