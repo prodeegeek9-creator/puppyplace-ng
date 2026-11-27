@@ -3296,6 +3296,7 @@ const PET_FOOTER_SOCIALS = [
   { name: 'Facebook',  url: 'https://www.facebook.com/thepuppyplace.ng', icon: '<path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v7h4v-7h3l.5-4h-3.5V9c0-.6.4-1 1-1Z" fill="currentColor"/>' },
   { name: 'Instagram', url: 'https://www.instagram.com/puppyplace_ng', icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>' },
   { name: 'TikTok',    url: 'https://www.tiktok.com/@puppyplace.ng', icon: '<path d="M16.6 2h-3.4v13.4a2.9 2.9 0 1 1-2.1-2.8V9.1a6.4 6.4 0 1 0 5.5 6.3V8.6a8 8 0 0 0 4.4 1.3V6.5a4.5 4.5 0 0 1-4.4-4.5Z" fill="currentColor"/>' },
+  { name: 'X',         url: 'https://x.com/puppyplaceng', icon: '<path d="M17.8 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.2 21H2.1l7.3-8.3L1.8 3h6.4l4.4 5.9L17.8 3Zm-1.1 16.2h1.7L7.4 4.7H5.6l11.1 14.5Z" fill="currentColor"/>' },
 ];
 
 // The pets table has no gender, colour or litter-size columns; sellers put
