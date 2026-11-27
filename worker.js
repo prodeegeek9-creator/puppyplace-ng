@@ -1989,14 +1989,15 @@ const shrinkLater = (ctx, env, files) => ctx.waitUntil(
  * Every uploaded photo gets the PuppyPlace logo stamped faintly across its
  * middle (the way Jiji marks listing photos), so a copied photo still says
  * where it came from. It is burned into the stored file at upload time, before
- * shrinking. The logo is /images/watermark.png when that file exists (a white
- * logo on a see-through background looks best), else the site logo.
+ * shrinking. The mark is /images/watermark.png (the logo's figure, then
+ * PUPPYPLACE in orange and .NG in grey, on a see-through background; made from
+ * images/logo.png at 3559×353), else the site logo.
  * It needs the Images binding (wrangler.jsonc → "images"); without it, or if
  * stamping fails, the photo is saved unmarked rather than refused.
  */
 const WATERMARK_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const WATERMARK_SIZE = 0.45;    // logo width as a share of the photo's shorter side
-const WATERMARK_OPACITY = 0.35; // faded: visible, but the pet stays the subject
+const WATERMARK_SIZE = 0.7;     // mark width as a share of the photo's width
+const WATERMARK_OPACITY = 0.45; // faded: visible, but the pet stays the subject
 const WATERMARK_ASSET = '/images/watermark.png';
 
 let watermarkLogo = null; // the logo's bytes, kept while this Worker instance lives
@@ -2026,8 +2027,7 @@ async function watermarkPhoto(env, bytes, type) {
   try {
     const logo = await watermarkLogoBytes(env);
     const info = await env.IMAGES.info(bytesStream(bytes));
-    const side = Math.min(info.width || 1000, info.height || 1000);
-    const width = Math.max(80, Math.round(side * WATERMARK_SIZE));
+    const width = Math.max(120, Math.round((info.width || 1000) * WATERMARK_SIZE));
     const out = await env.IMAGES.input(bytesStream(bytes))
       .draw(env.IMAGES.input(bytesStream(logo)).transform({ width }), { opacity: WATERMARK_OPACITY })
       .output({ format: type, quality: 88 });
