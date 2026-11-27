@@ -3744,7 +3744,7 @@ svg{flex-shrink:0}
 </head>
 <body>
 <nav class="nav">
-  <a class="nav-logo" href="/">🐾 Puppy<span>Place</span></a>
+  <a class="nav-logo" href="/"><img src="/images/logo.png" alt="PuppyPlace" width="200" height="32" style="height:28px;width:auto;display:block"/></a>
   <div class="nav-links">
     <a class="nav-link" href="/">Home</a>
     <a class="nav-link" href="/shop.html">Shop</a>
@@ -3810,7 +3810,7 @@ svg{flex-shrink:0}
 <footer class="footer">
   <div class="wrap">
     <div class="f-top">
-      <div class="f-brand"><a class="nav-logo" href="/">🐾 Puppy<span>Place</span></a><div class="f-tag">Healthy Pets. Happy Homes.</div></div>
+      <div class="f-brand"><a class="nav-logo" href="/"><img src="/images/logo.png" alt="PuppyPlace" width="200" height="32" style="height:28px;width:auto;display:block"/></a><div class="f-tag">Healthy Pets. Happy Homes.</div></div>
       <nav class="f-links"><a href="/">Home</a><a href="/shop.html">Shop</a><a href="/pets.html">Pets</a><a href="/blog.html">Blog</a><a href="/contact.html">Contact</a></nav>
       <div class="f-social">${socials.map(s => s.off ? `<a class="pp-soc-off" aria-disabled="true" aria-label="${esc(s.name)} (coming back soon)"><svg width="15" height="15" viewBox="0 0 24 24">${s.icon}</svg></a>` : `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}"><svg width="15" height="15" viewBox="0 0 24 24">${s.icon}</svg></a>`).join('')}</div>
     </div>
@@ -4420,7 +4420,7 @@ a.art-cat{display:inline-block}
 </head>
 <body>
 <nav class="nav">
-  <a class="nav-logo" href="/index.html">Puppy<span>Place</span></a>
+  <a class="nav-logo" href="/index.html"><img src="/images/logo.png" alt="PuppyPlace" width="200" height="32" style="height:28px;width:auto;display:block"/></a>
   <a class="nav-back" href="/blog.html">← All Posts</a>
 </nav>
 ${heroHtml}
@@ -5071,7 +5071,7 @@ footer{background:#1a1a18;color:rgba(255,255,255,.6);padding:40px 40px 24px;marg
 </head>
 <body>
 <nav class="nav">
-  <a href="/index.html" class="nav-logo">Puppy<span>Place</span></a>
+  <a href="/index.html" class="nav-logo"><img src="/images/logo.png" alt="PuppyPlace" width="200" height="32" style="height:28px;width:auto;display:block"/></a>
   <div class="nav-icons">
     <a href="/shop.html" class="nav-back" style="margin-right:4px">← Shop</a>
     <div class="nav-ico" onclick="openWishlist()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;display:block"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="nav-badge" id="wBadge">0</span></div>
@@ -5262,7 +5262,7 @@ ${p.review_count > 0 ? `
 </div>
 
 <footer>
-  <div class="footer-logo">Puppy<span>Place</span>.ng</div>
+  <div class="footer-logo"><img src="/images/logo.png" alt="PuppyPlace" width="200" height="32" style="height:28px;width:auto;display:block;margin:0 auto"/></div>
   <div class="footer-links">
     <a href="/index.html">Home</a>
     <a href="/shop.html">Shop</a>
