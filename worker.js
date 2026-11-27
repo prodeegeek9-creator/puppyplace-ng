@@ -1990,8 +1990,8 @@ const shrinkLater = (ctx, env, files) => ctx.waitUntil(
  * middle (the way Jiji marks listing photos), so a copied photo still says
  * where it came from. It is burned into the stored file at upload time, before
  * shrinking. The mark is /images/watermark.png (the logo's figure, then
- * PUPPYPLACE in orange and .NG in grey, on a see-through background; made from
- * images/logo.png at 3559×353), else the site logo.
+ * puppyplace in orange and .ng in grey, on a see-through background; made from
+ * images/logo.png at 3028×437), else the site logo.
  * It needs the Images binding (wrangler.jsonc → "images"); without it, or if
  * stamping fails, the photo is saved unmarked rather than refused.
  */
