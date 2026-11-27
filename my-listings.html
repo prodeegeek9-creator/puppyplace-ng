@@ -177,7 +177,6 @@ function render() {
     <p class="sub">Changes you make are checked by PuppyPlace before they show on the site, usually within a day. You'll get a WhatsApp message when they're approved.</p>
     ${L.length ? `<div class="list">${L.map(card).join('')}</div>` : `<div class="card empty">You have no listings on this number yet.<br/><a class="btn" style="margin-top:14px" href="/sell-my-dog.html">List a pet for free</a></div>`}`;
   app.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openEdit(b.dataset.edit)));
-  app.querySelectorAll('[data-remove]').forEach((b) => (b.onclick = () => openRemove(b.dataset.remove)));
   app.querySelectorAll('[data-sold]').forEach((b) => (b.onclick = () => markSold(b.dataset.sold, b.dataset.to === 'sold', b)));
 }
 
@@ -238,7 +237,6 @@ function card(p) {
         ${p.active !== false && !p.sold_at ? `<button class="btn small" data-sold="${esc(p.id)}" data-to="sold">Mark as ${soldLabel(p)}</button>` : ''}
         ${p.sold_at ? `<button class="btn ghost small" data-sold="${esc(p.id)}" data-to="available">Mark as available again</button>` : ''}
         ${p.sold_at ? '' : `<button class="btn ${p.active !== false ? 'ghost ' : ''}small" data-edit="${esc(p.id)}">Edit</button>`}
-        ${p.active === false ? `<button class="btn ghost small" data-remove="${esc(p.id)}">Take down</button>` : ''}
       </div>
     </div>
   </div>`;
@@ -319,28 +317,6 @@ async function sendEdit(p) {
     closeEdit(); await load();
     flash('✅ Sent for review. You will get a WhatsApp message when it is approved.');
   } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; btn.disabled = false; }
-}
-
-function openRemove(id) {
-  const p = me.listings.find((x) => String(x.id) === String(id));
-  if (!p || p.active !== false) return; // a live listing is marked sold instead
-  $('#editModal').innerHTML = `
-    <div class="modal-h"><h1 style="font-size:20px">Take down ${esc(p.breed || 'listing')}?</h1><button class="x" id="x">✕</button></div>
-    <p class="sub">This listing is not live yet, so PuppyPlace will drop it once they've checked the request.</p>
-    <label>Why?</label>
-    <select id="r_why"><option>No longer available</option><option>Changed my mind</option><option>Other</option></select>
-    <button class="btn full" id="send">Ask to take it down</button>
-    <div class="msg" id="emsg"></div>`;
-  $('#x').onclick = closeEdit;
-  $('#send').onclick = async () => {
-    const msg = $('#emsg'), btn = $('#send');
-    btn.disabled = true;
-    try {
-      await api('/api/me/edit', { method: 'POST', body: JSON.stringify({ pet_id: p.id, kind: 'remove', note: $('#r_why').value }) });
-      closeEdit(); await load(); flash('✅ Request sent. The listing comes down once it is checked.');
-    } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; btn.disabled = false; }
-  };
-  $('#editBg').style.display = 'flex';
 }
 
 function flash(text) {

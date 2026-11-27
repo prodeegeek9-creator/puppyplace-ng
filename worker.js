@@ -1194,7 +1194,7 @@ function cleanChanges(c, env) {
 
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
-// POST /api/me/edit { pet_id, kind: 'edit' | 'remove', changes, note }
+// POST /api/me/edit { pet_id, changes, note }
 async function handleMeEdit(request, url, env, ctx) {
   if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
   if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
@@ -1205,13 +1205,14 @@ async function handleMeEdit(request, url, env, ctx) {
   try { b = await request.json(); } catch { return userJson({ error: 'Invalid request' }, 400); }
   const pet = (await listingsFor(env, account.phone, LISTING_FIELDS)).find((p) => String(p.id) === String(b?.pet_id));
   if (!pet) return userJson({ error: 'That listing is not yours.' }, 404);
-  const kind = b?.kind === 'remove' ? 'remove' : 'edit';
-  const note = cleanText(b?.note, 300);
-  // A live listing is taken down by marking it sold (removed after
-  // SOLD_KEEP_DAYS); only one not live yet can be withdrawn by request.
-  if (kind === 'remove' && pet.active !== false) {
+  // There is no take-down request: a seller marks the pet sold, and sold
+  // listings are removed after SOLD_KEEP_DAYS. (Admin → Edit requests still
+  // decides any 'remove' request sent before this.)
+  if (b?.kind === 'remove') {
     return userJson({ error: `Use “Mark as ${soldWord(pet)}” instead. Sold listings are removed after ${SOLD_KEEP_DAYS} days.` }, 400);
   }
+  const kind = 'edit';
+  const note = cleanText(b?.note, 300);
 
   let changes = {};
   if (kind === 'edit') {
