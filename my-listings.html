@@ -181,8 +181,8 @@ function render() {
   app.querySelectorAll('[data-sold]').forEach((b) => (b.onclick = () => markSold(b.dataset.sold, b.dataset.to === 'sold', b)));
 }
 
-// Sold (or adopted): the listing stays up, stamped and greyed, for two months, then it is removed.
-const SOLD_KEEP_DAYS = 60;
+// Sold (or adopted): the listing stays up, stamped and greyed, for 30 days, then it is removed.
+const SOLD_KEEP_DAYS = 30;
 const soldLabel = (p) => (p.listing_type === 'adoption' ? 'adopted' : 'sold');
 function goneOn(p) {
   const d = new Date(Date.parse(p.sold_at) + SOLD_KEEP_DAYS * 864e5);
@@ -193,12 +193,12 @@ async function markSold(id, sold, btn) {
   const p = me.listings.find((x) => String(x.id) === String(id));
   if (!p) return;
   const word = soldLabel(p);
-  if (sold && !confirm(`Mark your ${p.breed || 'pet'} as ${word}?\n\nIt stays on PuppyPlace with a ${word.toUpperCase()} stamp for two months, so buyers can see it went, and buyers can no longer contact you about it. Then it is removed.`)) return;
+  if (sold && !confirm(`Mark your ${p.breed || 'pet'} as ${word}?\n\nListings marked ${word} are removed from PuppyPlace after ${SOLD_KEEP_DAYS} days. Until then it shows a ${word.toUpperCase()} stamp, so buyers can see it went, and buyers can no longer contact you about it.`)) return;
   btn.disabled = true;
   try {
     await api('/api/me/sold', { method: 'POST', body: JSON.stringify({ pet_id: p.id, sold }) });
     await load();
-    flash(sold ? `🎉 Marked as ${word}. Congratulations!` : '✅ Your listing is available again.');
+    flash(sold ? `🎉 Marked as ${word}. Congratulations! It will be removed from PuppyPlace in ${SOLD_KEEP_DAYS} days.` : '✅ Your listing is available again.');
   } catch (e) { btn.disabled = false; alert(e.message); }
 }
 
@@ -238,7 +238,7 @@ function card(p) {
         ${p.active !== false && !p.sold_at ? `<button class="btn small" data-sold="${esc(p.id)}" data-to="sold">Mark as ${soldLabel(p)}</button>` : ''}
         ${p.sold_at ? `<button class="btn ghost small" data-sold="${esc(p.id)}" data-to="available">Mark as available again</button>` : ''}
         ${p.sold_at ? '' : `<button class="btn ${p.active !== false ? 'ghost ' : ''}small" data-edit="${esc(p.id)}">Edit</button>`}
-        <button class="btn ghost small" data-remove="${esc(p.id)}">Take down</button>
+        ${p.active === false ? `<button class="btn ghost small" data-remove="${esc(p.id)}">Take down</button>` : ''}
       </div>
     </div>
   </div>`;
@@ -323,12 +323,12 @@ async function sendEdit(p) {
 
 function openRemove(id) {
   const p = me.listings.find((x) => String(x.id) === String(id));
-  if (!p) return;
+  if (!p || p.active !== false) return; // a live listing is marked sold instead
   $('#editModal').innerHTML = `
     <div class="modal-h"><h1 style="font-size:20px">Take down ${esc(p.breed || 'listing')}?</h1><button class="x" id="x">✕</button></div>
-    <p class="sub">PuppyPlace will remove the listing from the site once they've checked the request.${p.sold_at || p.active === false ? '' : ` Sold it? Use <b>Mark as ${soldLabel(p)}</b> instead: it shows a ${soldLabel(p).toUpperCase()} stamp straight away, with no wait.`}</p>
+    <p class="sub">This listing is not live yet, so PuppyPlace will drop it once they've checked the request.</p>
     <label>Why?</label>
-    <select id="r_why"><option>No longer available</option><option>Sold</option><option>Adopted</option><option>Other</option></select>
+    <select id="r_why"><option>No longer available</option><option>Changed my mind</option><option>Other</option></select>
     <button class="btn full" id="send">Ask to take it down</button>
     <div class="msg" id="emsg"></div>`;
   $('#x').onclick = closeEdit;

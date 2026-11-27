@@ -919,7 +919,7 @@ async function sbJson(env, path, init = {}) {
  * so petsJson asks for it and, if it is not there, asks again without it (and
  * stops asking for a few minutes). Nothing shows as sold until then.
  */
-const SOLD_KEEP_DAYS = 60;
+const SOLD_KEEP_DAYS = 30;
 const SOLD_COL = ',sold_at';
 let soldMissingUntil = 0;
 const SOLD_SETUP = 'Marking pets sold is not set up yet. Run supabase/sold_pets.sql once in Supabase → SQL Editor.';
@@ -1207,6 +1207,11 @@ async function handleMeEdit(request, url, env, ctx) {
   if (!pet) return userJson({ error: 'That listing is not yours.' }, 404);
   const kind = b?.kind === 'remove' ? 'remove' : 'edit';
   const note = cleanText(b?.note, 300);
+  // A live listing is taken down by marking it sold (removed after
+  // SOLD_KEEP_DAYS); only one not live yet can be withdrawn by request.
+  if (kind === 'remove' && pet.active !== false) {
+    return userJson({ error: `Use “Mark as ${soldWord(pet)}” instead. Sold listings are removed after ${SOLD_KEEP_DAYS} days.` }, 400);
+  }
 
   let changes = {};
   if (kind === 'edit') {

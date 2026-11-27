@@ -2056,7 +2056,7 @@ function renderPets(){
     <td style="white-space:nowrap">${escHtml(fmtStamp(p.created_at))}<small style="display:block;color:var(--gray)">${escHtml(ago(p.created_at))}</small>${iss.length?`<small style="display:block;color:#8a5a00" title="${escA(iss.join(', '))}">⚠ ${iss.length} to fix</small>`:''}</td>
     <td><div class="action-btns">
       ${p.active===false?`<button class="act-btn" title="Approve and publish" onclick="approvePet('${sid(p.id)}')">✅</button>`:''}
-      ${p.active!==false?`<button class="act-btn" title="${p.sold_at?'Mark as available again':'Mark as sold: stamped SOLD, removed after 2 months'}" onclick="markPetSold('${sid(p.id)}',${p.sold_at?'false':'true'})">${p.sold_at?'↩️':'🏷️'}</button>`:''}
+      ${p.active!==false?`<button class="act-btn" title="${p.sold_at?'Mark as available again':'Mark as sold: stamped SOLD, removed after 30 days'}" onclick="markPetSold('${sid(p.id)}',${p.sold_at?'false':'true'})">${p.sold_at?'↩️':'🏷️'}</button>`:''}
       <button class="act-btn" title="Details" onclick="openPetDetail('${sid(p.id)}')">👁️</button>
       <button class="act-btn" onclick="editPet('${sid(p.id)}')">✏️</button>
       <button class="act-btn del" onclick="deletePetById('${sid(p.id)}')">🗑️</button>
@@ -2502,7 +2502,7 @@ async function approvePet(id) {
 async function markPetSold(id,sold) {
   try{ await adminApi('/api/admin/pets',{action:'set_sold',id,sold}); }
   catch(error){ showToast('❌ '+error.message,'error'); return; }
-  showToast(sold?'🏷️ Marked sold. It shows a SOLD stamp and is removed after 2 months':'↩️ Available again','success');
+  showToast(sold?'🏷️ Marked sold. It shows a SOLD stamp and is removed after 30 days':'↩️ Available again','success');
   loadPets();
 }
 async function deletePet(id,name) {
