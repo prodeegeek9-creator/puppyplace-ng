@@ -1249,7 +1249,7 @@ async function handleMeEdit(request, url, env, ctx) {
 
 // POST /api/me/cancel { pet_id } → deletes the seller's own listing that has
 // not been approved yet (live listings are marked sold instead), with its
-// photos, straight away. The owner is told.
+// photos, straight away. The owner and the seller are told on WhatsApp.
 async function handleMeCancel(request, url, env, ctx) {
   if (!accountsReady(env)) return userJson({ error: 'Log in is not set up yet' }, 503);
   if (!sameOrigin(request, url)) return userJson({ error: 'Forbidden' }, 403);
@@ -1271,6 +1271,7 @@ async function handleMeCancel(request, url, env, ctx) {
     sbJson(env, `pet_owners?pet_id=eq.${pid}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }),
     sbJson(env, `pet_edits?pet_id=eq.${pid}&status=eq.pending`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'withdrawn', decided_at: new Date().toISOString() }) }),
     sendWhatsApp(env, { to: 'owner', text: `🗑️ ${account.name || '+' + account.phone} cancelled their *${pet.breed}* listing before it was approved.` }),
+    sendWhatsApp(env, { phone: account.phone, text: `🗑️ Your *${pet.breed}* listing has been cancelled, as you asked. It was not published on PuppyPlace, and its photos have been deleted.\n\nWant to list a pet again? Send the details here any time.` }),
   ]).catch((err) => console.error('cancel clean-up failed:', err?.message ?? err)));
   return userJson({ ok: true });
 }
